@@ -23,13 +23,15 @@ Each entry says what the rule is, why it exists, and how to apply it. Don't rest
 
 ## Brand names
 
-⚠️ **Decision needed:** set by `ucl-setup`. Define how each product or brand name is written (capitalization, spacing), the forms that are never correct, and which names must never be used interchangeably. Identifiers that aren't user-facing (the npm package, CSS/JS names) keep their lowercase forms.
+- **Sparks:** written "Sparks" in all UI copy (titles, running text, buttons). The all-caps "SPARKS" appears only inside the logo artwork (`Logo`, `brand/logo/`). Never "SPARKS" or "sparks" in copy.
+- Identifiers that aren't user-facing (the npm package `@jcaunedo/ucl`, CSS/JS names) keep their lowercase forms.
+- ⚠️ **Decision needed:** any other product or feature names, and which names must never be used interchangeably.
 
 ---
 
 ## Brand voice
 
-The `project-copywriter` skill reads this section. The voice below is the base every project starts from. Adjust it per client, and fill in the audiences and terminology.
+The `sparks-copywriter` skill reads this section. Sparks uses the base voice below as is. Fill in the audiences and terminology when they're known.
 
 - **Voice:** clear, direct, calm, helpful.
 - **Never:** cute, salesy, vague, blaming.
@@ -41,6 +43,140 @@ The `project-copywriter` skill reads this section. The voice below is the base e
   - No exclamation marks, no "please", no "oops".
 - **Audiences:** ⚠️ **Decision needed:** who reads the UI (e.g. builders creating apps, team admins, internal operators), and the tone for each.
 - **Terminology:** ⚠️ **Decision needed:** the words the product uses for its core objects and states (e.g. "project", "workspace", "draft"), and words to avoid.
+
+---
+
+## Logo artwork keeps its literal colors (`brand/logo/logo.tsx`)
+
+**Rule:** the Logo's letter colors (`#0063F7`, `#F78000`, `#9139DA`, `#05B328`, `#E4C202`, `#00ADF7`) and its sparkle colors (`#0063F7` on light, the first S's blue; white on dark) stay literal hex in `logo.tsx`. They're the one exception to "never raw hex". The path data is Figma's SVG export (sparks.ds, node `1:31`), copied verbatim. The artwork sits at the top of its 197.842 × 37.1451 box: about 1px above it and 4px below, as in Figma. The `auto` tone switches the sparkle with `in-[.dark]:text-white`, not `dark:text-white`.
+
+**Why:** these are artwork, not UI colors, and sparks.ds doesn't define them as variables. Turning them into theme tokens would let a theme change recolor the brand mark. `dark:` in Tailwind 4 follows the OS color scheme by default, while `theme.css` switches on the `.dark` class. With `dark:`, the sparkle could turn white on a light page.
+
+**How to apply:** don't tokenize the logo's colors or redraw its paths. To update the artwork, re-export node `1:31` from Figma and replace the paths. Known-good sparkle classes: `auto: "text-[#0063F7] in-[.dark]:text-white"`, `"on-light": "text-[#0063F7]"`, `"on-dark": "text-white"`, with the sparkle path filled with `currentColor`.
+
+---
+
+## AutoPartsHUB logo artwork (`brand/autoparts-hub-logo/autoparts-hub-logo.tsx`)
+
+**Rule:** the AutoPartsHUB logo's colors stay literal hex: the blue gradient `#0063F7` → `#0025A9` on "AUTOPARTS" and "A", and orange `#F16521` on "HUB." and "H.". The paths are Figma's SVG export of sparks.ds node 20:141 (variants `20:146` Logo, `20:142` Symbol) with **text outlined**, copied verbatim. The viewBoxes are the export's bounds (`0 0 245 36` and `0 0 50 36`), slightly wider than the Figma frames (243 and 46), because "HUB." and the dot run past them. Gradient ids come from `React.useId()`.
+
+**Why:**
+
+- Figma draws the logo as live text in Google Sans Flex, which apps don't load. Rendering it as text would fall back to another font, so it ships as outlined paths.
+- The colors are artwork, not UI colors, and sparks.ds doesn't define them as variables (same exception as the Sparks Logo above).
+- The frames clip nothing in Figma, so the overflow is visible there. A viewBox at the frame size would cut off the right edge of "HUB." and the dot.
+- A fixed gradient id (`paint0_linear…`) is shared by every logo on the page; if the first one unmounts or is hidden, the others lose their blue fill.
+
+**How to apply:** don't tokenize these colors, redraw the paths, render the letters as text, or replace `useId()` with fixed ids. To update the artwork, re-export both variants with `exportAsync({ format: "SVG_STRING", svgOutlineText: true })` and replace the paths, gradient coordinates and viewBoxes together.
+
+---
+
+## Product logos (`brand/pulse-logo`, `brand/flow-logo`, `brand/sales-logo`, `brand/care-logo`)
+
+**Rule:** the paths are Figma's SVG export of sparks.ds → Branding (nodes 21:419 Pulse, 21:420 Flow, 21:421 Sales, 21:422 Care), copied verbatim. Width, height and viewBox are each node's exact size (e.g. Pulse `126.428 × 44.7273`), not the export's rounded-up integers. Colors:
+
+- **Pulse:** `fill='currentColor'` with `text-foreground-prominent` on the svg, because Figma binds every fill to `colors/foreground/prominent`.
+- **Flow:** literal gradient `#00F7EB` → `#FF9328` (at 0.519231) → `#CF0000`.
+- **Sales:** one literal gradient `#B5DC00` → `#0C9400`, shared by all five letters. Figma's export repeats it once per letter with identical values.
+- **Care:** literal `#D63EC9`.
+
+Gradient ids come from `React.useId()`.
+
+**Why:** the logos are artwork, so their literal colors are exempt from tokens, like the Sparks Logo. Pulse is the exception: Figma binds it to a semantic variable, so it follows the theme like any text. A fixed gradient id is shared by every copy on the page, and hiding one breaks the others' fill.
+
+**How to apply:** don't tokenize the literal colors or hardcode Pulse's (`#222A34`). To update the artwork, re-export the node with `exportAsync({ format: "SVG_STRING" })` and replace the paths and gradient together.
+
+---
+
+## Tabs (`navigation/tabs/tabs.tsx`)
+
+**Rule:** Tabs follows shadcn's structure, with these deliberate differences:
+
+1. **The active look is a sliding indicator.** The white pill (Default) and the 2px underline (Line) are a `motion.span` with a `layoutId` unique to each `Tabs` (`useId()`), rendered inside the active trigger and moved with `resolve(layoutSpring)`. They aren't `data-[state=active]` styles on the trigger. To know which trigger is active, `Tabs` mirrors Radix's value in context. Triggers are `isolate`, and the pill is `-z-10`, so it sits behind the label.
+2. **The active pill's shadow is exact:** `shadow-[0_0_4px_-2px_var(--shadow-color-md),0_0_4px_1px_var(--shadow-color-sm)]`. It's `shadow-md`'s colors, blur and spread with no offset, as Figma draws it. It's not `shadow-md` (2px lower) or shadcn's `shadow-sm`.
+3. **The list passes `variant`, `size` and `baseline` to triggers through context** (`tabsTriggerVariants` with compound variants), not shadcn's `group-data-[variant=…]` selectors.
+4. **Trigger heights are fixed per variant and size:** Default `h-[30px]` / `h-[34px]` (inside the track's `p-[3px]`), Line `h-9` / `h-10`. Default lg uses `text-base` with a fixed height: Figma gives that label no text style and an auto line height, while Line lg uses `base/base -semibold`.
+5. **No shadcn `dark:` classes.** `dark:` follows the OS in Tailwind 4, not the `.dark` class, and the tokens already switch with `.dark`.
+6. **`baseline`** (Figma "State=Default (line)") is a `before:` 1px `bg-border` line on each Line trigger. The underline indicator renders after it, so it covers the baseline.
+7. **The focus ring shows for keyboard focus only.** The trigger tracks `focusedByPointer`: set on pointer down, cleared on key down and blur. It adds the `focus-visible:ring-*` classes only while that's false (and sets `data-focus-source='pointer'` while it's true).
+
+**Why:**
+
+1. MOTION.md asks for the tab indicator on a shared `layoutId`.
+2. Snapping the shadow to a token changes its look.
+3. Context keeps every trigger's height and padding in one `cva`.
+4. Heights come from Figma per variant: Default fits inside the 3px track padding, Line is full height.
+5. Shadcn's `dark:` classes would switch on the OS setting, not the app's theme.
+6. Without the ordering, the gray baseline would paint over the underline.
+7. Radix Tabs calls `focus()` on the tab from its mouse-down handler. The browser treats focus moved by script as keyboard focus, so a plain `focus-visible:` ring showed a box around a tab after a mouse click (a plain `Button` doesn't). Keyboard users still need the ring, so it isn't removed, only skipped for pointer focus.
+
+**How to apply:** keep these on a shadcn resync. A new list variant needs its own indicator style in `tabsIndicatorVariants` and its height and padding in the trigger's compound variants.
+
+⚠️ **No Figma source** (assumed): focus (Button's ring), disabled (`opacity-50`), vertical orientation (shadcn's layout, with the underline on the right). Figma's hidden counter badge, "Alert" badge and alert dot aren't built yet: they wait for a Badge component and a status token (the dot is bound to `alerts-patient/critical`, not in sparks.ds's synced variables).
+
+---
+
+## Avatar (`data-display/avatar/avatar.tsx`)
+
+**Rule:** four choices in the Avatar differ from shadcn or from a plain Figma read, on purpose:
+
+1. **No `overflow-hidden` on the root.** shadcn's root has it; here `AvatarImage` and `AvatarFallback` each carry `rounded-full` instead. Known-good root: `"group/avatar relative flex shrink-0 rounded-full select-none"`.
+2. **Initials are 11px** (`text-[11px] font-bold` at `default`), as Figma draws them, not `text-xs` (12px). At `lg` they're `text-sm`.
+3. **Initials colors are `--avatar-1` … `--avatar-10`** in `theme.css`, in Figma's i1–i10 order. sparks.ds has them as raw fills, with no variables behind them.
+4. **`AvatarBadge` is 8px (`size-2`) at `default`**, Figma's size, not shadcn's `size-2.5`, and filled with `bg-success`, not `bg-primary`.
+
+**Why:**
+
+1. With `overflow-hidden` on the round root, the badge in the corner is clipped by the circle.
+2. A sync or cleanup would likely snap 11px to the nearest text token.
+3. Without this note, the tokens look like sync misses that a later `ucl-ds-sync` might drop. The order matters: `color={N}` and `avatarColorFor()` map to them by number, so reordering them changes every user's color.
+4. A shadcn resync would bring back `size-2.5` and `bg-primary`.
+
+**How to apply:** keep these four on a shadcn or Figma resync. If sparks.ds adds variables for the initials colors, map them to the same `--avatar-N` names in the same order.
+
+⚠️ **No Figma source** (assumed; check when drawn): the `lg` sizes (initials `text-sm`, badge `size-2.5`; Figma only has the 32px set), and `AvatarAdd`'s hover and focus, which reuse Button's outline variant (`hover:bg-accent`, the standard focus ring).
+
+
+---
+
+## Clickable elements show the pointer cursor (`src/styles/theme.css`)
+
+**Rule:** one global `@layer base` rule at the end of `theme.css` gives every enabled clickable element the pointer cursor: buttons, `role="button"`, `role="tab"`, `role="option"`, `role="menuitem"`, `summary`, `label[for]`, `select`, checkboxes, radios and file inputs. Disabled ones keep the default cursor. Links have the pointer already.
+
+**Why:** Tailwind 4's preflight sets buttons to `cursor: default`, so tabs, buttons and the avatar's add button showed the arrow on hover. One rule covers every component and every app, instead of `cursor-pointer` on each.
+
+**How to apply:** don't add `cursor-pointer` to components. A new clickable element that isn't a button, link or one of the roles above gets its role (or is added to this rule). `theme.css` ships to consumers, so the apps' own buttons get the pointer too.
+
+---
+
+## Figma → theme.css token map (`src/styles/theme.css`)
+
+**Rule:** `theme.css` mirrors sparks.ds, and only sparks.ds. Every token comes from a sparks.ds variable, text style or effect style, and its comment in `theme.css` names the source. A token with no Figma variable behind it says so in its comment.
+
+- **Primitives** (`primitives` collection) → `:root` as `--<palette>-<step>` in oklch, with the Figma hex in a comment (`--gray-700: oklch(0.334 0.016 255.63); /* #31373f */`). A palette's base alias (`palettes/sky/sky`) → `--sky: var(--sky-500)`. `colors/white`/`black` → `--white`/`--black`. Primitives aren't exposed as Tailwind utilities: components use semantic roles.
+- **Semantic** (`semantic` collection, Light mode) → `:root, .dark`, referencing primitives, under shadcn role names where one fits (`colors/tone/brand/brand` → `--brand` → `--primary`). The path drops `colors/` and `tone/`, a group's own name (`colors/card/card` → `--card`), and `on-<x>` becomes `<x>-foreground`. Brand "accent" is `--tone-accent`, because shadcn's `--accent` is the hover surface (`colors/states/hover`). Badge names follow the Figma code syntax (`var(--badge-blue)`).
+- **Aliases with opacity** (`states/hover`, `states/highlight`, `sidebar/active`) → `color-mix(in oklab, var(--x) N%, transparent)`.
+- **Text styles** → `--text-*` with the paired `--text-*--line-height`. Font families → `--font-sans`/`--font-display` (both Figtree, `font-family/font`), `--font-mono` (`font-family/code`). Weights are Tailwind's defaults and letter spacing is 0, so neither is redefined.
+- **Effect styles** → `--shadow-xs` … `--shadow-2xl` (colored by `--shadow-color-*`) and `--shadow-sonner`.
+- **Semantic radius** → `--radius` (`radius/default`, 8px) plus `--radius-card`, `-input`, `-modal`, `-menu`, `-menu-item`, `-avatar-square`, `-button-xs` … `-button-xl`. badge, pill, chip and full are `rounded-full`.
+- **Spacing** matches Tailwind's 4px scale value for value (`spacing/1` = 4px … `spacing/60` = 240px), so it isn't redefined.
+
+**No Figma variable behind these** (decided at the first sync; change them in Figma first if they should differ):
+
+- `--card-foreground`, `--popover-foreground`, `--accent-foreground`, `--secondary-foreground`: `var(--foreground)`.
+- `--secondary`: `var(--neutral-muted)`, shadcn's light-gray secondary.
+- `--destructive-foreground`: white. Figma has no "on-destructive".
+- `--avatar-1` … `--avatar-10`: the avatar initials backgrounds, raw fills in sparks.ds (see "Avatar").
+
+ℹ️ `--foreground-prominent` (`colors/foreground/prominent` → gray/800) was added after the first sync, when Pulse needed it. Its `.dark` placeholder is `var(--white)`, one step past `--foreground`'s gray-50.
+
+**Not mirrored:** `colors/tone/danger/*` duplicates `colors/tone/destructive/*` value for value, so only `--destructive-*` exists. `font-size/xxs`, `line-height/xxxs` and `paragraph-gap/*` aren't used by any text style. `breakpoint/width`/`height` (1728 × 1117) are the cover frame's size, not a CSS breakpoint.
+
+⚠️ **Gap:** sparks.ds has no Dark mode. The `.dark` block in `theme.css` is a derived placeholder (gray steps inverted, brand and tones unchanged). Replace it when the Dark mode exists in Figma.
+
+**Why:** the first sync replaced every template value. Without this list, the tokens Figma doesn't define look like sync misses, and a later sync could "fix" them to something else or drop them.
+
+**How to apply:** resync with `ucl-ds-sync` and keep these rules. A new semantic variable gets a token named by the rule above, a mapping in `@theme inline` and its Figma source in the comment.
 
 ---
 
@@ -199,7 +335,7 @@ const { resolve } = useMotionPreference();
 
 - Don't add `antialiased` or these properties to a component. The global rule covers it.
 - `text-rendering: optimizeLegibility` is deliberately not set globally: modern browsers already kern and apply ligatures, and on long pages it can slow rendering. Use it per element only if a specific heading needs it.
-- Apps load every weight of the project's font that the components use (the `Typography` `weight` values). A weight that isn't loaded falls back to the nearest loaded one. ⚠️ **Decision needed:** set by `ucl-setup` once the project's fonts are chosen.
+- Apps load every weight of the project's font that the components use (the `Typography` `weight` values). A weight that isn't loaded falls back to the nearest loaded one. For Sparks: Figtree at 400, 500, 600, 700 and 900 (the weights the text styles use; 300 and 800 are tokens no style uses yet) and Roboto Mono for code.
 - Digits that line up in columns use `tabular-nums` per element. That's a typographic choice, not part of this rule.
 
 ⚠️ **Constraint:** `theme.css` ships to consumers, so every app's text renders this way, including text outside UCL components. `antialiased` makes text look slightly lighter on macOS: compare it with Figma before changing font weights to make up for it.

@@ -1,7 +1,7 @@
 <!--
 Created: Nov 9, 2026
 Created by: Julio Caunedo
-Last updated: Nov 18, 2026
+Last updated: Nov 20, 2026
 Scope: how this repo's work is branched, committed, versioned, tagged and traced, and how docs under `prds/` are written.
 Purpose: keep the team's workflow and writing rules in the repo, so they're the same on every machine and for every person or assistant.
 -->
@@ -28,7 +28,7 @@ Format: `type(scope): summary [ID…]`
 
 - `type` is one of the branch prefixes above (`feat`, `fix`, `chore`, `design`, `docs`), plus `ci` for CI config.
 - `scope` is the area touched: a component (`button`), a layout or flow, `theme`, `motion`, `prds`, `repo`…
-- `[ID…]` cites the requirement or ticket IDs the change serves (see "IDs"). Leave it out when the work has none.
+- `[ID…]` cites the PRD IDs the change serves (see "IDs"). Sparks has no outside tracker, so there are no ticket IDs to cite. Leave it out when the work has none.
 
 Examples:
 
@@ -38,10 +38,10 @@ Examples:
 
 ## IDs
 
-⚠️ **Set at setup:** where the project tracks its work (Jira, Linear, a requirements spec…), the ID prefixes it uses, and whether PRDs here mint their own IDs. `ucl-setup` asks and fills this section.
+Sparks has no outside tracker (no Jira, Linear or requirements spec). PRDs mint their own IDs.
 
-- **Referenced here, never minted here:** IDs whose source of record is outside the repo (tickets, requirements, decisions). ⚠️ Not set.
-- **Minted here:** repo-local PRD IDs (e.g. `SIGN-` and `SIGN-AC-` for a sign-in PRD and its acceptance criteria). Pick prefixes that never collide with an outside prefix, and list each one here when its PRD is created. ⚠️ None yet.
+- **Referenced here, never minted here:** none. If the team adopts a tracker, list its prefixes here, and keep PRD prefixes from colliding with them.
+- **Minted here:** repo-local PRD IDs (e.g. `SIGN-` and `SIGN-AC-` for a sign-in PRD and its acceptance criteria). List each prefix here when its PRD is created. None yet.
 
 ## Versioning
 
@@ -102,3 +102,18 @@ Scope: one or two lines on which spec doc(s) this file governs.
 Purpose: one or two lines on why the file exists.
 -->
 ```
+
+### This project
+
+The profile the PRD skill (`ucl-generate-prd`) reads before writing a PRD.
+
+- **PRD folder:** `prds/`, flat (no category folders yet). One file per screen, flow or shared rule, named for it (`autopartshub-home.md`).
+- **Products and audiences:**
+  - **AutoPartsHUB:** the customer workspace. Its team members sign in and open the apps they use. Layouts in `src/layouts/autopartshub/`.
+  - **The apps** opened from it: Pulse, Sparks, Flow, Sales, Care. Written by those names in copy (DESIGN.md → "Brand names" for Sparks).
+  - ⚠️ **Decision needed:** the user roles (who sees which apps, admins vs. members).
+- **Shared rules and their owners:** none yet. The first rule several screens share (permissions, which apps a user sees) gets its own PRD, listed here.
+- **Copy:** load `sparks-copywriter` before writing UI copy. Copy quoted from Figma is used as is.
+- **Building decisions:** a decision about something already built changes the layout or component in the same change. Try it in Storybook (`npm run storybook`); checks: `npm run lint`, `npm run build`.
+- **Screen sizes:** phones, tablet (`md`) and desktop (`lg` and up), with the breakpoints in DESIGN.md → "Breakpoints include their own width".
+- **Model PRD:** [prds/autopartshub-home.md](prds/autopartshub-home.md) (a screen).

@@ -1,10 +1,6 @@
-# UCL (Unified Component Library)
+# Sparks UCL (Unified Component Library)
 
-Shared React component library for a project's frontend applications. Built with React 19, Tailwind CSS 4 and TypeScript, on the base component library chosen in "Stack" (shadcn/ui by default).
-
-## ⚠️ Setup required
-
-This repo is the **unconfigured UCL template**. Before doing any other task, run the `ucl-setup` skill (`/ucl-setup`). It asks for the stack first (base component library, icons, forms), then the project details (name, Figma file, brand; package, registry, repo, control sizes and work tracking have preset defaults it shows for confirmation), and updates dependencies, build config and docs to match, including SIZE-SCALE.md and CONVENTIONS.md. When setup finishes, it deletes this section.
+Shared React component library for Sparks's frontend applications. Built with React 19, Tailwind CSS 4 and TypeScript, on shadcn/ui and Radix (see "Stack").
 
 ## Project
 
@@ -12,10 +8,11 @@ Everything specific to this project is in this section, "Stack", "Figma", DESIGN
 
 | Item         | Value                                                        |
 | ------------ | ------------------------------------------------------------ |
-| Project      | ⚠️ Not set (run `ucl-setup`)                                 |
-| Package      | `ucl` (placeholder, e.g. `@your-org/ucl`)                    |
-| Registry     | GitHub Packages (default)                                    |
-| Apps         | ⚠️ Not defined. Set at the first layout (`ucl-generate-layout` asks); used for `src/layouts/<app>/` |
+| Project      | Sparks                                                       |
+| Package      | `@jcaunedo/ucl`                                              |
+| Registry     | GitHub Packages, `@jcaunedo` scope (`https://npm.pkg.github.com`) |
+| Repository   | `https://github.com/jcaunedo/sparks`                         |
+| Apps         | AutoPartsHUB (`src/layouts/autopartshub/`, Figma: Sparks `ShkgoGYA4VmXg8xqfXBZLJ`). Add each new app here and in ARCHITECTURE.md |
 | Brand        | DESIGN.md → "Brand names", "Brand voice"                     |
 
 ## How the rules work
@@ -27,7 +24,7 @@ Everything specific to this project is in this section, "Stack", "Figma", DESIGN
 - **[SIZE-SCALE.md](SIZE-SCALE.md)**: the one height scale every control shares. Covers each step's height and role, the default, and which sizes each control supports. Read it before building or resizing a button, input, select or any control with a `size` prop.
 - **[CONVENTIONS.md](CONVENTIONS.md)**: how work is branched, committed, versioned, tagged and traced, and how PRDs are written (status labels, creation header, ID prefixes).
 - **[explorations/index.md](explorations/index.md)**: the index of explorations, newest first: claude.ai artifacts, and Storybook explorations (story path instead of a URL). An exploration is published as a claude.ai artifact, and gets its row in the same change, with its open questions in Notes. [explorations/notes.md](explorations/notes.md) compares editing an artifact here with editing it in the browser.
-- **Skills** in `.claude/skills/` (`ucl-setup`, `ucl-ds-sync`, `ucl-generate-component`, `ucl-generate-layout`, `project-copywriter`) are project-agnostic. They read CLAUDE.md and DESIGN.md before they start (plus MOTION.md when the work involves animation) and take every project value (package, Figma file, categories, apps, component APIs, voice) from them. **When a skill and these files disagree, these files win.**
+- **Skills** in `.claude/skills/` (`ucl-setup`, `ucl-ds-sync`, `ucl-generate-component`, `ucl-generate-layout`, `sparks-copywriter`) are project-agnostic. They read CLAUDE.md and DESIGN.md before they start (plus MOTION.md when the work involves animation) and take every project value (package, Figma file, categories, apps, component APIs, voice) from them. **When a skill and these files disagree, these files win.**
 - **Not defined here?** Ask, then record the answer in the right file so the next run doesn't have to ask again.
 
 ## Quick Reference
@@ -44,17 +41,17 @@ Everything specific to this project is in this section, "Stack", "Figma", DESIGN
 
 ## Stack
 
-The stack is set per project so UCL matches what the project's dev team ships. It's the first thing `ucl-setup` asks for. The values below are the template defaults. Change a row only after agreeing it with the dev team, then update every section below that depends on it.
+The stack is set per project so UCL matches what the project's dev team ships. It's the first thing `ucl-setup` asks for. Change a row only after agreeing it with the dev team, then update every section below that depends on it.
 
 | Concern              | Choice                                                     | Status                     |
 | -------------------- | ---------------------------------------------------------- | -------------------------- |
 | Framework            | React 19 (`react`, `react-dom` as peer dependencies)       | Set                        |
-| Base components      | shadcn/ui on Radix (`@radix-ui/react-*`)                   | Default                    |
+| Base components      | shadcn/ui on Radix (`@radix-ui/react-*`)                   | Set                        |
 | Styling              | Tailwind CSS 4, tokens in `src/styles/theme.css` (oklch)   | Set                        |
 | Variants             | `class-variance-authority` (`cva`) + `cn()`                | Set                        |
-| Icons                | `lucide-react`                                             | Default                    |
+| Icons                | `lucide-react`                                             | Set                        |
 | Motion               | `motion` (`motion/react`)                                  | Set                        |
-| Forms                | `react-hook-form` + `zod`, optional peer dependencies      | Default                    |
+| Forms                | `react-hook-form` + `zod`, optional peer dependencies      | Set                        |
 | App rendering        | Bundle marked `"use client"` after build (works for client-only and Next.js apps) | Set |
 | Build                | tsup, ESM only                                             | Set                        |
 | Workbench            | Storybook 10 (`@storybook/react-vite`, `addon-docs`)       | Set                        |
@@ -66,10 +63,12 @@ The stack is set per project so UCL matches what the project's dev team ships. I
 
 | Item                    | Value                                     |
 | ----------------------- | ----------------------------------------- |
-| Design system file      | ⚠️ Not set. Add the name and `fileKey`    |
-| Modes                   | ⚠️ Not set. Light only, or light + dark?  |
+| Design system file      | sparks.ds (`FdKai5pCbpFKZTrGHRvZaT`)      |
+| Modes                   | Light + dark                              |
 
-Skills compare every Figma URL's `fileKey` against this table. Until it's set, they ask for the file before syncing tokens.
+Skills compare every Figma URL's `fileKey` against this table.
+
+ℹ️ sparks.ds holds the logo (the "Branding" page) and a `primitives` variable collection (402 variables, one "Default" mode: color palettes, spacing, radius, font size, line height, paragraph gap). It also has a `semantic` collection (162 variables, one "Light" mode) aliased to those primitives: colors, radius, shadow colors, font family and weight, breakpoints. Both are one-time copies from archielabs.ds (`primitives`, and `semantic`'s "intercept" mode), not linked to it. `theme.css` is synced from both collections, the text styles and the effect styles (DESIGN.md → "Figma → theme.css token map"). ⚠️ No "Dark" mode yet (`.dark` is a derived placeholder), and no button or input, so the control sizes in SIZE-SCALE.md haven't been checked against Figma.
 
 ## Architecture
 
@@ -84,7 +83,7 @@ Skills compare every Figma URL's `fileKey` against this table. Until it's set, t
   - `index.ts` barrel
   - optional `<name>.mdx` docs page
 
-  Categories: `buttons`, `forms`, `cards`, `data-display`, `feedback`, `overlays`, `navigation`, `typography`. Create a category folder when its first component arrives. Don't invent a category that isn't listed here without asking.
+  Categories: `brand`, `buttons`, `forms`, `cards`, `data-display`, `feedback`, `overlays`, `navigation`, `typography`. `brand` holds brand marks (the logo), not UI controls. Create a category folder when its first component arrives. Don't invent a category that isn't listed here without asking.
 - **Layouts:** full-page reference compositions under `src/layouts/<app>/<name>/`, previewed in Storybook and **not** exported from `src/index.ts`. Layouts used by more than one app go in `src/layouts/shared/`. Apps are listed in "Project". Screens in a multi-screen flow nest under `src/layouts/<app>/<flow>/`. Mock data goes in `sample-*` files, never in the screen (see "Sample Data"). Each app's wiring (which file does what, how the pieces connect, which files are sample data) is in [ARCHITECTURE.md](ARCHITECTURE.md), one section per app. Read the app's section before working on its layouts, and update it in the same change when the wiring changes (a page, flow, step or sample file added, moved or removed); a new app gets its own section.
 - **Lib:** `src/lib/`
   - `utils.ts`: `cn()`
@@ -166,10 +165,32 @@ export { Button, buttonVariants } from "@/components/buttons/button";
 
 Mirror these names when a new component has the same concept. Keep this list current when components are added.
 
+- **Logo** (`brand/logo`): the Sparks wordmark, an inline SVG.
+  - `tone`: `auto` (default; follows `.dark`) | `on-light` | `on-dark`. Colors only the sparkle; the letters never change
+  - Resize by height through `className` (`h-6`); the width follows. `aria-label` defaults to "Sparks"
+- **AutoPartsHubLogo** (`brand/autoparts-hub-logo`): the AutoPartsHUB logo, an inline SVG. Light backgrounds only (Figma has no dark version yet)
+  - `variant`: `wordmark` (default; Figma "Logo") | `symbol` (Figma "Symbol", the AH. mark)
+  - 36px tall by default (`h-9`). Resize by height through `className`; the width follows. `aria-label` defaults to "AutoPartsHUB"
 - **Button** (`buttons/button`):
   - `variant`: `default` | `secondary` | `outline` | `ghost` | `link` | `destructive`
   - `size`: `default` | `sm` | `lg` | `icon`
   - `asChild` renders the button styles on its child (use for links)
+- **PulseLogo**, **FlowLogo**, **SalesLogo**, **CareLogo** (`brand/pulse-logo`, `brand/flow-logo`, `brand/sales-logo`, `brand/care-logo`): the product logos, inline SVGs with no props of their own
+  - Render at Figma's size; resize by height through `className`, the width follows. `aria-label` defaults to the product name ("Pulse", "Flow", "Sales", "Care")
+  - `PulseLogo` follows the theme (`text-foreground-prominent`); the other three keep fixed artwork colors
+- **AppHeader** (`navigation/app-header`): the app's top bar, full width, 96px tall (padding 28 top/bottom, 32 left/right)
+  - `logo`: the app's logo, on the left. Figma's two versions: `<AutoPartsHubLogo />` (36px) and `<Logo className='h-8' />` (Sparks, 32px). `children`: what sits on the right (e.g. `<Avatar size='lg'>`)
+- **Tabs** (`navigation/tabs`): shadcn's composition (`Tabs` > `TabsList` > `TabsTrigger`, plus `TabsContent`)
+  - `TabsList` `variant`: `default` (muted track, white pill) | `line` (underline). `size`: `default` (36px) | `lg` (40px). `baseline` (line only): a 1px line under every tab
+  - Triggers take their look from the list; an svg child is a 16px icon. The active indicator slides between tabs (MOTION.md → Tabs)
+- **AppCard** (`cards/app-card`): a card introducing an app, `min-h-[220px]`, fills its container's width
+  - `logo` (top) and `description` (bottom)
+  - `asChild` renders it as its child, a link (`<AppCard asChild …><a href='…' /></AppCard>`); then it lifts on hover (Lift) and shows the focus ring. Without `asChild` it's static
+- **Avatar** (`data-display/avatar`): shadcn's Avatar composition (`Avatar` > `AvatarImage` + `AvatarFallback` + optional `AvatarBadge`), plus `AvatarAdd`
+  - `size` (on `Avatar` and `AvatarAdd`): `default` (32px) | `lg` (40px). shadcn's names, not SIZE-SCALE.md's (see there)
+  - `AvatarFallback` `color`: `1`–`10` (Figma i1–i10, `bg-avatar-N`). Without it, `avatarColorFor()` picks one from the initials, so the same initials always get the same color
+  - `AvatarBadge`: the online dot (success). Put `sr-only` text inside it
+  - `AvatarAdd`: a round button with a plus icon; `aria-label` defaults to "Add person"
 - **Typography** (`typography/typography`):
   - `size`: `xs` | `sm` | `base` | `lg` | `xl` | `2xl` | `3xl` | `4xl` | `5xl` | `6xl` | `7xl` (`xl` and up use `font-display`)
   - `weight`: `regular` | `medium` | `semibold` | `bold` | `black`
@@ -245,25 +266,25 @@ The motion rules live in [MOTION.md](MOTION.md): principles, personality, the na
 Apps need a `.npmrc` scoping the package to the registry, plus a read-only token:
 
 ```
-@your-org:registry=https://npm.pkg.github.com
+@jcaunedo:registry=https://npm.pkg.github.com
 //npm.pkg.github.com/:_authToken=${NPM_TOKEN}
 ```
 
 ```bash
-npm install @your-org/ucl
+npm install @jcaunedo/ucl
 ```
 
 ```css
 /* In the consuming app's global CSS */
 @import "tailwindcss";
-@import "@your-org/ucl/styles";
-@source "../node_modules/@your-org/ucl/dist";
+@import "@jcaunedo/ucl/styles";
+@source "../node_modules/@jcaunedo/ucl/dist";
 ```
 
 `@source` makes Tailwind scan UCL's bundled JS for class names. Without it, component styles silently go missing.
 
 ```tsx
-import { Button } from "@your-org/ucl";
+import { Button } from "@jcaunedo/ucl";
 ```
 
 ## Keeping PRDs Current

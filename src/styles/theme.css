@@ -1,4 +1,12 @@
+/* Tokens synced from the sparks.ds Figma file (`FdKai5pCbpFKZTrGHRvZaT`): the
+   "primitives" collection (:root primitives), the "semantic" collection's Light
+   mode (semantic roles), text styles and effect styles. DESIGN.md → "Figma →
+   theme.css token map" records the mapping rules and every token with no
+   Figma variable behind it. sparks.ds has no Dark mode yet: the `.dark` block
+   is a derived placeholder. */
+
 @theme inline {
+	/* shadcn roles */
 	--color-background: var(--background);
 	--color-foreground: var(--foreground);
 	--color-card: var(--card);
@@ -18,12 +26,171 @@
 	--color-border: var(--border);
 	--color-input: var(--input);
 	--color-ring: var(--ring);
+
+	/* Surfaces, text and lines */
+	--color-on-foreground: var(--on-foreground);
+	--color-foreground-subtle: var(--foreground-subtle);
+	--color-foreground-prominent: var(--foreground-prominent);
+	--color-background-subtle: var(--background-subtle);
+	--color-background-defined: var(--background-defined);
+	--color-card-subtle: var(--card-subtle);
+	--color-card-muted: var(--card-muted);
+	--color-card-defined: var(--card-defined);
+	--color-border-subtle: var(--border-subtle);
+	--color-border-muted: var(--border-muted);
+	--color-border-defined: var(--border-defined);
+	--color-modal: var(--modal);
+	--color-input-disabled: var(--input-disabled);
+	--color-input-ring: var(--input-ring);
+	--color-ring-outside: var(--ring-outside);
+	--color-veil: var(--veil);
+	--color-veil-soft: var(--veil-soft);
+
+	/* Icons */
+	--color-icon: var(--icon);
+	--color-icon-muted: var(--icon-muted);
+	--color-icon-subtle: var(--icon-subtle);
+	--color-icon-brand: var(--icon-brand);
+	--color-icon-on-brand: var(--icon-on-brand);
+	--color-ai-icon: var(--ai-icon);
+
+	/* Tones */
+	--color-brand: var(--brand);
+	--color-brand-foreground: var(--brand-foreground);
+	--color-brand-subtle: var(--brand-subtle);
+	--color-brand-muted: var(--brand-muted);
+	--color-brand-defined: var(--brand-defined);
+	--color-brand-prominent: var(--brand-prominent);
+	--color-brand-strong: var(--brand-strong);
+	--color-tone-accent: var(--tone-accent);
+	--color-tone-accent-foreground: var(--tone-accent-foreground);
+	--color-tone-accent-subtle: var(--tone-accent-subtle);
+	--color-tone-accent-muted: var(--tone-accent-muted);
+	--color-tone-accent-defined: var(--tone-accent-defined);
+	--color-tone-accent-prominent: var(--tone-accent-prominent);
+	--color-tone-accent-strong: var(--tone-accent-strong);
+	--color-emphasis: var(--emphasis);
+	--color-emphasis-foreground: var(--emphasis-foreground);
+	--color-emphasis-subtle: var(--emphasis-subtle);
+	--color-emphasis-muted: var(--emphasis-muted);
+	--color-emphasis-defined: var(--emphasis-defined);
+	--color-emphasis-prominent: var(--emphasis-prominent);
+	--color-emphasis-strong: var(--emphasis-strong);
+	--color-neutral: var(--neutral);
+	--color-neutral-foreground: var(--neutral-foreground);
+	--color-neutral-subtle: var(--neutral-subtle);
+	--color-neutral-muted: var(--neutral-muted);
+	--color-neutral-defined: var(--neutral-defined);
+	--color-neutral-prominent: var(--neutral-prominent);
+	--color-neutral-strong: var(--neutral-strong);
+	--color-info: var(--info);
+	--color-info-subtle: var(--info-subtle);
+	--color-info-muted: var(--info-muted);
+	--color-info-emphasis: var(--info-emphasis);
+	--color-info-strong: var(--info-strong);
+	--color-success: var(--success);
+	--color-success-subtle: var(--success-subtle);
+	--color-success-muted: var(--success-muted);
+	--color-success-emphasis: var(--success-emphasis);
+	--color-success-strong: var(--success-strong);
+	--color-warning: var(--warning);
+	--color-warning-subtle: var(--warning-subtle);
+	--color-warning-muted: var(--warning-muted);
+	--color-warning-defined: var(--warning-defined);
+	--color-warning-emphasis: var(--warning-emphasis);
+	--color-warning-strong: var(--warning-strong);
+	--color-destructive-subtle: var(--destructive-subtle);
+	--color-destructive-muted: var(--destructive-muted);
+	--color-destructive-emphasis: var(--destructive-emphasis);
+	--color-destructive-strong: var(--destructive-strong);
+	--color-decorative-1: var(--decorative-1);
+
+	/* States */
+	--color-link: var(--link);
+	--color-active: var(--active);
+	--color-active-alt: var(--active-alt);
+	--color-highlight: var(--highlight);
+	--color-disabled: var(--disabled);
+
+	/* Charts */
+	--color-chart-1: var(--chart-1);
+	--color-chart-2: var(--chart-2);
+	--color-chart-3: var(--chart-3);
+	--color-chart-4: var(--chart-4);
+	--color-chart-5: var(--chart-5);
+
+	/* Sidebar */
+	--color-sidebar: var(--sidebar);
+	--color-sidebar-foreground: var(--sidebar-foreground);
+	--color-sidebar-foreground-active: var(--sidebar-foreground-active);
+	--color-sidebar-icon: var(--sidebar-icon);
+	--color-sidebar-icon-active: var(--sidebar-icon-active);
+	--color-sidebar-hover: var(--sidebar-hover);
+	--color-sidebar-active: var(--sidebar-active);
+
+	/* Badges (Figma code syntax: var(--badge-*)) */
+	--color-badge-blue: var(--badge-blue);
+	--color-badge-blue-foreground: var(--badge-blue-foreground);
+	--color-badge-green: var(--badge-green);
+	--color-badge-green-foreground: var(--badge-green-foreground);
+	--color-badge-sky: var(--badge-sky);
+	--color-badge-sky-foreground: var(--badge-sky-foreground);
+	--color-badge-purple: var(--badge-purple);
+	--color-badge-purple-foreground: var(--badge-purple-foreground);
+	--color-badge-red: var(--badge-red);
+	--color-badge-red-foreground: var(--badge-red-foreground);
+	/* Avatar initials backgrounds */
+	--color-avatar-1: var(--avatar-1);
+	--color-avatar-2: var(--avatar-2);
+	--color-avatar-3: var(--avatar-3);
+	--color-avatar-4: var(--avatar-4);
+	--color-avatar-5: var(--avatar-5);
+	--color-avatar-6: var(--avatar-6);
+	--color-avatar-7: var(--avatar-7);
+	--color-avatar-8: var(--avatar-8);
+	--color-avatar-9: var(--avatar-9);
+	--color-avatar-10: var(--avatar-10);
+
+	/* Code */
+	--color-code-green: var(--code-green);
+	--color-code-blue: var(--code-blue);
+	--color-code-pink: var(--code-pink);
+	--color-code-yellow: var(--code-yellow);
+	--color-code-white: var(--code-white);
+	--color-code-gray: var(--code-gray);
+
+	/* Gradient stops */
+	--color-linear-1a: var(--linear-1a);
+	--color-linear-1b: var(--linear-1b);
+
+	/* Shadow colors (used by --shadow-*) */
+
+	/* Radius: radius/default (8px) is --radius; shadcn's sm/md/lg derive from it. */
 	--radius-sm: calc(var(--radius) - 4px);
 	--radius-md: calc(var(--radius) - 2px);
 	--radius-lg: var(--radius);
-	/* Display font for `Typography` sizes xl and up. Defaults to the body font;
-	   point it at the project's headline family when there is one. */
-	--font-display: var(--font-sans);
+	/* Component radii from the semantic collection. badge, pill, chip and full are radius/full: use `rounded-full`. */
+	--radius-card: 1rem; /* radius/card → radius/4: 16px */
+	--radius-input: 0.625rem; /* radius/input → radius/2_5: 10px */
+	--radius-modal: 1rem; /* radius/modal → radius/4: 16px */
+	--radius-menu: 1rem; /* radius/menu/container → radius/4: 16px */
+	--radius-menu-item: 0.5rem; /* radius/menu/item → radius/2: 8px */
+	--radius-avatar-square: 0.75rem; /* radius/avatar-square → radius/3: 12px */
+	--radius-button-xs: 0.5rem; /* radius/button/xs → radius/2: 8px */
+	--radius-button-sm: 0.625rem; /* radius/button/sm → radius/2_5: 10px */
+	--radius-button-md: 0.75rem; /* radius/button/md → radius/3: 12px */
+	--radius-button-lg: 0.75rem; /* radius/button/lg → radius/3: 12px */
+	--radius-button-xl: 0.75rem; /* radius/button/xl → radius/3: 12px */
+
+	/* Effect styles shadow-xs … shadow-2xl, colored by the shadow/* variables. */
+	--shadow-xs: 0 1px 2px 0 var(--shadow-color-sm);
+	--shadow-sm: 0 2px 4px 0 var(--shadow-color-sm);
+	--shadow-md: 0 2px 4px -2px var(--shadow-color-md), 0 2px 4px 1px var(--shadow-color-sm);
+	--shadow-lg: 0 10px 16px 0 var(--shadow-color-sm), 0 3px 8px 0 var(--shadow-color-sm);
+	--shadow-xl: 0 8px 10px -6px var(--shadow-color-md), 0 6px 17px 0 var(--shadow-color-md);
+	--shadow-2xl: 0 16px 50px -12px var(--shadow-color-lg);
+	/* Effect style "Sonner" (a raw color in Figma, no variable). */
+	--shadow-sonner: 0 12px 36px -2px oklch(0 0 0 / 30%);
 }
 
 /* ---------- Breakpoints ----------
@@ -44,49 +211,606 @@
 	--breakpoint-3xl: 1921px;
 }
 
-:root {
-	--radius: 0.5rem;
-	--background: oklch(1 0 0);
-	--foreground: oklch(0.17 0.01 260);
-	--card: oklch(1 0 0);
-	--card-foreground: oklch(0.17 0.01 260);
-	--popover: oklch(1 0 0);
-	--popover-foreground: oklch(0.17 0.01 260);
-	--primary: oklch(0.52 0.14 155);
-	--primary-foreground: oklch(0.98 0.01 155);
-	--secondary: oklch(0.95 0.02 155);
-	--secondary-foreground: oklch(0.28 0.06 155);
-	--muted: oklch(0.96 0.005 260);
-	--muted-foreground: oklch(0.5 0.02 260);
-	--accent: oklch(0.95 0.02 155);
-	--accent-foreground: oklch(0.28 0.06 155);
-	--destructive: oklch(0.58 0.22 27);
-	--destructive-foreground: oklch(0.98 0.01 27);
-	--border: oklch(0.9 0.01 260);
-	--input: oklch(0.9 0.01 260);
-	--ring: oklch(0.52 0.14 155);
+/* ---------- Typography ----------
+   Fonts: every text style binds `font-family/font` (Figtree); `headline` and
+   `bodytext` alias it, so --font-sans and --font-display are both Figtree.
+   `font-family/code` → --font-mono. Non-inline `@theme`, so the variables reach
+   `:root` and --font-sans feeds the base font. Tokens only: UCL doesn't load
+   the webfonts (Storybook loads them in `.storybook/preview-head.html`; apps
+   load them themselves). Sizes and paired line heights: `font-size/*` and
+   `line-height/*`, as the text styles pair them. Font weights (`font-weight/*`)
+   are 300–900, Tailwind's defaults, so they aren't redefined. Letter spacing
+   is 0 in every text style. */
+@theme {
+	--font-sans: "Figtree", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+	--font-display: "Figtree", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+	--font-mono: "Roboto Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+
+	--text-xs: 0.75rem; /* 12px */
+	--text-xs--line-height: 1.125rem; /* 18px */
+	--text-sm: 0.875rem; /* 14px */
+	--text-sm--line-height: 1.25rem; /* 20px */
+	--text-base: 1rem; /* 16px */
+	--text-base--line-height: 1.5rem; /* 24px */
+	--text-lg: 1.125rem; /* 18px */
+	--text-lg--line-height: 1.75rem; /* 28px */
+	--text-xl: 1.25rem; /* 20px */
+	--text-xl--line-height: 1.875rem; /* 30px */
+	--text-2xl: 1.5rem; /* 24px */
+	--text-2xl--line-height: 2rem; /* 32px */
+	--text-3xl: 1.875rem; /* 30px */
+	--text-3xl--line-height: 2.25rem; /* 36px */
+	--text-4xl: 2.25rem; /* 36px */
+	--text-4xl--line-height: 3.375rem; /* 54px */
+	--text-5xl: 3rem; /* 48px */
+	--text-5xl--line-height: 4rem; /* 64px */
+	--text-6xl: 4rem; /* 64px */
+	--text-6xl--line-height: 6rem; /* 96px */
+	--text-7xl: 5rem; /* 80px */
+	--text-7xl--line-height: 7.5rem; /* 120px */
 }
 
+:root {
+	--radius: 0.5rem; /* radius/default → radius/2: 8px */
+
+	/* ---------- Primitives ("primitives" collection) ---------- */
+	--white: oklch(1 0 0); /* #ffffff */
+	--black: oklch(0 0 0); /* #000000 */
+
+	--gray-50: oklch(0.973 0.002 247.84); /* #f5f6f7 */
+	--gray-100: oklch(0.951 0.005 258.32); /* #edeff2 */
+	--gray-200: oklch(0.912 0.006 264.53); /* #e0e2e6 */
+	--gray-300: oklch(0.84 0.011 256.7); /* #c6cbd2 */
+	--gray-400: oklch(0.707 0.018 259.42); /* #9aa1ac */
+	--gray-500: oklch(0.541 0.023 264.36); /* #686f7d */
+	--gray-600: oklch(0.436 0.022 258.37); /* #4a525e */
+	--gray-700: oklch(0.334 0.016 255.63); /* #31373f */
+	--gray-800: oklch(0.282 0.022 254.18); /* #222a34 */
+	--gray-900: oklch(0.247 0.025 263.97); /* #1b212d */
+	--gray-950: oklch(0.185 0.035 265.25); /* #0b1222 */
+
+	--slate-50: oklch(0.958 0.009 242.84); /* #ecf2f7 */
+	--slate-100: oklch(0.905 0.015 244.73); /* #d8e1e9 */
+	--slate-200: oklch(0.843 0.022 239.48); /* #bfced9 */
+	--slate-300: oklch(0.71 0.035 238.37); /* #8ea5b5 */
+	--slate-400: oklch(0.606 0.044 239.53); /* #6a869a */
+	--slate-500: oklch(0.535 0.051 243.89); /* #547189 */
+	--slate-600: oklch(0.451 0.056 244.81); /* #3a5973 */
+	--slate-700: oklch(0.343 0.07 243.38); /* #113c5a */
+	--slate-800: oklch(0.303 0.07 245.34); /* #07314f */
+	--slate-900: oklch(0.263 0.066 244.51); /* #002742 */
+	--slate-950: oklch(0.232 0.061 246.61); /* #001f38 */
+
+	--terracotta-50: oklch(0.961 0.011 45.72); /* #f9f0ec */
+	--terracotta-100: oklch(0.932 0.018 43.22); /* #f4e5df */
+	--terracotta-200: oklch(0.877 0.034 43.49); /* #ebd0c5 */
+	--terracotta-300: oklch(0.822 0.05 42.12); /* #e2bbac */
+	--terracotta-400: oklch(0.77 0.067 43.43); /* #daa792 */
+	--terracotta-500: oklch(0.716 0.085 42.5); /* #d19279 */
+	--terracotta-600: oklch(0.662 0.103 42.44); /* #c87d5f */
+	--terracotta-700: oklch(0.583 0.089 42.3); /* #a86950 */
+	--terracotta-800: oklch(0.502 0.075 42.1); /* #885541 */
+	--terracotta-900: oklch(0.417 0.06 43); /* #684131 */
+	--terracotta-950: oklch(0.327 0.044 42.93); /* #482d22 */
+
+	--valencia-50: oklch(0.933 0.024 23.85); /* #f9e3e1 */
+	--valencia-100: oklch(0.876 0.047 24.62); /* #f4cbc7 */
+	--valencia-200: oklch(0.817 0.071 24.15); /* #eeb2ad */
+	--valencia-300: oklch(0.763 0.096 25.11); /* #e99a93 */
+	--valencia-400: oklch(0.711 0.122 26.73); /* #e48278 */
+	--valencia-500: oklch(0.659 0.149 27.3); /* #de695e */
+	--valencia-600: oklch(0.615 0.173 28.57); /* #d95144 */
+	--valencia-700: oklch(0.552 0.154 28.82); /* #bb463a */
+	--valencia-800: oklch(0.484 0.133 28.22); /* #9c3a31 */
+	--valencia-900: oklch(0.417 0.112 28.54); /* #7e2f27 */
+	--valencia-950: oklch(0.346 0.088 28.28); /* #5f241e */
+
+	--sage-50: oklch(0.941 0.007 160.07); /* #e8edea */
+	--sage-100: oklch(0.883 0.013 156.97); /* #d2dbd5 */
+	--sage-200: oklch(0.813 0.019 161.01); /* #b8c6be */
+	--sage-300: oklch(0.719 0.028 159.3); /* #96aa9e */
+	--sage-400: oklch(0.582 0.042 159.05); /* #668372 */
+	--sage-500: oklch(0.495 0.051 158.1); /* #496b57 */
+	--sage-600: oklch(0.356 0.065 155.47); /* #1b462d */
+	--sage-700: oklch(0.336 0.06 155.29); /* #194029 */
+	--sage-800: oklch(0.287 0.05 155.89); /* #133220 */
+	--sage-900: oklch(0.248 0.041 156.21); /* #0f2719 */
+	--sage-950: oklch(0.211 0.031 157.89); /* #0b1d13 */
+
+	--beige-50: oklch(0.989 0.01 81.8); /* #fffbf4 */
+	--beige-100: oklch(0.967 0.011 71.9); /* #f9f3ec */
+	--beige-200: oklch(0.947 0.017 70.53); /* #f5ece2 */
+	--beige-300: oklch(0.929 0.022 67.55); /* #f2e5d8 */
+	--beige-400: oklch(0.908 0.025 69.42); /* #ecdecf */
+	--beige-500: oklch(0.884 0.026 67.48); /* #e5d6c7 */
+	--beige-600: oklch(0.836 0.02 65.1); /* #d3c7bc */
+	--beige-700: oklch(0.741 0.017 64.59); /* #b3a9a0 */
+	--beige-800: oklch(0.645 0.015 67.55); /* #948c84 */
+	--beige-900: oklch(0.542 0.012 67.57); /* #746e68 */
+	--beige-950: oklch(0.435 0.009 61.27); /* #55504c */
+
+	--info-50: oklch(0.983 0.009 247.91); /* #f5faff */
+	--info-100: oklch(0.933 0.023 246.04); /* #ddebf8 */
+	--info-200: oklch(0.811 0.066 246.56); /* #9fc6ea */
+	--info-300: oklch(0.703 0.108 247.66); /* #66a5df */
+	--info-400: oklch(0.61 0.142 249.79); /* #3387d4 */
+	--info-500: oklch(0.563 0.159 251); /* #0d77ce */
+	--info-600: oklch(0.525 0.172 254.89); /* #0068ca */
+	--info-700: oklch(0.4506 0.1452 254.37); /* #0054a3 */
+	--info-800: oklch(0.369 0.115 253.45); /* #003f7a */
+	--info-900: oklch(0.286 0.084 251.24); /* #002b52 */
+	--info-950: oklch(0.214 0.059 249.31); /* #001a33 */
+
+	--success-50: oklch(0.959 0.021 158.59); /* #e6f6ec */
+	--success-100: oklch(0.917 0.045 157.49); /* #ccedd8 */
+	--success-200: oklch(0.836 0.089 156.01); /* #99dbb1 */
+	--success-300: oklch(0.759 0.131 153.95); /* #66c98a */
+	--success-400: oklch(0.69 0.166 151.03); /* #33b763 */
+	--success-500: oklch(0.6573 0.1777 150.15); /* #0dae52 */
+	--success-600: oklch(0.6358 0.1806 148.68); /* #01a746 */
+	--success-700: oklch(0.5415 0.1526 148.98); /* #018638 */
+	--success-800: oklch(0.44 0.122 149.62); /* #01642a */
+	--success-900: oklch(0.335 0.091 150.79); /* #00431c */
+	--success-950: oklch(0.246 0.064 152.85); /* #002911 */
+
+	--warning-50: oklch(0.963 0.019 60.17); /* #fdf0e6 */
+	--warning-100: oklch(0.912 0.048 65.13); /* #f9dcc1 */
+	--warning-200: oklch(0.859 0.076 61.35); /* #f6c69e */
+	--warning-300: oklch(0.7975 0.1135 64.11); /* #f0ad6c */
+	--warning-400: oklch(0.733 0.148 61.19); /* #ea9036 */
+	--warning-500: oklch(0.706 0.179 53.13); /* #f37a00 */
+	--warning-600: oklch(0.67 0.166 55.1); /* #e07400 */
+	--warning-700: oklch(0.569 0.141 55.12); /* #b45c00 */
+	--warning-800: oklch(0.464 0.113 56.39); /* #874500 */
+	--warning-900: oklch(0.3519 0.0835 58.84); /* #5a2e00 */
+	--warning-950: oklch(0.267 0.061 63.27); /* #3a1e00 */
+
+	--destructive-50: oklch(0.942 0.023 17.57); /* #fbe6e6 */
+	--destructive-100: oklch(0.88 0.046 18.07); /* #f5cccc */
+	--destructive-200: oklch(0.759 0.093 19.45); /* #e69999 */
+	--destructive-300: oklch(0.645 0.142 21.81); /* #d66666 */
+	--destructive-400: oklch(0.549 0.184 25.69); /* #c63333 */
+	--destructive-500: oklch(0.534 0.214 28.71); /* #cc0d0d */
+	--destructive-600: oklch(0.531 0.218 29.23); /* #cc0000 */
+	--destructive-700: oklch(0.449 0.184 29.23); /* #a30000 */
+	--destructive-800: oklch(0.364 0.149 29.23); /* #7a0000 */
+	--destructive-900: oklch(0.275 0.113 29.23); /* #520000 */
+	--destructive-950: oklch(0.202 0.083 29.23); /* #330000 */
+
+	--sky: var(--sky-500);
+	--sky-50: oklch(0.963 0.02 238.66); /* #e7f5ff */
+	--sky-100: oklch(0.91 0.048 236.88); /* #c4e7fe */
+	--sky-200: oklch(0.832 0.093 238.38); /* #8dd1fe */
+	--sky-300: oklch(0.758 0.135 241.66); /* #57bafe */
+	--sky-400: oklch(0.709 0.162 244.52); /* #2ca9fe */
+	--sky-500: oklch(0.6805 0.1765 247.21); /* #0f9efe */
+	--sky-600: oklch(0.5765 0.1483 246.88); /* #0a7ecb */
+	--sky-700: oklch(0.4828 0.1243 247.22); /* #0862a0 */
+	--sky-800: oklch(0.3894 0.0968 246.16); /* #064875 */
+	--sky-900: oklch(0.299 0.072 245.52); /* #04304f */
+	--sky-950: oklch(0.227 0.053 244.57); /* #021e33 */
+
+	--vermilion: var(--vermilion-500);
+	--vermilion-50: oklch(0.953 0.019 25.6); /* #fcebe9 */
+	--vermilion-100: oklch(0.884 0.049 25.88); /* #f8cdc8 */
+	--vermilion-200: oklch(0.786 0.097 25.77); /* #f1a199 */
+	--vermilion-300: oklch(0.694 0.146 27.03); /* #e9756a */
+	--vermilion-400: oklch(0.637 0.174 28.33); /* #e1584b */
+	--vermilion-500: oklch(0.592 0.192 30.07); /* #d8402f */
+	--vermilion-600: oklch(0.514 0.167 30.3); /* #b33324 */
+	--vermilion-700: oklch(0.43 0.138 30.31); /* #8c271b */
+	--vermilion-800: oklch(0.346 0.108 30.27); /* #661c13 */
+	--vermilion-900: oklch(0.256 0.075 30.22); /* #40110b */
+	--vermilion-950: oklch(0.197 0.053 30.83); /* #290a06 */
+
+	--indigo: var(--indigo-600);
+	--indigo-50: oklch(0.945 0.023 296.73); /* #eeeafb */
+	--indigo-100: oklch(0.875 0.054 297.01); /* #d9cff6 */
+	--indigo-200: oklch(0.754 0.11 294.95); /* #b4a1ee */
+	--indigo-300: oklch(0.633 0.166 291.86); /* #8e73e5 */
+	--indigo-400: oklch(0.522 0.211 287.42); /* #6947d9 */
+	--indigo-500: oklch(0.473 0.22 284.33); /* #5735cf */
+	--indigo-600: oklch(0.446 0.225 282.47); /* #4d2ac9 */
+	--indigo-700: oklch(0.38 0.188 282.92); /* #3d21a0 */
+	--indigo-800: oklch(0.314 0.149 283.85); /* #2e1978 */
+	--indigo-900: oklch(0.243 0.109 285.78); /* #1f1050 */
+	--indigo-950: oklch(0.19 0.076 288.1); /* #140a33 */
+
+	--emerald: var(--emerald-600);
+	--emerald-50: oklch(0.957 0.02 159.75); /* #e6f5ec */
+	--emerald-100: oklch(0.895 0.049 159.15); /* #c2e7d1 */
+	--emerald-200: oklch(0.825 0.08 158.9); /* #99d6b3 */
+	--emerald-300: oklch(0.752 0.114 160.33); /* #66c596 */
+	--emerald-400: oklch(0.679 0.147 155.77); /* #33b270 */
+	--emerald-500: oklch(0.6306 0.1626 152.13); /* #0da455 */
+	--emerald-600: oklch(0.6003 0.1623 150.73); /* #019a49 */
+	--emerald-700: oklch(0.5073 0.1355 151.2); /* #017a3a */
+	--emerald-800: oklch(0.416 0.109 151.97); /* #015c2c */
+	--emerald-900: oklch(0.316 0.079 153.82); /* #013d1e */
+	--emerald-950: oklch(0.236 0.058 155.64); /* #002612 */
+
+	--charcoal: var(--charcoal-500);
+	--charcoal-50: oklch(0.96 0.001 197.14); /* #f1f2f2 */
+	--charcoal-100: oklch(0.907 0.003 197.1); /* #dee1e1 */
+	--charcoal-200: oklch(0.836 0.005 214.33); /* #c6cacb */
+	--charcoal-300: oklch(0.704 0.007 208.77); /* #9ba1a2 */
+	--charcoal-400: oklch(0.57 0.01 214.37); /* #71797b */
+	--charcoal-500: oklch(0.464 0.012 212.56); /* #525b5d */
+	--charcoal-600: oklch(0.391 0.012 212.58); /* #3e4749 */
+	--charcoal-700: oklch(0.318 0.012 214.48); /* #2c3436 */
+	--charcoal-800: oklch(0.287 0.01 216.83); /* #252c2e */
+	--charcoal-900: oklch(0.267 0.011 216.87); /* #202729 */
+	--charcoal-950: oklch(0.2 0.008 211.09); /* #121718 */
+
+	--prussian-blue: var(--prussian-blue-900);
+	--prussian-blue-50: oklch(0.964 0.009 242.84); /* #eef4f9 */
+	--prussian-blue-100: oklch(0.921 0.019 237.78); /* #dae7f0 */
+	--prussian-blue-200: oklch(0.831 0.042 240.48); /* #b0cce1 */
+	--prussian-blue-300: oklch(0.735 0.068 242.04); /* #83afd1 */
+	--prussian-blue-400: oklch(0.635 0.095 243.71); /* #5591c0 */
+	--prussian-blue-500: oklch(0.5492 0.1106 244.38); /* #2e77ad */
+	--prussian-blue-600: oklch(0.481 0.101 246.12); /* #246293 */
+	--prussian-blue-700: oklch(0.412 0.089 247.14); /* #1b4e78 */
+	--prussian-blue-800: oklch(0.34 0.077 249.26); /* #123a5e */
+	--prussian-blue-900: oklch(0.273 0.066 251.61); /* #0a2846 */
+	--prussian-blue-950: oklch(0.204 0.042 248.82); /* #061829 */
+
+	--teal: var(--teal-500);
+	--teal-50: oklch(0.965 0.016 196.89); /* #e8f7f7 */
+	--teal-100: oklch(0.916 0.039 194.52); /* #c6eceb */
+	--teal-200: oklch(0.876 0.059 194.79); /* #a9e3e2 */
+	--teal-300: oklch(0.835 0.076 194.74); /* #8cd9d8 */
+	--teal-400: oklch(0.753 0.102 194.4); /* #52c3c2 */
+	--teal-500: oklch(0.688 0.101 194.23); /* #3baead */
+	--teal-600: oklch(0.633 0.096 194.11); /* #2e9c9b */
+	--teal-700: oklch(0.481 0.068 193.78); /* #256a69 */
+	--teal-800: oklch(0.397 0.055 193.41); /* #1c504f */
+	--teal-900: oklch(0.303 0.04 192.68); /* #123534 */
+	--teal-950: oklch(0.233 0.029 191.56); /* #0b2221 */
+
+	--amber: var(--amber-500);
+	--amber-50: oklch(0.97 0.02 70); /* #fef3e7 */
+	--amber-100: oklch(0.925 0.049 68.14); /* #fde1c4 */
+	--amber-200: oklch(0.867 0.095 71.13); /* #fbc98d */
+	--amber-300: oklch(0.81 0.135 69.16); /* #f9b057 */
+	--amber-400: oklch(0.773 0.152 64.32); /* #f79e3b */
+	--amber-500: oklch(0.746 0.165 60.62); /* #f69021 */
+	--amber-600: oklch(0.6737 0.1562 58.67); /* #db7a10 */
+	--amber-700: oklch(0.5718 0.1356 56.71); /* #b25f0a */
+	--amber-800: oklch(0.4757 0.1115 56.9); /* #8a4908 */
+	--amber-900: oklch(0.3729 0.0854 58.17); /* #613305 */
+	--amber-950: oklch(0.277 0.06 61.01); /* #3d2003 */
+
+	--gold: var(--gold-400);
+	--gold-50: oklch(0.973 0.022 80.69); /* #fef5e6 */
+	--gold-100: oklch(0.936 0.058 83); /* #fde7be */
+	--gold-200: oklch(0.897 0.097 83.41); /* #fcd892 */
+	--gold-300: oklch(0.864 0.117 78.7); /* #fcc975 */
+	--gold-400: oklch(0.8096 0.1553 74.54); /* #fbb035 */
+	--gold-500: oklch(0.772 0.16 71.49); /* #f3a11c */
+	--gold-600: oklch(0.734 0.152 72.69); /* #e29716 */
+	--gold-700: oklch(0.625 0.1302 71.02); /* #b87811 */
+	--gold-800: oklch(0.51 0.104 72.49); /* #8a5b0e */
+	--gold-900: oklch(0.3866 0.0765 74.18); /* #5c3d09 */
+	--gold-950: oklch(0.289 0.054 76.98); /* #3a2706 */
+
+	--cobalt: var(--cobalt-600);
+	--cobalt-50: oklch(0.953 0.013 255.51); /* #eaf0f8 */
+	--cobalt-100: oklch(0.886 0.028 253.25); /* #cddbec */
+	--cobalt-200: oklch(0.807 0.048 249.41); /* #a9c3de */
+	--cobalt-300: oklch(0.716 0.077 254.95); /* #83a6d3 */
+	--cobalt-400: oklch(0.626 0.102 255.6); /* #5d8ac5 */
+	--cobalt-500: oklch(0.554 0.121 254.89); /* #3d74b8 */
+	--cobalt-600: oklch(0.501 0.126 256.93); /* #2f63aa */
+	--cobalt-700: oklch(0.429 0.105 257.17); /* #264f88 */
+	--cobalt-800: oklch(0.376 0.096 256.79); /* #1c4173 */
+	--cobalt-900: oklch(0.318 0.075 257.93); /* #183258 */
+	--cobalt-950: oklch(0.277 0.062 257.49); /* #132846 */
+
+	--sand: var(--sand-500);
+	--sand-50: oklch(0.974 0.007 80.72); /* #f9f6f1 */
+	--sand-100: oklch(0.941 0.016 86.43); /* #f0ebe0 */
+	--sand-200: oklch(0.891 0.024 82.12); /* #e3daca */
+	--sand-300: oklch(0.835 0.041 83.11); /* #d6c7ab */
+	--sand-400: oklch(0.773 0.048 83.22); /* #c4b393 */
+	--sand-500: oklch(0.697 0.056 83.82); /* #ae9b76 */
+	--sand-600: oklch(0.611 0.057 83.67); /* #94815c */
+	--sand-700: oklch(0.493 0.045 81.94); /* #6e5f44 */
+	--sand-800: oklch(0.389 0.034 81.03); /* #4e4330 */
+	--sand-900: oklch(0.297 0.024 82.75); /* #332c1f */
+	--sand-950: oklch(0.221 0.015 76.09); /* #1f1a13 */
+
+	--catalina: var(--catalina-800);
+	--catalina-50: oklch(0.961 0.018 269.09); /* #edf2ff */
+	--catalina-100: oklch(0.929 0.034 271.04); /* #dfe7ff */
+	--catalina-200: oklch(0.859 0.069 270.49); /* #bfcfff */
+	--catalina-300: oklch(0.765 0.119 269.23); /* #94afff */
+	--catalina-400: oklch(0.651 0.166 268.78); /* #6687f4 */
+	--catalina-500: oklch(0.539 0.196 268); /* #3f60de */
+	--catalina-600: oklch(0.46 0.2 266.17); /* #2447c5 */
+	--catalina-700: oklch(0.39 0.182 265.22); /* #1435a4 */
+	--catalina-800: oklch(0.319 0.162 264.9); /* #082383 */
+	--catalina-900: oklch(0.265 0.12 265.26); /* #081c5e */
+	--catalina-950: oklch(0.189 0.076 266.45); /* #050f35 */
+
+	--elf: var(--elf-600);
+	--elf-50: oklch(0.98 0.016 196.9); /* #edfcfc */
+	--elf-100: oklch(0.946 0.036 198.68); /* #d2f5f6 */
+	--elf-200: oklch(0.892 0.065 199.65); /* #a8e9ec */
+	--elf-300: oklch(0.822 0.097 200.41); /* #70d8de */
+	--elf-400: oklch(0.737 0.1147 201.48); /* #32bfc8 */
+	--elf-500: oklch(0.628 0.1054 201.38); /* #0a9ba3 */
+	--elf-600: oklch(0.5348 0.0895 202.88); /* #087c84 */
+	--elf-700: oklch(0.457 0.0754 204.84); /* #0a636b */
+	--elf-800: oklch(0.3857 0.0615 206.12); /* #0c4d54 */
+	--elf-900: oklch(0.328 0.05 207.3); /* #0c3c42 */
+	--elf-950: oklch(0.24 0.037 210.16); /* #052429 */
+
+	--corn: var(--corn-400);
+	--corn-50: oklch(0.987 0.021 95.28); /* #fffbeb */
+	--corn-100: oklch(0.962 0.064 95.9); /* #fff3c2 */
+	--corn-200: oklch(0.928 0.117 95.47); /* #ffe789 */
+	--corn-300: oklch(0.886 0.157 91.66); /* #ffd54a */
+	--corn-400: oklch(0.8258 0.1682 89.49); /* #f1bf04 */
+	--corn-500: oklch(0.7425 0.152 85.98); /* #d6a300 */
+	--corn-600: oklch(0.635 0.131 81.73); /* #b28100 */
+	--corn-700: oklch(0.521 0.107 77.65); /* #8b6005 */
+	--corn-800: oklch(0.448 0.09 74.06); /* #724c0b */
+	--corn-900: oklch(0.397 0.077 71.83); /* #603f0e */
+	--corn-950: oklch(0.27 0.053 68.66); /* #372105 */
+
+	--flamingo: var(--flamingo-500);
+	--flamingo-50: oklch(0.976 0.015 61.35); /* #fff5ed */
+	--flamingo-100: oklch(0.943 0.036 59.21); /* #ffe7d5 */
+	--flamingo-200: oklch(0.884 0.073 55.8); /* #ffcdab */
+	--flamingo-300: oklch(0.812 0.119 51.63); /* #ffab78 */
+	--flamingo-400: oklch(0.74 0.159 46.77); /* #fa874a */
+	--flamingo-500: oklch(0.674 0.188 42.32); /* #f16521 */
+	--flamingo-600: oklch(0.6 0.184 39.09); /* #d64c12 */
+	--flamingo-700: oklch(0.5132 0.1645 36.15); /* #b13711 */
+	--flamingo-800: oklch(0.44 0.134 35.32); /* #8d2e15 */
+	--flamingo-900: oklch(0.384 0.109 35.36); /* #722815 */
+	--flamingo-950: oklch(0.252 0.073 33.31); /* #3e1108 */
+
+	--blue-50: oklch(0.97 0.014 254.6); /* #eff6ff */
+	--blue-300: oklch(0.809 0.096 251.81); /* #93c5fd */
+	--blue-700: oklch(0.488 0.217 264.38); /* #1d4ed8 */
+	--blue-950: oklch(0.282 0.087 267.94); /* #172554 */
+
+	--green-50: oklch(0.982 0.018 155.83); /* #f0fdf4 */
+	--green-300: oklch(0.871 0.136 154.45); /* #86efac */
+	--green-700: oklch(0.527 0.137 150.07); /* #15803d */
+	--green-950: oklch(0.266 0.063 152.93); /* #052e16 */
+
+	--purple-50: oklch(0.954 0.029 308.13); /* #f5ebff */
+	--purple-300: oklch(0.827 0.108 306.38); /* #d8b4fe */
+	--purple-700: oklch(0.496 0.237 301.92); /* #7e22ce */
+	--purple-950: oklch(0.291 0.143 302.72); /* #3b0764 */
+
+	--red-50: oklch(0.946 0.025 17.61); /* #fee7e7 */
+	--red-300: oklch(0.808 0.103 19.57); /* #fca5a5 */
+	--red-700: oklch(0.505 0.19 27.52); /* #b91c1c */
+	--red-950: oklch(0.258 0.089 26.04); /* #450a0a */
+
+	--denim: oklch(0.534 0.218 261.15); /* #1160e8 */
+	--denim-50: oklch(0.972 0.012 259.82); /* #f1f6fe */
+	--denim-100: oklch(0.941 0.025 263.33); /* #e3ecfd */
+	--denim-200: oklch(0.872 0.055 261.22); /* #c1d6fa */
+	--denim-300: oklch(0.777 0.101 261.1); /* #92b7f7 */
+	--denim-400: oklch(0.655 0.162 260.55); /* #548ef2 */
+	--denim-500: oklch(0.534 0.218 261.15); /* #1160e8 */
+	--denim-600: oklch(0.477 0.192 261.11); /* #0f52c6 */
+	--denim-700: oklch(0.415 0.165 261.11); /* #0c43a3 */
+	--denim-800: oklch(0.353 0.135 260.97); /* #0a3580 */
+	--denim-900: oklch(0.29 0.107 260.8); /* #07275f */
+	--denim-950: oklch(0.217 0.071 259.52); /* #04183a */
+}
+
+/* ---------- Semantic: Light mode ("semantic" collection) ----------
+   Declared on `.dark` too, so aliases such as `--primary: var(--brand)`
+   re-resolve wherever `.dark` is applied, including on a wrapper below <html>. */
+:root,
 .dark {
-	--background: oklch(0.17 0.01 260);
-	--foreground: oklch(0.98 0.005 260);
-	--card: oklch(0.21 0.015 260);
-	--card-foreground: oklch(0.98 0.005 260);
-	--popover: oklch(0.21 0.015 260);
-	--popover-foreground: oklch(0.98 0.005 260);
-	--primary: oklch(0.72 0.14 155);
-	--primary-foreground: oklch(0.18 0.04 155);
-	--secondary: oklch(0.28 0.03 260);
-	--secondary-foreground: oklch(0.98 0.005 260);
-	--muted: oklch(0.28 0.02 260);
-	--muted-foreground: oklch(0.7 0.02 260);
-	--accent: oklch(0.28 0.03 260);
-	--accent-foreground: oklch(0.98 0.005 260);
-	--destructive: oklch(0.55 0.2 27);
-	--destructive-foreground: oklch(0.98 0.01 27);
-	--border: oklch(1 0 0 / 12%);
-	--input: oklch(1 0 0 / 16%);
-	--ring: oklch(0.72 0.14 155);
+	/* shadcn roles */
+	--background: var(--white); /* colors/background/background */
+	--foreground: var(--gray-700); /* colors/foreground/foreground */
+	--card: var(--white); /* colors/card/card */
+	--card-foreground: var(--foreground); /* no Figma variable: text on a card is foreground */
+	--popover: var(--white); /* colors/popover/popover */
+	--popover-foreground: var(--foreground); /* no Figma variable: text on a popover is foreground */
+	--primary: var(--brand); /* colors/tone/brand/brand */
+	--primary-foreground: var(--brand-foreground); /* colors/tone/brand/on-brand */
+	--secondary: var(--neutral-muted); /* no Figma variable: shadcn's light-gray secondary, from colors/tone/neutral/muted */
+	--secondary-foreground: var(--foreground); /* no Figma variable */
+	--muted: var(--gray-100); /* colors/background/muted */
+	--muted-foreground: var(--gray-500); /* colors/foreground/muted */
+	--accent: color-mix(in oklab, var(--foreground) 6%, transparent); /* colors/states/hover: foreground at 6% */
+	--accent-foreground: var(--foreground); /* no Figma variable: text on a hovered surface is foreground */
+	--destructive: var(--destructive-500); /* colors/tone/destructive/destructive */
+	--destructive-foreground: var(--white); /* no Figma variable (no on-destructive): white, like on-brand */
+	--border: var(--gray-200); /* colors/border/border */
+	--input: var(--gray-200); /* colors/input/border */
+	--ring: var(--catalina); /* colors/input/ring-focus */
+
+	/* Surfaces, text and lines */
+	--on-foreground: var(--white); /* colors/foreground/on-foreground */
+	--foreground-subtle: var(--gray-400); /* colors/foreground/subtle */
+	--foreground-prominent: var(--gray-800); /* colors/foreground/prominent */
+	--background-subtle: var(--gray-50); /* colors/background/subtle */
+	--background-defined: var(--gray-200); /* colors/background/defined */
+	--card-subtle: var(--gray-50); /* colors/card/subtle */
+	--card-muted: var(--gray-100); /* colors/card/muted */
+	--card-defined: var(--gray-200); /* colors/card/defined */
+	--border-subtle: var(--gray-50); /* colors/border/subtle */
+	--border-muted: var(--gray-100); /* colors/border/muted */
+	--border-defined: var(--gray-300); /* colors/border/defined */
+	--modal: var(--white); /* colors/modal/modal */
+	--input-disabled: var(--gray-100); /* colors/input/border-disabled */
+	--input-ring: var(--gray-400); /* colors/input/ring */
+	--ring-outside: var(--catalina-200); /* colors/input/ring-outside */
+	--veil: oklch(0 0 0 / 2%); /* colors/base/opacity-veil */
+	--veil-soft: oklch(0 0 0 / 8%); /* colors/base/opacity-soft */
+
+	/* Icons */
+	--icon: var(--gray-700); /* colors/icon/foreground */
+	--icon-muted: var(--gray-500); /* colors/icon/muted */
+	--icon-subtle: var(--gray-400); /* colors/icon/subtle */
+	--icon-brand: var(--brand); /* colors/icon/brand */
+	--icon-on-brand: var(--white); /* colors/icon/on-brand */
+	--ai-icon: oklch(1 0 0); /* colors/ai-icon */
+
+	/* Tones */
+	--brand: var(--denim); /* colors/tone/brand/brand */
+	--brand-foreground: var(--white); /* colors/tone/brand/on-brand */
+	--brand-subtle: var(--denim-50); /* colors/tone/brand/subtle */
+	--brand-muted: var(--denim-100); /* colors/tone/brand/muted */
+	--brand-defined: var(--denim-300); /* colors/tone/brand/defined */
+	--brand-prominent: var(--denim-700); /* colors/tone/brand/prominent */
+	--brand-strong: var(--denim-800); /* colors/tone/brand/strong */
+	--tone-accent: var(--elf); /* colors/tone/accent/accent (not shadcn's --accent) */
+	--tone-accent-foreground: var(--white); /* colors/tone/accent/on-accent */
+	--tone-accent-subtle: var(--elf-50); /* colors/tone/accent/subtle */
+	--tone-accent-muted: var(--elf-100); /* colors/tone/accent/muted */
+	--tone-accent-defined: var(--elf-400); /* colors/tone/accent/defined */
+	--tone-accent-prominent: var(--elf-800); /* colors/tone/accent/prominent */
+	--tone-accent-strong: var(--elf-900); /* colors/tone/accent/strong */
+	--emphasis: var(--corn); /* colors/tone/emphasis/emphasis */
+	--emphasis-foreground: var(--foreground); /* colors/tone/emphasis/on-emphasis */
+	--emphasis-subtle: var(--corn-50); /* colors/tone/emphasis/subtle */
+	--emphasis-muted: var(--corn-100); /* colors/tone/emphasis/muted */
+	--emphasis-defined: var(--corn-300); /* colors/tone/emphasis/defined */
+	--emphasis-prominent: var(--corn-800); /* colors/tone/emphasis/prominent */
+	--emphasis-strong: var(--corn-900); /* colors/tone/emphasis/strong */
+	--neutral: var(--gray-700); /* colors/tone/neutral/neutral */
+	--neutral-foreground: var(--white); /* colors/tone/neutral/on-neutral */
+	--neutral-subtle: var(--gray-50); /* colors/tone/neutral/subtle */
+	--neutral-muted: var(--gray-100); /* colors/tone/neutral/muted */
+	--neutral-defined: var(--gray-400); /* colors/tone/neutral/defined */
+	--neutral-prominent: var(--gray-600); /* colors/tone/neutral/prominent */
+	--neutral-strong: var(--gray-800); /* colors/tone/neutral/strong */
+	--info: var(--info-500); /* colors/tone/info/info */
+	--info-subtle: var(--info-50); /* colors/tone/info/subtle */
+	--info-muted: var(--info-100); /* colors/tone/info/muted */
+	--info-emphasis: var(--info-700); /* colors/tone/info/emphasis */
+	--info-strong: var(--info-900); /* colors/tone/info/strong */
+	--success: var(--success-600); /* colors/tone/success/success */
+	--success-subtle: var(--success-50); /* colors/tone/success/subtle */
+	--success-muted: var(--success-100); /* colors/tone/success/muted */
+	--success-emphasis: var(--success-800); /* colors/tone/success/emphasis */
+	--success-strong: var(--success-900); /* colors/tone/success/strong */
+	--warning: var(--warning-500); /* colors/tone/warning/warning */
+	--warning-subtle: var(--amber-50); /* colors/tone/warning/subtle */
+	--warning-muted: var(--amber-100); /* colors/tone/warning/muted */
+	--warning-defined: var(--amber); /* colors/tone/warning/defined */
+	--warning-emphasis: var(--amber-800); /* colors/tone/warning/emphasis */
+	--warning-strong: var(--amber-900); /* colors/tone/warning/strong */
+	--destructive-subtle: var(--destructive-50); /* colors/tone/destructive/subtle */
+	--destructive-muted: var(--destructive-100); /* colors/tone/destructive/muted */
+	--destructive-emphasis: var(--destructive-700); /* colors/tone/destructive/emphasis */
+	--destructive-strong: var(--destructive-800); /* colors/tone/destructive/strong */
+	--decorative-1: var(--flamingo); /* colors/decorative/decorative-1 */
+
+	/* States */
+	--link: var(--catalina-500); /* colors/states/link */
+	--active: var(--gray-50); /* colors/states/active */
+	--active-alt: var(--gray-50); /* colors/states/active-alt */
+	--highlight: color-mix(in oklab, var(--catalina-100) 15%, transparent); /* colors/states/highlight: catalina/100 at 15% */
+	--disabled: var(--gray-50); /* colors/states/disabled */
+
+	/* Charts */
+	--chart-1: var(--catalina-500); /* colors/charts/chart-1 */
+	--chart-2: var(--elf-500); /* colors/charts/chart-2 */
+	--chart-3: oklch(0.45 0.171 324.86); /* colors/charts/chart-3 */
+	--chart-4: oklch(0.661 0.169 290.03); /* colors/charts/chart-4 */
+	--chart-5: var(--corn-600); /* colors/charts/chart-5 */
+
+	/* Sidebar */
+	--sidebar: var(--background); /* colors/sidebar/background */
+	--sidebar-foreground: var(--foreground); /* colors/sidebar/foreground */
+	--sidebar-foreground-active: var(--foreground); /* colors/sidebar/foreground-active */
+	--sidebar-icon: var(--icon-muted); /* colors/sidebar/icon */
+	--sidebar-icon-active: var(--icon); /* colors/sidebar/icon-active */
+	--sidebar-hover: var(--white); /* colors/sidebar/hover */
+	--sidebar-active: color-mix(in oklab, var(--catalina-50) 20%, transparent); /* colors/sidebar/active: catalina/50 at 20% */
+
+	/* Badges (Figma code syntax: var(--badge-*)) */
+	--badge-blue: var(--blue-50); /* colors/badge/blue/background */
+	--badge-blue-foreground: var(--blue-700); /* colors/badge/blue/foreground */
+	--badge-green: var(--green-50); /* colors/badge/green/background */
+	--badge-green-foreground: var(--green-700); /* colors/badge/green/foreground */
+	--badge-sky: var(--sky-50); /* colors/badge/sky/background */
+	--badge-sky-foreground: var(--sky-700); /* colors/badge/sky/foreground */
+	--badge-purple: var(--purple-50); /* colors/badge/purple/background */
+	--badge-purple-foreground: var(--purple-700); /* colors/badge/purple/foreground */
+	--badge-red: var(--red-50); /* colors/badge/red/background */
+	--badge-red-foreground: var(--red-700); /* colors/badge/red/foreground */
+
+	/* Avatar initials backgrounds. sparks.ds draws these as raw fills on the avatar set (i1–i10), with no variable behind them. */
+	--avatar-1: oklch(0.502 0.146 262.28); /* #335fb6, avatar i1 (no Figma variable) */
+	--avatar-2: oklch(0.691 0.146 157.47); /* #33b677, avatar i2 (no Figma variable) */
+	--avatar-3: oklch(0.534 0.208 319.6); /* #9e33b6, avatar i3 (no Figma variable) */
+	--avatar-4: oklch(0.737 0.153 104.9); /* #b9ae11, avatar i4 (no Figma variable) */
+	--avatar-5: oklch(0.587 0.124 48.59); /* #b66333, avatar i5 (no Figma variable) */
+	--avatar-6: oklch(0.643 0.12 223.24); /* #029cc2, avatar i6 (no Figma variable) */
+	--avatar-7: oklch(0.663 0.207 333.08); /* #d957c8, avatar i7 (no Figma variable) */
+	--avatar-8: oklch(0.563 0.178 141.06); /* #268d11, avatar i8 (no Figma variable) */
+	--avatar-9: oklch(0.533 0.191 25.81); /* #c3282b, avatar i9 (no Figma variable) */
+	--avatar-10: oklch(0.671 0.183 248.48); /* #019aff, avatar i10 (no Figma variable) */
+
+	/* Code */
+	--code-green: oklch(0.822 0.098 178.18); /* colors/code/green */
+	--code-blue: oklch(0.784 0.099 254.02); /* colors/code/blue */
+	--code-pink: oklch(0.765 0.16 325.85); /* colors/code/pink */
+	--code-yellow: oklch(0.847 0.11 86.03); /* colors/code/yellow */
+	--code-white: oklch(0.967 0.003 264.54); /* colors/code/white */
+	--code-gray: oklch(0.725 0 0); /* colors/code/gray */
+
+	/* Gradient stops */
+	--linear-1a: oklch(0.259 0.111 291.13); /* colors/linear-1A */
+	--linear-1b: oklch(0.278 0.127 261.82); /* colors/linear-1B */
+
+	/* Shadow colors (used by --shadow-*) */
+	--shadow-color-sm: oklch(0 0 0 / 5%); /* shadow/sm */
+	--shadow-color-md: oklch(0 0 0 / 10%); /* shadow/md */
+	--shadow-color-lg: oklch(0 0 0 / 25%); /* shadow/lg */
+}
+
+/* ---------- Dark: derived placeholder ----------
+   ⚠️ sparks.ds has no Dark mode yet. These values invert the gray steps so
+   `.dark` stays readable; brand, tone and chart colors keep their Light values.
+   Replace this block with the Figma Dark mode when it exists. */
+.dark {
+	--background: var(--gray-950);
+	--foreground: var(--gray-50);
+	--card: var(--gray-900);
+	--popover: var(--gray-900);
+	--modal: var(--gray-900);
+	--muted: var(--gray-800);
+	--muted-foreground: var(--gray-400);
+	--foreground-subtle: var(--gray-500);
+	--foreground-prominent: var(--white);
+	--on-foreground: var(--gray-950);
+	--background-subtle: var(--gray-900);
+	--background-defined: var(--gray-800);
+	--card-subtle: var(--gray-800);
+	--card-muted: var(--gray-800);
+	--card-defined: var(--gray-700);
+	--border: var(--gray-800);
+	--border-subtle: var(--gray-900);
+	--border-muted: var(--gray-800);
+	--border-defined: var(--gray-700);
+	--input: var(--gray-700);
+	--input-disabled: var(--gray-800);
+	--icon: var(--gray-50);
+	--icon-muted: var(--gray-400);
+	--icon-subtle: var(--gray-500);
+	--neutral: var(--gray-50);
+	--neutral-foreground: var(--gray-950);
+	--secondary: var(--gray-800);
+	--active: var(--gray-800);
+	--active-alt: var(--gray-800);
+	--disabled: var(--gray-800);
+	--sidebar-hover: var(--gray-900);
 }
 
 /* ---------- Text rendering ----------
@@ -103,5 +827,26 @@
 		font-synthesis: none;
 		-webkit-text-size-adjust: 100%;
 		text-size-adjust: 100%;
+	}
+}
+
+/* ---------- Pointer cursor on everything clickable ----------
+   Tailwind 4's preflight gives buttons the default arrow cursor. Every enabled
+   control a user can click shows the pointer instead, so components don't add
+   `cursor-pointer` one by one. Links already have it. Shipped to consumers.
+   See DESIGN.md "Clickable elements show the pointer cursor". */
+@layer base {
+	button:not(:disabled),
+	[role="button"]:not([aria-disabled="true"]),
+	[role="tab"]:not(:disabled),
+	[role="option"]:not([aria-disabled="true"]),
+	[role="menuitem"]:not([aria-disabled="true"]),
+	summary,
+	label[for],
+	select:not(:disabled),
+	input[type="checkbox"]:not(:disabled),
+	input[type="radio"]:not(:disabled),
+	input[type="file"]:not(:disabled) {
+		cursor: pointer;
 	}
 }

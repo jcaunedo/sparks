@@ -1,25 +1,15 @@
-# UCL template
+# Sparks UCL
 
-Starting point for a project's UCL (Unified Component Library): a React component library that lives in its own repo, ships design tokens as CSS, and is reviewed in Storybook before any app uses it.
+Sparks's UCL (Unified Component Library): a React component library that lives in its own repo, ships design tokens as CSS, and is reviewed in Storybook before any app uses it. Published as `@jcaunedo/ucl`.
 
-## Start a new project
+## Getting started
 
-1. Copy this repo to a new one named for the project (e.g. `acme-ucl`), then give the new project its own copy of the Claude Code files. `.claude/` is gitignored and synced between machines by claude-sync (`~/.claude/README.md`), so it doesn't come with the copy:
+```bash
+npm install
+npm run storybook
+```
 
-   ```bash
-   git clone https://github.com/jcaunedo/master-ucl.git ~/development/acme-ucl
-   cd ~/development/acme-ucl && git remote set-url origin <the new repo's URL>
-   mkdir -p .claude/commands && cp -RH ~/development/master-ucl/.claude/skills .claude/
-   ln -s ~/.claude/commands/*.md .claude/commands/
-   claude-sync adopt ~/development/acme-ucl
-   ```
-
-   `cp -RH` copies the template's own skills as real files, not as a link to the template's folder: setup renames and edits skills in the new project (e.g. `project-copywriter`), which must not change the template's. Personal skills that the template links from `~/.claude/skills/` (e.g. `prd-to-slack`, `ucl-generate-prd`) stay links, so the new repo shows them without a copy that could drift. Don't use `cp -RL`: it turns those links into copies. Commands work like the personal skills: `ln -s` links your personal commands in `~/.claude/commands/` (e.g. `/switch-mcp-figma`), so the repo shows them without a copy that could drift. `adopt` moves both into claude-sync, so the project has the same skills and commands on every machine.
-2. Open it in Claude Code and ask for anything. CLAUDE.md tells Claude to run `ucl-setup` first, or run `/ucl-setup` yourself.
-3. Setup asks for the **stack** first (base component library, icons, forms), then the project details (name, Figma file, brand). Package (`@jcaunedo/ucl`), registry (GitHub Packages), repo URL, control sizes and work tracking have preset defaults it shows for you to confirm. Apps are asked at the first layout. It updates `package.json`, the build config, the docs and CLAUDE.md/DESIGN.md to match.
-4. Review the changes and commit.
-
-The template defaults to shadcn/ui on Radix, `lucide-react` icons and react-hook-form + zod.
+Storybook opens at http://localhost:6006. The Claude Code skills in `.claude/` are gitignored and synced between machines by claude-sync (`~/.claude/README.md`).
 
 ## How UCL works
 
@@ -38,21 +28,21 @@ An app only needs a small registry config pointing the package scope at the regi
 
 - React 19, TypeScript (strict)
 - Tailwind CSS 4, tokens in `src/styles/theme.css`
-- Base components: shadcn/ui on Radix (default)
+- Base components: shadcn/ui on Radix
+- Icons: `lucide-react`
+- Forms: react-hook-form + zod (optional peer dependencies)
 - Motion for React (`motion/react`)
 - Storybook 10 with MDX docs
 - tsup (ESM bundle + types + CSS)
 
 ## Using UCL in an App
 
-ℹ️ The snippets use the placeholder package `@your-org/ucl`. `ucl-setup` replaces it with the project's package and scope.
-
 ### 1. Point the app at GitHub Packages
 
-UCL is published to GitHub Packages, not the public npm registry. Add an `.npmrc` at the app's root so npm fetches the `@your-org` scope from there:
+UCL is published to GitHub Packages, not the public npm registry. Add an `.npmrc` at the app's root so npm fetches the `@jcaunedo` scope from there:
 
 ```ini
-@your-org:registry=https://npm.pkg.github.com
+@jcaunedo:registry=https://npm.pkg.github.com
 //npm.pkg.github.com/:_authToken=${NPM_TOKEN}
 ```
 
@@ -64,7 +54,7 @@ UCL is published to GitHub Packages, not the public npm registry. Add an `.npmrc
 ### 2. Install
 
 ```bash
-npm install @your-org/ucl
+npm install @jcaunedo/ucl
 ```
 
 `react` and `react-dom` 19 are peer dependencies: the app provides them, so it doesn't get two copies of React. Form components also need `react-hook-form`, `zod` and `@hookform/resolvers`, which are optional peer dependencies.
@@ -75,8 +65,8 @@ In the app's global CSS:
 
 ```css
 @import "tailwindcss";
-@import "@your-org/ucl/styles";
-@source "../node_modules/@your-org/ucl/dist";
+@import "@jcaunedo/ucl/styles";
+@source "../node_modules/@jcaunedo/ucl/dist";
 ```
 
 `@source` makes Tailwind scan UCL's compiled JS for class names. **Without it, component styles go missing without any error.** Adjust the path so it's relative to the stylesheet.
@@ -88,7 +78,7 @@ UCL declares the font tokens (`--font-sans`, `--font-mono` in `theme.css`) but d
 ### 5. Use components
 
 ```tsx
-import { Button } from "@your-org/ucl";
+import { Button } from "@jcaunedo/ucl";
 
 export function Example() {
 	return <Button>Continue</Button>;
@@ -109,7 +99,7 @@ Add the `dark` class to a parent element (usually `<html>`) to switch every toke
 
 Production only changes when an app picks up the new version and deploys. Publishing a UCL version never changes a live site by itself.
 
-**Try unpublished changes in an app:** link the library locally first, with `npm link`, [yalc](https://github.com/wclr/yalc), or a local file path dependency (`"@your-org/ucl": "file:../ucl"`).
+**Try unpublished changes in an app:** link the library locally first, with `npm link`, [yalc](https://github.com/wclr/yalc), or a local file path dependency (`"@jcaunedo/ucl": "file:../sparks"`).
 
 ## Releasing
 
@@ -117,7 +107,7 @@ Production only changes when an app picks up the new version and deploys. Publis
 
 `.github/workflows/publish.yml` watches `main` and publishes a new package **only when the version in `package.json` changes**. Merging normal work releases nothing. A release happens only when someone deliberately bumps the version, which keeps the registry clean and every release intentional.
 
-The workflow also never publishes while `package.json` has `"private": true` (the unconfigured template; `ucl-setup` removes it) or on a first commit with no previous version to compare, so the first release always comes from `npm run release:*`.
+The workflow also never publishes on a first commit with no previous version to compare, so the first release always comes from `npm run release:*`.
 
 ### Helper scripts
 
@@ -149,7 +139,7 @@ The release flow:
 
 ## Why it's set up this way
 
-- **Design tokens ship as a CSS file in the package** (`@your-org/ucl/styles`), so apps never copy colors by hand.
+- **Design tokens ship as a CSS file in the package** (`@jcaunedo/ucl/styles`), so apps never copy colors by hand.
 - **Apps using Tailwind must scan UCL's built files** for class names (the `@source` line in [Import the styles](#3-import-the-styles)), or styles silently go missing.
 - **The bundle is marked as client-side code** in a post-build step, so apps with server-side rendering (e.g. Next.js Server Components) import it cleanly.
 - **Peer dependencies stay peers.** React (and the forms libraries) are peer dependencies, not bundled, so apps don't end up with two copies.
@@ -191,7 +181,7 @@ When you work on a component or layout with Claude Code, the design decisions yo
 ```text
 .claude/                    # Gitignored; synced by claude-sync (links)
   skills/                   # ucl-setup, ucl-ds-sync, ucl-generate-component,
-                            # ucl-generate-layout, project-copywriter, …
+                            # ucl-generate-layout, sparks-copywriter, …
 .github/workflows/
   publish.yml               # Publishes when the package.json version changes
 scripts/

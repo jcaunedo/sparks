@@ -1,7 +1,7 @@
 <!--
 Created: Nov 9, 2026
 Created by: Julio Caunedo
-Last updated: Nov 9, 2026
+Last updated: Nov 20, 2026
 Scope: the `size` prop and heights of interactive controls in UCL (buttons, and future inputs, selects, toggles, button groups, segmented controls).
 Purpose: keep control heights aligned across components, with the base component library and with Figma, under one set of size names.
 -->
@@ -10,7 +10,9 @@ Purpose: keep control heights aligned across components, with the base component
 
 Controls that sit in the same row (a form, a toolbar, a filter bar) share one set of heights, so a Button next to an Input lines up without either one being adjusted.
 
-⚠️ **Set at setup:** these are the template defaults: shadcn/ui's heights and names. `ucl-setup` confirms the heights against the project's Figma file and picks the names (keep shadcn's, or use the names the Figma file uses, e.g. `xs`–`lg` with `md` as the default). Until then, this file describes what the code ships today.
+Sparks keeps shadcn/ui's step names and heights.
+
+⚠️ **Gap:** the heights haven't been checked against Figma yet: as of setup, sparks.ds has no Button or Input. Check them when the first control is drawn, and add any height Figma uses that isn't on the scale (see below) before building it.
 
 ## Scale
 
@@ -32,6 +34,8 @@ Use the default unless a density requirement forces otherwise. Don't mix sizes w
 | Component | `size` values                    | Default   | Notes |
 | --------- | -------------------------------- | --------- | ----- |
 | `Button`  | `sm` · `default` · `lg` · `icon` | `default` | shadcn's Button as scaffolded. No `xs` yet |
+| `TabsList` | `default` · `lg` | `default` | The list's height; its triggers fit inside (Default: 30 / 34 px inside the 3 px track padding; Line: full height). No `sm` in Figma |
+| `Avatar`, `AvatarAdd` | `default` (32 px) · `lg` (40 px) | `default` | ⚠️ Exception: shadcn's Avatar names, not this scale's (here 32 px is `sm` and `default` is 36 px). Avatars aren't row controls, and keeping shadcn's names means pasted shadcn code renders the same size. `default` is the sparks.ds avatar set; `lg` is the header's avatar |
 
 Add a row when a component with a `size` prop arrives, in the same change.
 

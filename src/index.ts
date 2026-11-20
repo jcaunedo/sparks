@@ -43,6 +43,21 @@ export {
 } from "@/lib/motion";
 
 /* -------------------------------------------------------------------------- */
+/* Brand                                                                      */
+/* -------------------------------------------------------------------------- */
+
+export {
+	AutoPartsHubLogo,
+	autoPartsHubLogoVariants,
+	type AutoPartsHubLogoProps,
+} from "@/components/brand/autoparts-hub-logo";
+export { CareLogo, type CareLogoProps } from "@/components/brand/care-logo";
+export { FlowLogo, type FlowLogoProps } from "@/components/brand/flow-logo";
+export { Logo, logoVariants, type LogoProps } from "@/components/brand/logo";
+export { PulseLogo, type PulseLogoProps } from "@/components/brand/pulse-logo";
+export { SalesLogo, type SalesLogoProps } from "@/components/brand/sales-logo";
+
+/* -------------------------------------------------------------------------- */
 /* Buttons                                                                    */
 /* -------------------------------------------------------------------------- */
 
@@ -51,6 +66,46 @@ export {
 	buttonVariants,
 	type ButtonProps,
 } from "@/components/buttons/button";
+
+/* -------------------------------------------------------------------------- */
+/* Cards                                                                      */
+/* -------------------------------------------------------------------------- */
+
+export { AppCard, type AppCardProps } from "@/components/cards/app-card";
+
+/* -------------------------------------------------------------------------- */
+/* Data display                                                               */
+/* -------------------------------------------------------------------------- */
+
+export {
+	Avatar,
+	AvatarImage,
+	AvatarFallback,
+	AvatarBadge,
+	AvatarAdd,
+	avatarVariants,
+	avatarColors,
+	avatarColorFor,
+	type AvatarProps,
+	type AvatarFallbackProps,
+	type AvatarAddProps,
+	type AvatarColor,
+} from "@/components/data-display/avatar";
+
+/* -------------------------------------------------------------------------- */
+/* Navigation                                                                 */
+/* -------------------------------------------------------------------------- */
+
+export { AppHeader, type AppHeaderProps } from "@/components/navigation/app-header";
+export {
+	Tabs,
+	TabsList,
+	TabsTrigger,
+	TabsContent,
+	tabsListVariants,
+	tabsTriggerVariants,
+	type TabsListProps,
+} from "@/components/navigation/tabs";
 
 /* -------------------------------------------------------------------------- */
 /* Typography                                                                 */
