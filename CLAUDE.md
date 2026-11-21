@@ -33,7 +33,7 @@ Everything specific to this project is in this section, "Stack", "Figma", DESIGN
 | ------------------------- | -------------------------------------------- |
 | `npm run build`           | Build library to `dist/` (ESM + types + CSS) |
 | `npm run dev`             | Watch mode build                             |
-| `npm run storybook`       | Launch Storybook on port 6006                |
+| `npm run storybook`       | Launch Storybook on port 6120                |
 | `npm run build-storybook` | Build static Storybook site                  |
 | `npm run lint`            | Type-check with `tsc --noEmit`               |
 

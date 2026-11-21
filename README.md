@@ -9,7 +9,7 @@ npm install
 npm run storybook
 ```
 
-Storybook opens at http://localhost:6006. The Claude Code skills in `.claude/` are gitignored and synced between machines by claude-sync (`~/.claude/README.md`).
+Storybook opens at http://localhost:6120. The Claude Code skills in `.claude/` are gitignored and synced between machines by claude-sync (`~/.claude/README.md`).
 
 ## How UCL works
 
@@ -169,7 +169,7 @@ When you work on a component or layout with Claude Code, the design decisions yo
 
 | Command                   | Description                                            |
 | ------------------------- | ------------------------------------------------------ |
-| `npm run storybook`       | Launch Storybook at http://localhost:6006              |
+| `npm run storybook`       | Launch Storybook at http://localhost:6120              |
 | `npm run build`           | Build the library to `dist/`                           |
 | `npm run dev`             | Build in watch mode                                    |
 | `npm run lint`            | Type-check with TypeScript                             |
