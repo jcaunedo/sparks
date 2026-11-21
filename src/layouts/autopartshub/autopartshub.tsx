@@ -33,7 +33,8 @@ function AutoPartsHubShell({ user, children }: AutoPartsHubShellProps) {
 					<AvatarFallback>{user.firstName.charAt(0).toUpperCase()}</AvatarFallback>
 				</Avatar>
 			</AppHeader>
-			<main className='flex-1'>{children}</main>
+			{/* Fills the screen below the header, so a page can stretch into it (e.g. an empty state centered in the rest of the screen). */}
+			<main className='flex flex-1 flex-col'>{children}</main>
 		</div>
 	);
 }

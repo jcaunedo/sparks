@@ -191,6 +191,10 @@ Mirror these names when a new component has the same concept. Keep this list cur
   - `AvatarFallback` `color`: `1`–`10` (Figma i1–i10, `bg-avatar-N`). Without it, `avatarColorFor()` picks one from the initials, so the same initials always get the same color
   - `AvatarBadge`: the online dot (success). Put `sr-only` text inside it
   - `AvatarAdd`: a round button with a plus icon; `aria-label` defaults to "Add person"
+- **EmptyState** (`feedback/empty-state`): the centered message for any view, tab or filter with nothing to show. Same API as verita-ucl's
+  - `title` (required), `description`, `icon` (optional slot above the title)
+  - `buttonLabel` + `buttonProps` (forwarded to a `sm` primary `Button`); omit `buttonLabel` for no button
+  - Centers itself in its parent: give it `flex-1` or a height through `className`
 - **Typography** (`typography/typography`):
   - `size`: `xs` | `sm` | `base` | `lg` | `xl` | `2xl` | `3xl` | `4xl` | `5xl` | `6xl` | `7xl` (`xl` and up use `font-display`)
   - `weight`: `regular` | `medium` | `semibold` | `bold` | `black`

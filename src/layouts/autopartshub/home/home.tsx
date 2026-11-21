@@ -6,6 +6,7 @@ import { Logo } from "@/components/brand/logo";
 import { PulseLogo } from "@/components/brand/pulse-logo";
 import { SalesLogo } from "@/components/brand/sales-logo";
 import { AppCard } from "@/components/cards/app-card";
+import { EmptyState } from "@/components/feedback/empty-state";
 import {
 	Tabs,
 	TabsContent,
@@ -49,7 +50,7 @@ function AutoPartsHubHome({ user, apps }: AutoPartsHubHomeProps) {
 	return (
 		<AutoPartsHubShell user={user}>
 			{/* Figma: content 1232px wide, centered (248px each side at 1728); 48px top and bottom, 32px between blocks. */}
-			<div className='mx-auto flex w-full max-w-[1296px] flex-col gap-8 px-8 py-12'>
+			<div className='mx-auto flex w-full max-w-[1296px] flex-1 flex-col gap-8 px-8 py-12'>
 				<div className='flex flex-col'>
 					<Typography as='h1' size='4xl' weight='semibold'>
 						Welcome back, {user.firstName}
@@ -59,7 +60,7 @@ function AutoPartsHubHome({ user, apps }: AutoPartsHubHomeProps) {
 					</Typography>
 				</div>
 
-				<Tabs defaultValue='apps' className='gap-6'>
+				<Tabs defaultValue='apps' className='flex-1 gap-6'>
 					<TabsList variant='line' size='lg'>
 						<TabsTrigger value='apps'>My apps</TabsTrigger>
 						<TabsTrigger value='knowledge'>Knowledge</TabsTrigger>
@@ -81,9 +82,24 @@ function AutoPartsHubHome({ user, apps }: AutoPartsHubHomeProps) {
 							})}
 						</ul>
 					</TabsContent>
-					{/* Not designed yet: empty until Figma has these panels. */}
-					<TabsContent value='knowledge' />
-					<TabsContent value='connections' />
+					{/*
+					 * Content not designed yet: each shows its empty state, centered in the rest of the screen
+					 * (at least as tall as a row of cards).
+					 */}
+					<TabsContent value='knowledge' className='flex'>
+						<EmptyState
+							className='min-h-[220px] flex-1'
+							title='Nothing in Knowledge yet'
+							description="When knowledge is added, it'll show up here."
+						/>
+					</TabsContent>
+					<TabsContent value='connections' className='flex'>
+						<EmptyState
+							className='min-h-[220px] flex-1'
+							title='No connections yet'
+							description="When connections are added, they'll show up here."
+						/>
+					</TabsContent>
 				</Tabs>
 			</div>
 		</AutoPartsHubShell>

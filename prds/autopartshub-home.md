@@ -1,7 +1,7 @@
 <!--
 Created: Nov 20, 2026
 Created by: Julio Caunedo
-Last updated: Nov 20, 2026 (Created)
+Last updated: Nov 20, 2026 (Knowledge and Connections show the standard empty state)
 Scope: the AutoPartsHUB home screen (`AutoPartsHubHome`) and the app frame it sits in (`AutoPartsHubShell`): header, welcome, tabs and the user's apps.
 Purpose: defines what a signed-in user sees and can do on AutoPartsHUB's first screen, and records what's still undecided for the tabs that aren't designed yet.
 -->
@@ -60,15 +60,23 @@ One card per app the user has access to. Each card shows the app's logo and a on
 
 ## Knowledge and Connections
 
-Both tabs can be selected, and show an empty panel until their content is designed.
+Both tabs can be selected. Until they have content, each shows the product's standard empty state, centered in the panel:
 
-⚠️ **Gap:** neither tab has a design. Their content, and what they show when empty, need one.
+| Tab | Title | Description |
+| --- | --- | --- |
+| Knowledge | "Nothing in Knowledge yet" | "When knowledge is added, it'll show up here." |
+| Connections | "No connections yet" | "When connections are added, they'll show up here." |
+
+✅ **Resolved:** the two tabs use the same empty state as every other empty view in the product, not a blank panel. A blank panel reads as broken; the empty state says what's missing and that it will appear here. The copy says only that, because what Knowledge and Connections hold isn't defined yet.
+
+⚠️ **Gap:** neither tab's content is designed. The empty state has no button: the brand voice asks for one action, but neither tab has a defined action yet. Also in Open Questions.
 
 ## States
 
 | State | What shows | What the user can do |
 | --- | --- | --- |
 | Apps listed | The user's app cards | Open any app, switch tabs |
+| Knowledge or Connections selected | That tab's empty state ("Knowledge and Connections") | Switch tabs |
 | No photo | The first initial in the header | Same as above |
 | No apps | Not designed | — |
 
@@ -89,7 +97,7 @@ The header keeps the full logo and the photo. The welcome lines wrap, the three 
 - Given a signed-in user named Dana, when home opens, then it reads "Welcome back, Dana" and "My apps" is selected.
 - Each of the user's apps shows as a card with its logo and description; selecting a card opens that app.
 - A user with no profile photo sees their first initial in the header, in the same color on every visit.
-- Selecting "Knowledge" or "Connections" switches the tab and shows its (empty) panel; selecting "My apps" brings the cards back.
+- Selecting "Knowledge" shows "Nothing in Knowledge yet" and "When knowledge is added, it'll show up here."; selecting "Connections" shows "No connections yet" and "When connections are added, they'll show up here."; selecting "My apps" brings the cards back.
 - Arrow keys move between the tabs.
 - On desktop the cards show three per row, on tablet two, on phones one, with no sideways scrolling.
 
@@ -99,4 +107,5 @@ The header keeps the full logo and the photo. The welcome lines wrap, the three 
 - 🙋 Does a card open its app in the same tab or a new one? Recommended: the same tab, since home is the starting point and Back returns to it.
 - 🙋 What does "My apps" show when the user has no apps?
 - 🙋 What do "Knowledge" and "Connections" contain?
+- 🙋 What one action should each empty state offer (for example, adding knowledge or connecting a tool), and who can take it?
 - 🙋 What does selecting the profile photo do?

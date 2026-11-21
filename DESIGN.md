@@ -139,6 +139,16 @@ Gradient ids come from `React.useId()`.
 
 ---
 
+## Empty states (`feedback/empty-state/empty-state.tsx`)
+
+**Rule:** every view, tab or filter with nothing to show uses `EmptyState`, and only its copy changes: optional icon, title (`lg` semibold, foreground), description (`base`, `muted-foreground`), 8px apart, and an optional `sm` primary button 16px below. It's ported from verita-ucl's `EmptyState`, with the same layout and props. sparks.ds has no empty-state design.
+
+**Why:** one empty state everywhere, so an empty tab never looks like a broken blank panel and every empty view reads the same. Without a Figma source, this entry is the reference: a later edit shouldn't restyle it per screen.
+
+**How to apply:** copy follows DESIGN.md → "Brand voice" (say what's missing, offer one action when one is defined). A different look for one screen needs a prop here, not local overrides. When sparks.ds gets an empty-state design, sync it into this component.
+
+---
+
 ## Clickable elements show the pointer cursor (`src/styles/theme.css`)
 
 **Rule:** one global `@layer base` rule at the end of `theme.css` gives every enabled clickable element the pointer cursor: buttons, `role="button"`, `role="tab"`, `role="option"`, `role="menuitem"`, `summary`, `label[for]`, `select`, checkboxes, radios and file inputs. Disabled ones keep the default cursor. Links have the pointer already.

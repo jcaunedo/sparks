@@ -37,7 +37,7 @@ Paths are relative to `src/layouts/autopartshub/`. Figma: Sparks (`ShkgoGYA4VmXg
 
 ### Pages
 
-- **Home** (`home/home.tsx`, `AutoPartsHubHome`; Figma node 7:1021; PRD: [prds/autopartshub-home.md](prds/autopartshub-home.md)). Renders inside the shell. It shows "Welcome back, {firstName}", then `Tabs` (`line`, `lg`): "My apps" lists the user's apps as linked `AppCard`s, 3 per row above `lg`, 2 at `md`, 1 on phones. "Knowledge" and "Connections" are empty panels until they're designed. Each app's name and logo come from `appProducts` in the screen (product content); the API supplies which apps, their descriptions and links.
+- **Home** (`home/home.tsx`, `AutoPartsHubHome`; Figma node 7:1021; PRD: [prds/autopartshub-home.md](prds/autopartshub-home.md)). Renders inside the shell. It shows "Welcome back, {firstName}", then `Tabs` (`line`, `lg`): "My apps" lists the user's apps as linked `AppCard`s, 3 per row above `lg`, 2 at `md`, 1 on phones. "Knowledge" and "Connections" show `EmptyState` until their content is designed. Each app's name and logo come from `appProducts` in the screen (product content); the API supplies which apps, their descriptions and links.
 
 ### Sample data
 
