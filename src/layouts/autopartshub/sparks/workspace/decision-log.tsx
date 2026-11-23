@@ -2,7 +2,7 @@ import * as React from "react";
 
 /*
  * The decision log (prds/sparks.md, "The decision log"): every decision on the concept, recorded automatically from the
- * workflow, shown as "Decisions" in the Blueprint, newest first. Entries are never edited or removed: a changed
+ * workflow, shown as "Decisions" in the plan, newest first. Entries are never edited or removed: a changed
  * decision is a new entry, and the earlier one stays.
  */
 

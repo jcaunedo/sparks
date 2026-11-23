@@ -10,7 +10,7 @@ type SuccessPartDraft = {
 	assumption?: boolean;
 };
 
-/** One assumption from the brief, or from this part, and what checks it: a measure, or Validate. */
+/** One assumption from the brief, or from this part, and what checks it: a measure, or Evaluate. */
 type SuccessAssumptionCheck = {
 	assumption: string;
 	checkedBy: string;
@@ -36,7 +36,7 @@ function inWords(part: SuccessPartDraft) {
 }
 
 type SuccessCardProps = {
-	/** Smaller text, for the Blueprint. */
+	/** Smaller text, for the plan. */
 	compact?: boolean;
 	success: SuccessDraft;
 	className?: string;
@@ -48,6 +48,12 @@ type SuccessCardProps = {
  * get worse and what's not part of it, then how each assumption will be checked. No card around it. Not in Figma yet.
  */
 function SuccessCard({ success, compact, className }: SuccessCardProps) {
+	const { text, sources } = successSummary(success);
+	return <PlanSummary label='What success looks like' text={text} sources={sources} compact={compact} className={className} />;
+}
+
+/** The summary's text (AssistantMessage's format) and its sources line: what the card shows, and what the plan edits. */
+function successSummary(success: SuccessDraft) {
 	const others = success.otherMeasures.map((measure) => lowerFirst(measure.text.replace(/\.$/, "")));
 	const lines = [
 		`- **Main measure:** ${inWords(success.mainMeasure)}`,
@@ -69,11 +75,12 @@ function SuccessCard({ success, compact, className }: SuccessCardProps) {
 	const sources = parts.flatMap((part) =>
 		part.source === "dana" ? ["you"] : part.source === "evidence" && part.basis ? [part.basis] : [],
 	);
-	return <PlanSummary label='What success looks like' text={text} sources={sourcesLine(sources)} compact={compact} className={className} />;
+	return { text, sources: sourcesLine(sources) };
 }
 
 export {
 	SuccessCard,
+	successSummary,
 	type SuccessAssumptionCheck,
 	type SuccessCardProps,
 	type SuccessDraft,

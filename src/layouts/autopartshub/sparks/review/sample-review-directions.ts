@@ -9,7 +9,7 @@ import type { ConceptForReview, Reviewer } from "./review-panel";
  * recommendation and the decision. What the AI and the people involved would supply: all of it is simulated.
  */
 
-/** What the decision owner decided: advance, iterate in Validate (it wasn't tested), or go back to the choice in Plan. */
+/** What the decision owner decided: advance, iterate in Evaluate (it wasn't tested), or go back to the choice in Plan. */
 export type ReviewDecision = { kind: "advance" | "iterate-validate" | "iterate-choice"; reason: string };
 
 /** A change to the prototype that Sparks proposes after the reviews. */
@@ -39,7 +39,7 @@ export type ReviewProfile = {
 	decision: (evaluation: Evaluation) => ReviewDecision;
 };
 
-/** "What's pretend" and the sample data, as the Blueprint's Prototype section says them. */
+/** "What's pretend" and the sample data, as the plan's Prototype section says them. */
 const prototypeLines = (directionId: string, changes: FitCheckChanges) => {
 	const built = directionPrototypes[directionId];
 	const pretend = built.pretend(changes).map((item) => item.replace(/\.$/, "").toLowerCase());
@@ -112,7 +112,7 @@ const fitCheck: ReviewProfile = {
 		changes.fitAbovePrice
 			? undefined
 			: {
-					proposal: "Move the fit message above the price, as the UX team asks. It changes the prototype, so Validate will need a check.",
+					proposal: "Move the fit message above the price, as the UX team asks. It changes the prototype, so Evaluate will need a check.",
 					changes: { ...changes, fitAbovePrice: true },
 					version: "Fit message above the price, from the UX team's review",
 					done: "the fit message is above the price",
@@ -174,7 +174,7 @@ const flagReturns: ReviewProfile = {
 		changes.flagReminder
 			? undefined
 			: {
-					proposal: 'Word the flag as a reminder, "Check the fit for your vehicle", as the UX team suggests. It changes the prototype, so Validate will need a check.',
+					proposal: 'Word the flag as a reminder, "Check the fit for your vehicle", as the UX team suggests. It changes the prototype, so Evaluate will need a check.',
 					changes: { ...changes, flagReminder: true },
 					version: "Flag worded as a reminder, from the UX team's review",
 					done: 'the flag reads "Check the fit for your vehicle"',
@@ -241,7 +241,7 @@ const checkoutCheck: ReviewProfile = {
 		changes.cartCheck
 			? undefined
 			: {
-					proposal: "Check the fit as parts go in the cart, as the UX team asks. It changes the prototype, so Validate will need a check.",
+					proposal: "Check the fit as parts go in the cart, as the UX team asks. It changes the prototype, so Evaluate will need a check.",
 					changes: { ...changes, cartCheck: true },
 					version: "Fit checked in the cart, from the UX team's review",
 					done: "the fit is checked as parts go in the cart",
@@ -316,7 +316,7 @@ const fitData: ReviewProfile = {
 		changes.counterPrefill
 			? undefined
 			: {
-					proposal: "Fill the vehicle in from the customer's account at the counter, as the UX team suggests. It changes the prototype, so Validate will need a check.",
+					proposal: "Fill the vehicle in from the customer's account at the counter, as the UX team suggests. It changes the prototype, so Evaluate will need a check.",
 					changes: { ...changes, counterPrefill: true },
 					version: "Vehicle filled in at the counter, from the UX team's review",
 					done: "the counter fills the vehicle in from the customer's account",

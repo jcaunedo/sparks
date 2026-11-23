@@ -25,7 +25,7 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-/** A list of places to go, as the Blueprint's "Jump to a section". */
+/** A list of places to go, as the plan's "Jump to a section". */
 export const Default: Story = {
 	render: (args) => (
 		<DropdownMenu {...args}>

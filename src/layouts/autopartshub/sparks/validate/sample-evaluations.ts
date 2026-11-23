@@ -5,7 +5,7 @@ import type { Evaluation } from "./validate-panel";
 const ofSix = (n: number) => `${n} of 6`;
 
 /*
- * Validate for the directions other than "Fit check before you buy" (prds/sparks-validate.md): each one's scenarios,
+ * Evaluate for the directions other than "Fit check before you buy" (prds/sparks-validate.md): each one's scenarios,
  * findings and results, honest about what it can and can't do. What the AI would supply: every number is illustrative.
  * A fix the prototype can make is in sampleFixes (sample-validate.ts), and the results follow it: the finding is fixed,
  * its scenarios go better and the estimate moves. The others (another direction, other data) are suggestions for review.

@@ -93,7 +93,7 @@ export const Sparks: Story = {
 	},
 };
 
-const steps = ["Plan", "Prototype", "Validate", "Review"] as const;
+const steps = ["Plan", "Prototype", "Evaluate", "Review"] as const;
 
 function ProjectStart({ name }: { name: string }) {
 	return (

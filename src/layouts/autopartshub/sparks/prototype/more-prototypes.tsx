@@ -84,7 +84,7 @@ function Ordered({ onDone }: { onDone: () => void }) {
 }
 
 /**
- * The flag, written out: color is a second signal, never the only one. Worded as a reminder once Validate's fix is
+ * The flag, written out: color is a second signal, never the only one. Worded as a reminder once Evaluate's fix is
  * made, so it doesn't read as a warning about quality.
  */
 function ReturnFlag() {
@@ -271,7 +271,7 @@ function FlagReturnsPrototype({ data, readyScreens, ...view }: PrototypeProps) {
 const checkoutScreens = ["the shop", "the cart", "the fit check at checkout", "the store staff order lookup"];
 
 /**
- * Shopping as today; at checkout, every item is checked against the vehicle, with a swap for what doesn't fit. Validate's
+ * Shopping as today; at checkout, every item is checked against the vehicle, with a swap for what doesn't fit. Evaluate's
  * fixes: the fit checked as parts go in the cart (`cartCheck`), and another vehicle at checkout (`otherVehicle`).
  */
 function CheckoutCustomer({ data, readyScreens }: { data: FitCheckData; readyScreens: number }) {
@@ -572,7 +572,7 @@ function FitDataWalkthrough({ readyScreens }: { readyScreens: number }) {
 
 /**
  * At the counter: a "doesn't fit" return, with the vehicle noted. As built, the associate finds the customer's account
- * to see the saved vehicle, and a return with none can't be noted. Validate's fixes: the vehicle filled in from the
+ * to see the saved vehicle, and a return with none can't be noted. Evaluate's fixes: the vehicle filled in from the
  * account (`counterPrefill`), and picked at the counter when there's none (`counterAskVehicle`).
  */
 function FitDataReturn({ data, readyScreens }: { data: FitCheckData; readyScreens: number }) {
@@ -669,7 +669,7 @@ function FitDataReturn({ data, readyScreens }: { data: FitCheckData; readyScreen
 						variant='outline'
 						size='sm'
 						aria-pressed={i === index}
-						className={cn("rounded-button-md", i === index && "border-defined")}
+						className={cn("rounded-button-md", i === index && "border-border-defined")}
 						onClick={() => {
 							setIndex(i);
 							setReason(undefined);
@@ -701,7 +701,7 @@ function FitDataReturn({ data, readyScreens }: { data: FitCheckData; readyScreen
 							variant='outline'
 							size='sm'
 							aria-pressed={reason === r}
-							className={cn("rounded-button-md", reason === r && "border-defined")}
+							className={cn("rounded-button-md", reason === r && "border-border-defined")}
 							onClick={() => {
 								setReason(r);
 								reset();

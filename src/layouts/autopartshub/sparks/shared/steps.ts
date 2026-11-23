@@ -15,11 +15,11 @@ const sparksSteps = [
 	},
 	{
 		id: "validate",
-		label: "Validate",
+		label: "Evaluate",
 		upcoming: {
 			title: "See what holds up",
 			description:
-				"After Prototype, Sparks works your prototype through realistic scenarios for customers and store staff, and checks it against AutoParts Co.'s data, engineering and design system. You see what works, what to fix, and how it does against your target.",
+				"After Prototype, AI agents, each with the profile of a different customer or store staff member, try your prototype in realistic scenarios, and Sparks checks it against AutoParts Co.'s data, engineering and design system. You see what works, what to fix, and how it does against your target.",
 		},
 	},
 	{

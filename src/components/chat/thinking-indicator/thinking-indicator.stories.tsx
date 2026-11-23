@@ -33,7 +33,7 @@ export const AllVariants: Story = {
 	render: (args) => (
 		<div className='flex flex-col gap-6'>
 			<ThinkingIndicator {...args} />
-			<ThinkingIndicator steps={["Assembling the parts of your blueprint…", "Running a final inspection…"]} />
+			<ThinkingIndicator steps={["Assembling the parts of your plan…", "Running a final inspection…"]} />
 			<ThinkingIndicator steps={["Reading the gauges: what we know so far…"]} />
 		</div>
 	),

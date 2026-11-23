@@ -3,7 +3,7 @@ import * as React from "react";
 import { Typography } from "@/components/typography/typography";
 
 /*
- * The building blocks of the Blueprint's sections (prds/sparks.md, "The Blueprint"): a part with its heading,
+ * The building blocks of the plan's sections (prds/sparks.md, "The finished plan"): a part with its heading,
  * and a list that says "None." when it's empty. Every section after Plan's uses them, so they read the same.
  */
 

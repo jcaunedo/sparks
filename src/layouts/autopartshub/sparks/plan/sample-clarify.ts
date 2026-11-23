@@ -1,6 +1,7 @@
 import type { SparksReply, SparksSuggestion } from "../workspace/workspace";
 import type { BriefDraft, BriefPartDraft } from "./brief-card";
 import { sampleSuccessGoalSuggestion, sampleSuccessReplies, sampleSummaryReplies } from "./sample-success";
+import { sampleWithCorrection } from "./sample-correction";
 
 /*
  * Plan's Clarify part for "Wrong-part returns", one question at a time (prds/sparks-plan-clarify.md). What the AI and
@@ -42,7 +43,7 @@ const clarifyChanges: Record<ClarifyPart, string> = {
 /** How Sparks takes her answer to the question before (`previous`), ahead of what comes next. */
 function acknowledge(answer: ClarifyAnswer, previous: ClarifyPart): string {
 	if (answer === "typed") return `${clarifyChanges[previous]}\n\n`;
-	return answer === "yes" ? "Got it. " : "No problem. I'll note it as an assumption, and we'll check it in Validate. ";
+	return answer === "yes" ? "Got it. " : "No problem. I'll note it as an assumption, and we'll check it in Evaluate. ";
 }
 
 /** A Clarify question after the first: how Sparks took her last answer, a lead-in, then the question on its card. */
@@ -191,13 +192,16 @@ export const sampleBriefNotQuiteReply: SparksReply = {
 	parts: [{ kind: "text", text: "What's off? Tell me in your own words, and I'll update it." }],
 };
 
-/** After her correction: Sparks updates the brief and asks again. */
-export const sampleBriefAgainReply: SparksReply = {
+/** After her correction: Sparks updates the brief, shows it again with her words worked in, and asks again. */
+export const sampleBriefAgainReply = (brief: BriefDraft, words: string): SparksReply => ({
 	id: "brief-again",
 	from: "sparks",
-	parts: [{ kind: "text", text: "Thanks, I've updated it." }],
+	parts: [
+		{ kind: "text", text: "Thanks, I've updated it.\n\n**Here's what we know now:**" },
+		{ kind: "brief", brief: { ...brief, summary: sampleWithCorrection(brief.summary, words), approved: false } },
+	],
 	quickReplies: sampleSummaryReplies,
-};
+});
 
 /**
  * "Looks right": the brief is in the concept, and Sparks goes straight into Success's first question, the goal, with no

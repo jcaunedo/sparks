@@ -7,7 +7,7 @@ import { ConceptItems as Items, ConceptPart as Part } from "../workspace/concept
 
 /*
  * The Prototype section of the concept (prds/sparks-prototype.md, "The Prototype section"): what the step adds to the
- * Blueprint, all of it filled in by Sparks and kept current as the prototype changes.
+ * plan, all of it filled in by Sparks and kept current as the prototype changes.
  */
 
 /** One audience's screens, each with the steps of the direction's "How it works" it covers (0-based). */
@@ -41,7 +41,7 @@ type PrototypeSectionProps = {
 const capitalize = (text: string) => text.charAt(0).toUpperCase() + text.slice(1);
 
 /**
- * The Prototype section in the Blueprint: the current version with "Try it", what's in it (each audience's screens
+ * The Prototype section in the plan: the current version with "Try it", what's in it (each audience's screens
  * and the steps of "How it works" they cover), what's pretend, the sample data, what AutoParts Co. doesn't have yet,
  * what departs from the design system, and every version, newest first. Not in Figma yet.
  */

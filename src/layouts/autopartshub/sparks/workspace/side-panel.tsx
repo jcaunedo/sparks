@@ -11,7 +11,7 @@ type SidePanelProps = {
 	title: string;
 	/** Buttons before the close button. */
 	actions?: React.ReactNode;
-	/** The close button's name, e.g. "Close blueprint". */
+	/** The close button's name, e.g. "Close comments". */
 	closeLabel: string;
 	onClose: () => void;
 	/** Take focus when it opens (the close button): when she opened it, not when it opened on its own. */

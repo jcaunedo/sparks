@@ -20,6 +20,10 @@ type EmptyStateProps = Omit<React.ComponentProps<"div">, "title"> & {
 	buttonLabel?: string;
 	/** Forwarded to the button (`onClick`, or `asChild` with a link). */
 	buttonProps?: Omit<ButtonProps, "size" | "variant" | "children">;
+	/** A second, outlined button before the main one, e.g. "Back to Prototype" beside "Evaluate the prototype". */
+	secondaryButtonLabel?: string;
+	/** Forwarded to the second button. */
+	secondaryButtonProps?: Omit<ButtonProps, "size" | "variant" | "children">;
 };
 
 /**
@@ -33,6 +37,8 @@ function EmptyState({
 	icon,
 	buttonLabel,
 	buttonProps,
+	secondaryButtonLabel,
+	secondaryButtonProps,
 	className,
 	...props
 }: EmptyStateProps) {
@@ -62,10 +68,20 @@ function EmptyState({
 					</Typography>
 				)}
 			</div>
-			{buttonLabel && (
-				<Button size='sm' {...buttonProps}>
-					{buttonLabel}
-				</Button>
+			{/* The main action last, the second one 8px before it (as Cancel before Save). */}
+			{(buttonLabel || secondaryButtonLabel) && (
+				<div className='flex flex-wrap items-center justify-center gap-2'>
+					{secondaryButtonLabel && (
+						<Button size='sm' variant='outline' {...secondaryButtonProps}>
+							{secondaryButtonLabel}
+						</Button>
+					)}
+					{buttonLabel && (
+						<Button size='sm' {...buttonProps}>
+							{buttonLabel}
+						</Button>
+					)}
+				</div>
 			)}
 		</div>
 	);

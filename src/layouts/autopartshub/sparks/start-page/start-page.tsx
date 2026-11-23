@@ -32,8 +32,8 @@ type SparksConceptSummary = {
 	/** ISO date of the last edit: the list's order, most recent first. */
 	editedAt: string;
 	/**
-	 * Validate's last result: the share of scenarios that worked in the last finished run (0–100), "failed" when the last
-	 * run failed, none before Validate has run.
+	 * Evaluate's last result: the share of scenarios that worked in the last finished run (0–100), "failed" when the last
+	 * run failed, none before Evaluate has run.
 	 */
 	validation?: number | "failed";
 	status: SparksConceptStatus;
@@ -61,7 +61,7 @@ type SparksStartPageProps = {
 };
 
 
-/* One color per step: Plan purple and Prototype sky as in Figma (Sparks → "Sparks", 1:2); Validate yellow, Review blue. */
+/* One color per step: Plan purple and Prototype sky as in Figma (Sparks → "Sparks", 1:2); Evaluate yellow, Review blue. */
 const stepTone: Record<SparksStep, BadgeProps["tone"]> = { plan: "purple", prototype: "sky", validate: "yellow", review: "blue" };
 
 const statusBadge: Record<SparksConceptStatus, { label: string; tone: BadgeProps["tone"] }> = {
@@ -211,7 +211,7 @@ function ConceptList({
 				<span>Idea</span>
 				<span>Share with</span>
 				<span>Created</span>
-				<span>Validation</span>
+				<span>Evaluation</span>
 				<span>Status</span>
 			</div>
 			<ul className='col-span-full grid grid-cols-subgrid border-t border-border'>
@@ -230,7 +230,7 @@ const validationLabel = (validation: SparksConceptSummary["validation"]) =>
 	validation === undefined ? "Not run" : validation === "failed" ? "Failed" : `${Math.round(validation)}%`;
 
 /**
- * One concept: its preview, name and summary, then who can see it, when it was created, Validate's last result and
+ * One concept: its preview, name and summary, then who can see it, when it was created, Evaluate's last result and
  * where it is. Opens it.
  */
 function ConceptRow({ concept, now, tile }: { concept: SparksConceptSummary; now: number; tile: string }) {
@@ -276,9 +276,9 @@ function ConceptRow({ concept, now, tile }: { concept: SparksConceptSummary; now
 					{created.label}
 				</time>
 			</Typography>
-			{/* Validate's last result: the share of scenarios that worked (prds/sparks.md → "The start page"). */}
+			{/* Evaluate's last result: the share of scenarios that worked (prds/sparks.md → "The start page"). */}
 			<Typography size='sm' className='min-w-0'>
-				<span className='sr-only'>Validation: </span>
+				<span className='sr-only'>Evaluation: </span>
 				{validationLabel(concept.validation)}
 			</Typography>
 			<div className='flex'>

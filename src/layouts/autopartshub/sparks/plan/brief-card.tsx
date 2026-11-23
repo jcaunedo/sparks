@@ -38,7 +38,7 @@ function inWords(part: BriefPartDraft) {
 }
 
 type BriefCardProps = {
-	/** Smaller text, for the Blueprint. */
+	/** Smaller text, for the plan. */
 	compact?: boolean;
 	brief: BriefDraft;
 	className?: string;
@@ -50,6 +50,12 @@ type BriefCardProps = {
  * then the rest as lines with where each came from, then what's still to check. No card around it. Not in Figma yet.
  */
 function BriefCard({ brief, compact, className }: BriefCardProps) {
+	const { text, sources } = briefSummary(brief);
+	return <PlanSummary label='What we know' text={text} sources={sources} compact={compact} className={className} />;
+}
+
+/** The summary's text (AssistantMessage's format) and its sources line: what the card shows, and what the plan edits. */
+function briefSummary(brief: BriefDraft) {
 	const lines = briefParts.map(({ id, label }) => `- **${label}:** ${inWords(brief.parts[id])}`);
 	const text = [
 		brief.summary,
@@ -63,7 +69,7 @@ function BriefCard({ brief, compact, className }: BriefCardProps) {
 	const sources = Object.values(brief.parts).flatMap((part) =>
 		part.source === "dana" ? ["you"] : part.source === "evidence" && part.basis ? [part.basis] : [],
 	);
-	return <PlanSummary label='What we know' text={text} sources={sourcesLine(sources)} compact={compact} className={className} />;
+	return { text, sources: sourcesLine(sources) };
 }
 
-export { BriefCard, type BriefCardProps, type BriefDraft, type BriefPartDraft, type BriefPartId };
+export { BriefCard, briefSummary, type BriefCardProps, type BriefDraft, type BriefPartDraft, type BriefPartId };

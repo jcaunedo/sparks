@@ -41,7 +41,7 @@ function sourcesLine(problem: ProblemDraft) {
 }
 
 type ProblemCardProps = {
-	/** Smaller text, for the Blueprint. */
+	/** Smaller text, for the plan. */
 	compact?: boolean;
 	problem: ProblemDraft;
 	className?: string;
@@ -51,12 +51,16 @@ type ProblemCardProps = {
  * The problem as it stands, as a short conversational summary in Sparks's reply, shown once at the end of Plan's Problem
  * part for Dana to approve as a whole (prds/sparks-plan-problem.md, "The Problem summary"). No card around it: it reads
  * as Sparks summing up, with one sources line under it. Read only: she changes it by asking Sparks, or from the
- * Blueprint. Not in Figma yet.
+ * plan. Not in Figma yet.
  */
 function ProblemCard({ problem, compact, className }: ProblemCardProps) {
-	return (
-		<PlanSummary label='The problem' text={problem.summary} sources={sourcesLine(problem)} compact={compact} className={className} />
-	);
+	const { text, sources } = problemSummary(problem);
+	return <PlanSummary label='The problem' text={text} sources={sources} compact={compact} className={className} />;
 }
 
-export { ProblemCard, type ProblemCardProps, type ProblemDraft, type ProblemPartDraft, type ProblemPartId };
+/** The summary's text (AssistantMessage's format) and its sources line: what the card shows, and what the plan edits. */
+function problemSummary(problem: ProblemDraft) {
+	return { text: problem.summary, sources: sourcesLine(problem) };
+}
+
+export { ProblemCard, problemSummary, type ProblemCardProps, type ProblemDraft, type ProblemPartDraft, type ProblemPartId };

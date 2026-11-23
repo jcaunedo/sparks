@@ -201,7 +201,7 @@
 	/* Effect style "Sonner" (a raw color in Figma, no variable). */
 	--shadow-sonner: 0 12px 36px -2px oklch(0 0 0 / 30%);
 	/* The prompt composer at rest, sparks.ds "prompt-composer" Default (a raw shadow in Figma, no effect style). */
-	--shadow-composer: 0 16px 30px -12px oklch(0 0 0 / 6%);
+	--shadow-composer: 0 16px 30px -12px oklch(0 0 0 / 12%);
 }
 
 /* ---------- Breakpoints ----------

@@ -1,14 +1,14 @@
 <!--
 Created: Nov 21, 2026
 Created by: Julio Caunedo
-Last updated: Nov 22, 2026 (Plan becomes the Blueprint once it's done: what this part adds shows there, not in a panel during Plan; confirmations ("Done. … in your blueprint.") are regular; the bold line names what comes next; Sparks thinks one line at a time, in automotive terms, before it replies; after "Looks right, continue" on the brief, Sparks opens Success with "Now, let's define what success looks like."; Sparks's confirmation says "in your blueprint"; what we know is approved with "Looks right, continue", no question; "What we know" is a conversational summary in Sparks's reply, not a card; the brief's card renamed "What we know", with plainer part names, and without "Who's affected most", which is on the problem card; after a correction, Sparks says what changed and why it matters before the next question; Clarify starts in the reply that puts the problem in the concept, after "Looks right, continue" on the Problem summary; "Looks right, continue" goes straight into Success's first question, the goal; the brief summary built: the card, its labels, approval and corrections; "Who's involved" filled from data, not asked; the third question, about limits, built; the second question, "Why does it happen?", built; each reply opens by taking the last answer in one line; one question at a time from the first reply, on clarification cards; the first question built; Part of Plan: one conversation, the brief as a card, no step buttons)
+Last updated: Nov 22, 2026 (the step "Validate" renamed "Evaluate"; after a correction, Sparks shows the updated summary before asking again; "in your plan" instead of "in your blueprint"; Plan becomes the Blueprint once it's done: what this part adds shows there, not in a panel during Plan; confirmations ("Done. … in your blueprint.") are regular; the bold line names what comes next; Sparks thinks one line at a time, in automotive terms, before it replies; after "Looks right, continue" on the brief, Sparks opens Success with "Now, let's define what success looks like."; Sparks's confirmation says "in your blueprint"; what we know is approved with "Looks right, continue", no question; "What we know" is a conversational summary in Sparks's reply, not a card; the brief's card renamed "What we know", with plainer part names, and without "Who's affected most", which is on the problem card; after a correction, Sparks says what changed and why it matters before the next question; Clarify starts in the reply that puts the problem in the concept, after "Looks right, continue" on the Problem summary; "Looks right, continue" goes straight into Success's first question, the goal; the brief summary built: the card, its labels, approval and corrections; "Who's involved" filled from data, not asked; the third question, about limits, built; the second question, "Why does it happen?", built; each reply opens by taking the last answer in one line; one question at a time from the first reply, on clarification cards; the first question built; Part of Plan: one conversation, the brief as a card, no step buttons)
 Scope: the Clarify part of Plan, the second of Plan's five parts: how Sparks gathers evidence, what it asks Dana, how facts, Dana's answers and assumptions are told apart, and the Problem brief it adds to the concept.
 Purpose: defines how an agreed problem becomes a brief the team can trust, so success measures and solutions rest on what's known and what's assumed is visible.
 -->
 
 # Plan: Clarify — Sparks
 
-**Location:** the second part of Plan ([sparks.md](sparks.md), "Plan"). The conversation reaches it as soon as Dana approves the problem ([sparks-plan-problem.md](sparks-plan-problem.md), "Finishing this part"). She can come back to it by asking Sparks, or, once Plan is done, from the Blueprint ("Let's go back to the brief").
+**Location:** the second part of Plan ([sparks.md](sparks.md), "Plan"). The conversation reaches it as soon as Dana approves the problem ([sparks-plan-problem.md](sparks-plan-problem.md), "Finishing this part"). She can come back to it by asking Sparks, or, once Plan is done, from the plan ("Let's go back to the brief").
 **Audience:** experienced AutoParts Co. employees who know the business but aren't designers or engineers. The reference user is Dana, a Senior Product Manager.
 **Description:** the part of Plan where Sparks fills in what AutoParts Co.'s data already says about the problem, asks Dana only what the data can't answer, and turns it all into a problem brief.
 **Status:** defined. Built as a reference layout: the first three questions ("What do customers do today when they're not sure a part fits?", right after the Problem summary, then "Why does it happen?" and "What does a solution have to work around?") on clarification cards, with "Yes, that's right", "Not quite" and "I'm not sure" (`SparksWorkspace`, `ClarificationCard`). Then the Problem brief as a summary card, with "Looks right, continue" and "Not quite" (`BriefCard`). "Looks right, continue" goes straight into Success's first question ([sparks-plan-define-success.md](sparks-plan-define-success.md)).
@@ -33,7 +33,7 @@ Dana doesn't see "Clarify" as a stage. To her, it's Sparks asking a few question
 ~~2. It fills in every part it can, each with its source, as suggestions on a Problem brief card in the conversation.~~
 ~~3. It tells Dana what it found and what it still needs.~~
 
-~~Clarify starts in the same reply as the Problem summary~~ Clarify starts in the reply that puts the problem in the concept, after Dana says the Problem summary looks right ([sparks-plan-problem.md](sparks-plan-problem.md), "Finishing this part"), with no button and no wait. The reply opens "Done. The problem is in your ~~concept~~ blueprint." (regular), then Clarify's title in bold: "**Now, let's understand it better and clarify a few things.**" Then:
+~~Clarify starts in the same reply as the Problem summary~~ Clarify starts in the reply that puts the problem in the concept, after Dana says the Problem summary looks right ([sparks-plan-problem.md](sparks-plan-problem.md), "Finishing this part"), with no button and no wait. The reply opens "Done. The problem is in your ~~concept~~ plan." (regular), then Clarify's title in bold: "**Now, let's understand it better and clarify a few things.**" Then:
 
 1. Sparks has already looked through company knowledge and Dana's personal knowledge for each part of the brief ("The Problem brief"), and fills in what it can, with its sources, in the background.
 2. It says in one line what comes next, and why it asks so little:
@@ -51,7 +51,7 @@ Dana doesn't see "Clarify" as a stage. To her, it's Sparks asking a few question
 
 ✅ **Resolved:** Clarify asks one question at a time from its first reply, each on a clarification card like Problem's, and doesn't show the whole brief as a card of suggestions first. The brief builds up in the background; Dana sees it whole when Sparks sums it up at the end ("Finishing this part"). Why: the same reason as Problem: one decision at a time, and no form to review before the first question.
 
-- **The next question comes in the reply that takes her answer,** after one line on how Sparks took it: "Got it." for a yes, ~~"Thanks, I've added that to the brief." for an answer in her own words,~~ what changed and why it matters, in its own paragraph, for an answer in her own words (after "Not quite", or an edit on the card, which also puts her words on the card, "Edited by you"), "No problem. I'll note it as an assumption, and we'll check it in Validate." for "I'm not sure". Never an acknowledgement on its own, then the question in a second reply. The corrections, for "Wrong-part returns":
+- **The next question comes in the reply that takes her answer,** after one line on how Sparks took it: "Got it." for a yes, ~~"Thanks, I've added that to the brief." for an answer in her own words,~~ what changed and why it matters, in its own paragraph, for an answer in her own words (after "Not quite", or an edit on the card, which also puts her words on the card, "Edited by you"), "No problem. I'll note it as an assumption, and we'll check it in Evaluate." for "I'm not sure". Never an acknowledgement on its own, then the question in a second reply. The corrections, for "Wrong-part returns":
   - **What people do today:** "Thanks, I've changed what customers do today. Any solution has to fit how people buy now, so the brief should have it right."
   - **Why it happens:** "Thanks, I've changed why it happens. The solutions we look at will go after the cause, so your view counts more than my guess."
   - **Limits:** "Thanks, I've changed what a solution has to work around. I'll check every direction against these limits, so they need to be right." (before "That's all I need to ask.")
@@ -79,10 +79,10 @@ If company knowledge has nothing for a part, Sparks says so once, and asks Dana 
 - **Only what the data can't answer.** Sparks doesn't ask Dana for something company knowledge or her knowledge already answered. It shows that answer on the card and lets her correct it.
 - **One question at a time, most important first.** The parts that most shape the rest of Plan come first: who's affected most, how big the problem is, what it costs.
 - **Its best guess comes with each question,** with quick replies: "Yes, that's right", "Not quite" and "I'm not sure".
-- **"I'm not sure" is a good answer.** Sparks records its best guess as an assumption and moves on: "No problem. I'll note it as an assumption, and we'll check it in Validate."
+- **"I'm not sure" is a good answer.** Sparks records its best guess as an assumption and moves on: "No problem. I'll note it as an assumption, and we'll check it in Evaluate."
 - **Short.** Sparks asks a handful of questions, not an interview. Once every part of the brief has an answer or an assumption, it offers to move on.
 - **Dana can stop the questions** at any time ("Let's move on"). Unanswered parts become assumptions.
-- ~~**The card fills in as she answers.** Each answer updates its part of the Problem brief card, so she sees the brief build up without leaving the conversation.~~ **The brief fills in as she answers,** in the background, in the Blueprint (shown once Plan is done); she sees it whole in the summary at the end.
+- ~~**The card fills in as she answers.** Each answer updates its part of the Problem brief card, so she sees the brief build up without leaving the conversation.~~ **The brief fills in as she answers,** in the background, in the plan (shown as a document once Plan is done); she sees it whole in the summary at the end.
 
 ✅ **Resolved:** Sparks asks up to six relevant questions, and none that knowledge already answers. Enough to fill the gaps the data leaves, short enough that Clarify takes minutes.
 
@@ -98,7 +98,7 @@ Every part of Sparks follows the same rule ([sparks.md](sparks.md), "When the da
 
 > You mentioned most wrong-part returns come from first-time customers. Returns data shows something different: about two thirds are from repeat customers (returns, last 90 days). Want to keep your answer, use the data, or keep both and check it later?
 
-If she keeps both, the part of the brief shows both and becomes an assumption to check in Validate.
+If she keeps both, the part of the brief shows both and becomes an assumption to check in Evaluate.
 
 ## When the problem turns out different
 
@@ -110,7 +110,7 @@ As in Problem, a solution Dana mentions ("We could add a 'fits your car' badge")
 
 ## The Problem brief
 
-What this part adds to the concept, once Dana approves it. Sparks writes it into the concept's spec automatically; Dana sees it on the ~~Problem brief~~ "What we know" card and, once Plan is done, in the Blueprint ([sparks.md](sparks.md), "The Blueprint").
+What this part adds to the concept, once Dana approves it. Sparks writes it into the concept's spec automatically; Dana sees it on the ~~Problem brief~~ "What we know" card and, once Plan is done, in the plan ([sparks.md](sparks.md), "The finished plan").
 
 **On screen it's "What we know",** with the line "What the data says, what you told me, and what we still need to check." Sparks calls it the same in the conversation ("Here's what we know so far:"); the spec calls it the Problem brief. It holds only what Clarify adds: who it affects is on the problem card ([sparks-plan-problem.md](sparks-plan-problem.md), "The Problem summary") and isn't repeated. Its parts on the card, in order: "How often it happens", "What it costs us", "What customers do about it", "Why it happens", "What we've tried", "What a solution has to work around", "Who's involved", then "Still to check" (the assumptions).
 
@@ -161,7 +161,9 @@ Every part of the brief ends with evidence, an answer from Dana, or an assumptio
 - **The summary, not a card** (sparks.md, "Talking with Sparks"): "**Here's what we know so far:**", then the short summary (how often, what it costs, what's been tried), "Here's what's behind it:" with a line each for what customers do about it, why it happens, what a solution has to work around and who's involved, each with its source in brackets ("(customer intelligence, last 6 months)", "(from you)") or called a guess, then "Still to check:" as a list, and one sources line. With only one assumption, Sparks doesn't repeat it as "The biggest thing we're assuming…" before the question.
 - ~~**The card** (like the problem card, part by part with a line between parts): ~~"Problem brief"~~ "What we know" and its line, with "Draft" until she approves it, then "In your concept"; the two- or three-sentence summary and ~~"{n} of 8 parts backed by evidence."~~ "{n} of 7 come from company data."; each part with where it came from: ~~"Evidence · business performance, Aug–Oct 2026"~~ "From business performance, Aug–Oct 2026" (source and period), "From you", or "Sparks's guess" with the "Assumption" label between the part's name and its text; last, ~~"Assumptions to check"~~ "Still to check" as a list.~~
 - **How her answers land in the brief:** a confirmed guess that came from company data stays evidence; a confirmed guess with no data behind it ("Why it happens") becomes hers ("From you"); "I'm not sure" leaves it an assumption; an answer in her own words, or an edit on the card, is hers, in her words.
-- Quick replies: "Looks right, continue", "Not quite". "Not quite" gets "What's off? Tell me in your own words, and I'll update it." (the card can't be edited in place); her answer gets "Thanks, I've updated it." and the question again.
+- Quick replies: "Looks right, continue", "Not quite". "Not quite" gets "What's off? Tell me in your own words, and I'll update it." (the card can't be edited in place); her answer gets ~~"Thanks, I've updated it." and the question again~~ "Thanks, I've updated it.", then "**Here's what we know now:**" with the updated summary, her words worked in, and the question again.
+
+  ✅ **Resolved:** after her correction, Sparks shows the updated summary before asking again. Why: "Thanks, I've updated it." alone asked her to approve a version she couldn't see.
 - If she approves it, or says "Let's move on", before every part is answered, the unanswered parts become assumptions, and Sparks says which.
 - ~~Her approval adds the Problem brief to the concept, and Sparks moves on in the same conversation: "Now let's agree on what success looks like."~~ Her approval adds the Problem brief to the concept, and the same reply asks Success's first question, the goal ([sparks-plan-define-success.md](sparks-plan-define-success.md), "Starting this part"). There's no button or page between parts ([sparks.md](sparks.md), "Plan").
 
@@ -169,7 +171,7 @@ Every part of the brief ends with evidence, an answer from Dana, or an assumptio
 
 ✅ **Resolved:** after "Looks right, continue", Sparks says ~~"Done. The brief is in your concept."~~ ~~"Done. That's in your blueprint too."~~ "**Now, let's define what success looks like.**" and asks Success's first question, the goal, in the same reply, following Plan's rule that the reply that finishes a part asks the next part's first question ([sparks.md](sparks.md), "Plan").
 
-The assumptions stay in the brief and go forward: the success part can set measures for them, and Validate checks them.
+The assumptions stay in the brief and go forward: the success part can set measures for them, and Evaluate checks them.
 
 ## States
 
@@ -217,7 +219,7 @@ What Dana says → what Sparks must do:
 - The "What we know" card opens with a summary and how many parts come from company data, and doesn't repeat who it affects.
 - A solution Dana mentions goes to Ideas to explore, not into the brief.
 - A suggested change to the problem statement changes nothing until Dana accepts it.
-- Approving the brief moves the conversation on to success with no button or page in between, and the brief is in the Blueprint (shown once Plan is done).
+- Approving the brief moves the conversation on to success with no button or page in between, and the brief is in the plan (shown as a document once Plan is done).
 
 ## Out of scope
 

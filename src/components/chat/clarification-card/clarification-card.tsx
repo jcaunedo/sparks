@@ -65,7 +65,8 @@ function ClarificationCard({
 			aria-labelledby={questionId}
 			data-slot='clarification-card'
 			data-state={editing ? "edit" : "default"}
-			className={cn("flex w-full flex-col items-start gap-2.5", className)}
+			// Figma: 16px between the panel and the answer buttons (spacing/4).
+			className={cn("flex w-full flex-col items-start gap-4", className)}
 			{...props}
 		>
 			{/* Figma "clarification-message": 16px corners, 16px top/bottom, 20px left, 16px right. State=Default is
@@ -78,7 +79,8 @@ function ClarificationCard({
 				)}
 			>
 				<div className='flex w-full items-start gap-6'>
-					<div className='flex min-w-0 flex-1 flex-col gap-1 text-base text-foreground'>
+					{/* The question 4px above the answer; in State=Edit, 8px above the field. */}
+					<div className={cn("flex min-w-0 flex-1 flex-col text-base text-foreground", editing ? "gap-2" : "gap-1")}>
 						{/* Figma "base -semibold". */}
 						<p id={questionId} className='font-semibold'>
 							{question}
@@ -88,8 +90,8 @@ function ClarificationCard({
 						{/* Figma's "Show badge" property; State=Edit has no badge. */}
 						{badge && !editing ? <div className='flex pt-1'>{badge}</div> : null}
 						{editing ? (
-							// The field, then Cancel and Save 10px below it, on the right.
-							<div className='flex w-full flex-col gap-2.5'>
+							// The field, then Cancel and Save 12px below it (spacing/3), on the right.
+							<div className='flex w-full flex-col gap-3'>
 								{/* Figma "input": background, border, 10px corners, 12px × 8px padding with the 1px border drawn
 								    inside it, so 11px × 7px here plus the border (64px tall for two lines, as in Figma). */}
 								<textarea
@@ -140,7 +142,8 @@ function ClarificationCard({
 							variant='ghost'
 							size='icon'
 							aria-label={`Edit: ${question}`}
-							className='size-8 rounded-button-md text-foreground'
+							// The pen in colors/icon/foreground.
+							className='size-8 rounded-button-md text-icon'
 							onClick={startEditing}
 						>
 							<Pen aria-hidden />
@@ -151,7 +154,7 @@ function ClarificationCard({
 				{source && !editing ? <div className='flex items-center gap-2 text-xs text-muted-foreground'>{source}</div> : null}
 			</div>
 
-			{/* Figma "ctas", 10px under the panel (`QuickReplies`): the first reply (the "yes") last, at the right edge, as
+			{/* Figma "ctas", 16px under the panel (`QuickReplies`): the first reply (the "yes") last, at the right edge, as
 			    Save is, with the ↵ key; Enter picks it. Not in State=Edit: they come back once the edit is saved or
 			    cancelled. */}
 			{replies.length && !editing ? <QuickReplies replies={replies} onReply={onReply} /> : null}

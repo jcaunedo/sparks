@@ -72,19 +72,19 @@ type FitCheckChanges = {
 	liveStock?: boolean;
 	/** Light gray text, kept against the design system's contrast standard. */
 	lightText?: boolean;
-	/** The fit message above the price, so it isn't missed (a fix from Validate). */
+	/** The fit message above the price, so it isn't missed (a fix from Evaluate). */
 	fitAbovePrice?: boolean;
-	/** "We're not sure this fits" offers a next step: "See the fit list", "Ask a store" (a fix from Validate). */
+	/** "We're not sure this fits" offers a next step: "See the fit list", "Ask a store" (a fix from Evaluate). */
 	unsureHelp?: boolean;
-	/** "Flag often-returned parts": the flag reads as a reminder to check the fit, not a warning (a fix from Validate). */
+	/** "Flag often-returned parts": the flag reads as a reminder to check the fit, not a warning (a fix from Evaluate). */
 	flagReminder?: boolean;
-	/** "Fit check at checkout": the fit is checked as parts go in the cart, so checkout has no surprises (a fix from Validate). */
+	/** "Fit check at checkout": the fit is checked as parts go in the cart, so checkout has no surprises (a fix from Evaluate). */
 	cartCheck?: boolean;
-	/** "Fit check at checkout": checkout offers another vehicle besides the saved one (a fix from Validate). */
+	/** "Fit check at checkout": checkout offers another vehicle besides the saved one (a fix from Evaluate). */
 	otherVehicle?: boolean;
-	/** "Complete fit data": the counter fills the vehicle in from the customer's account, one tap (a fix from Validate). */
+	/** "Complete fit data": the counter fills the vehicle in from the customer's account, one tap (a fix from Evaluate). */
 	counterPrefill?: boolean;
-	/** "Complete fit data": with no saved vehicle, the associate picks it at the counter (a fix from Validate). */
+	/** "Complete fit data": with no saved vehicle, the associate picks it at the counter (a fix from Evaluate). */
 	counterAskVehicle?: boolean;
 	/** "Flag often-returned parts": search results say how often a flagged part comes back (asked in words). */
 	flagRate?: boolean;
@@ -518,7 +518,7 @@ function StaffLookup({ data, readyScreens }: { data: FitCheckData; readyScreens:
 					<span className='text-sm font-medium text-foreground'>Will this fit? Pick a part:</span>
 					<div className='flex flex-wrap gap-2'>
 						{data.parts.map((p) => (
-							<Button key={p.id} variant='outline' size='sm' aria-pressed={checked === p.id} className={cn("rounded-button-md", checked === p.id && "border-defined")} onClick={() => setChecked(p.id)}>
+							<Button key={p.id} variant='outline' size='sm' aria-pressed={checked === p.id} className={cn("rounded-button-md", checked === p.id && "border-border-defined")} onClick={() => setChecked(p.id)}>
 								{p.name}
 							</Button>
 						))}

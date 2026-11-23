@@ -7,7 +7,7 @@ import { Typography } from "@/components/typography/typography";
 import { cn } from "@/lib/utils";
 
 /*
- * Validate's results (prds/sparks-validate.md, "The results"): a scenario-based AI evaluation of the prototype, plus
+ * Evaluate's results (prds/sparks-validate.md, "The results"): a scenario-based AI evaluation of the prototype, plus
  * checks against business data, engineering context, the design system and how teams work. Every result says its
  * method; nothing from AI simulation is shown as research with real people.
  */
@@ -171,7 +171,7 @@ function ScenarioRow({ scenario, status }: { scenario: EvaluationScenario; statu
 }
 
 /**
- * Validate's results beside the conversation (prds/sparks-validate.md, "The results"): which run and prototype version,
+ * Evaluate's results beside the conversation (prds/sparks-validate.md, "The results"): which run and prototype version,
  * the read and the evidence status, then the measures, findings (with "Fix this in the prototype"), the scenarios (each
  * stepped through), assumptions, whether AutoParts Co. can build it, design and accessibility, what changes for teams,
  * and what only real people can tell us. Results fill in as the run goes; it can be stopped. Not in Figma yet.

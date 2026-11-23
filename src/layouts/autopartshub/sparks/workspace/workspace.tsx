@@ -1,5 +1,5 @@
 import * as React from "react";
-import { ArrowLeft, Bell, Check, ChevronDown, FlaskConical, Folder, LoaderCircle, MessageCircle, MousePointerClick, Paperclip, Pencil, Share, Users, X, Zap } from "lucide-react";
+import { ArrowLeft, Bell, Check, ChevronDown, FlaskConical, Folder, LoaderCircle, MessageCircle, MousePointerClick, Paperclip, Pencil, Users, X, Zap } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 
 import { AssistantMessage } from "@/components/chat/assistant-message";
@@ -21,6 +21,7 @@ import { StepNav, StepNavItem } from "@/components/navigation/step-nav";
 import { Button } from "@/components/buttons/button";
 import { EmptyState } from "@/components/feedback/empty-state";
 import { Typography } from "@/components/typography/typography";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/overlays/tooltip";
 import { cn } from "@/lib/utils";
 import {
 	motionDuration,
@@ -39,11 +40,12 @@ import { ProblemCard, type ProblemDraft } from "../plan/problem-card";
 import { DirectionCard, type DirectionDraft } from "../plan/direction-card";
 import { SuccessCard, type SuccessDraft } from "../plan/success-card";
 import { sparksSteps, type SparksStep } from "../shared/steps";
+import type { IdeaComment } from "../review/review-panel";
 import type { PrototypeComment } from "../prototype/prototype-comments";
 import { CommentsPanel } from "./comments-panel";
-import { Blueprint, type BlueprintSection } from "./blueprint";
+import { PlanDocument, type PlanSection } from "./plan-document";
 import { DecisionLog, useDecisionLog, type DecisionEntry } from "./decision-log";
-import { directionActionFor, planDecisions, planSections, type DirectionPaths } from "./plan-sections";
+import { directionActionFor, planDecisions, planSections, type PlanEditing, type DirectionPaths } from "./plan-sections";
 import { SharePopover, type SharePopoverProps } from "./share-popover";
 import { HeaderIconButton } from "../../header-icon-button";
 import { NotificationsPopover, type NotificationsPopoverProps } from "../../notifications-popover";
@@ -133,9 +135,8 @@ type SparksReply = {
 	id: string;
 	from: "sparks";
 	/**
-	 * The step the conversation was on when it came (prds/sparks.md, "Steps in the conversation"). A reply on another step
-	 * than the one before it starts a stretch of that step, marked by a divider above it. Without it, the same step as the
-	 * reply before (Plan for the first).
+	 * The step it came on (prds/sparks.md, "Steps in the conversation"): it shows in that step's conversation, with Dana's
+	 * message it answers. Without it, the same step as the reply before (Plan for the first).
 	 */
 	step?: SparksStep;
 	/** What Sparks works through before it replies, a line at a time ("Popping the hood on support cases…"), shown while it works on a new reply. */
@@ -165,7 +166,7 @@ function SparksReplyView({
 	showQuickReplies: boolean;
 	onQuickReply?: (text: string) => void;
 	onSuggestionEdit?: (part: string, text: string) => void;
-	/** A direction card's call to action ("Generate prototype"), the same as in the Blueprint. */
+	/** A direction card's call to action ("Generate prototype"), the same as in the plan. */
 	directionAction?: ReturnType<typeof directionActionFor>;
 }) {
 	const { prefersReducedMotion } = useMotionPreference();
@@ -278,21 +279,6 @@ function SparksReplyView({
 	);
 }
 
-/**
- * Where the conversation moved to another step: the step's name between two lines, 24px above the reply that starts it.
- * Read as a separator named for the step.
- */
-function StepDivider({ step }: { step: SparksStep }) {
-	const label = sparksSteps.find((s) => s.id === step)?.label ?? step;
-	return (
-		<div role='separator' aria-label={label} className='mb-6 flex items-center gap-3 text-xs font-medium text-muted-foreground'>
-			<span aria-hidden className='h-px flex-1 bg-border' />
-			{label}
-			<span aria-hidden className='h-px flex-1 bg-border' />
-		</div>
-	);
-}
-
 type SparksWorkspaceProps = {
 	user: AutoPartsHubUser;
 	/** The concept's name, in the header. */
@@ -331,6 +317,10 @@ type SparksWorkspaceProps = {
 		prototype?: PrototypeComment[];
 		/** Selecting one opens it on the prototype; without it (no prototype on screen), they're only listed. */
 		onOpenPrototypeComment?: (id: string) => void;
+		/** The reviewers' comments on parts of the idea, listed under "On the idea". */
+		idea?: IdeaComment[];
+		/** Selecting one opens its part in Review. */
+		onOpenIdeaComment?: (id: string) => void;
 	};
 	/** The bell's notifications popover (the same as every AutoPartsHUB header's). */
 	notifications?: NotificationsPopoverProps;
@@ -342,7 +332,7 @@ type SparksWorkspaceProps = {
 	/**
 	 * What shows beside the conversation, e.g. the prototype in the Prototype step (prds/sparks-prototype.md, "Trying
 	 * it"). With it, the conversation narrows to a column on the left and this takes the rest of the width. On Plan once
-	 * Plan is done (a later step reached), the Blueprint shows there unless this is given.
+	 * Plan is done (a later step reached), the PlanDocument shows there unless this is given.
 	 */
 	preview?: React.ReactNode;
 	/**
@@ -356,20 +346,36 @@ type SparksWorkspaceProps = {
 	 */
 	share?: Omit<SharePopoverProps, "children">;
 	/**
-	 * The Blueprint's sections after Plan's (prds/sparks.md, "The Blueprint"): what we built and where each later step
-	 * stands. Plan's come from what she approved in `messages`. The Blueprint is Plan's panel once Plan is done.
+	 * The plan's sections after Plan's (prds/sparks.md, "The finished plan"): what we built and where each later step
+	 * stands. Plan's come from what she approved in `messages`. The PlanDocument is Plan's panel once Plan is done.
 	 */
-	concept?: BlueprintSection[];
+	concept?: PlanSection[];
+	/**
+	 * Editing the PlanDocument (prds/sparks.md, "The finished plan"): her edits to Plan's four summaries and what saving one
+	 * does (`onEdit(part, text, before)`), and its versions, oldest first, with restoring. Without it, it's read only.
+	 */
+	planDocument?: PlanEditing & { versions: { id: string; name: string }[]; onRestore: (id: string) => void };
 	/**
 	 * The decisions after Plan's (prds/sparks.md, "The decision log"): Plan's come from `messages`. The workspace keeps
-	 * every entry it has seen, with when it first appeared, and shows them as "Decisions", last in the Blueprint.
+	 * every entry it has seen, with when it first appeared, and shows them as "Decisions", last in the plan.
 	 */
 	decisions?: DecisionEntry[];
 	/**
-	 * The directions as paths in the prototype (prds/sparks-plan-compare.md, "Directions in the blueprint"): the ones
-	 * built, the one shown, and what the Blueprint's "Choose this one", "Try this one too" and "Open its prototype" do.
+	 * The directions as paths in the prototype (prds/sparks-plan-compare.md, "Directions in the plan"): the ones
+	 * built, the one shown, and what the plan's "Choose this one", "Try this one too" and "Open its prototype" do.
 	 */
 	paths?: DirectionPaths;
+	/**
+	 * Starts the step after the one reached, from its empty state, once it can start (prds/sparks.md, "Steps"): e.g.
+	 * "Evaluate the prototype" once the prototype is built, beside "Back to Prototype". Without it, only "Back to …".
+	 */
+	nextStepAction?: { label: string; onClick: () => void };
+	/**
+	 * "Publish" in the header, after Share (prds/sparks-review.md, "Publishing"): gives the teams who review a fixed copy
+	 * of the idea and its prototype. `label`: "Publish", "Publish update" once she's changed it since, "Published" when
+	 * they have the latest. `hint`: why it can't be selected now (a tooltip), e.g. before there's a prototype.
+	 */
+	publish?: { label: string; onClick?: () => void; disabled?: boolean; hint?: string };
 	/**
 	 * "All ideas" in the menu on the concept's name: closes the concept, back to the Sparks start page in the same tab
 	 * (prds/sparks.md, "The concept workspace").
@@ -386,10 +392,10 @@ const upcomingIcons = { prototype: MousePointerClick, validate: FlaskConical, re
 const sidePanelColumn = "flex w-[512px] min-h-0 shrink-0 flex-col pe-8 pb-6";
 
 /**
- * The header's outlined button, Share: Figma's Button Outlined lg · 36 with a 16px icon on the left (10px in, 6px to the
- * label, 14px after it).
+ * The header's outlined button, Share: Figma's Button Outlined lg · 36, its label alone (sparks.ds "Sparks Project",
+ * 39:1608: 14px each side, sm semibold), no icon.
  */
-const headerButtonClasses = "gap-1.5 rounded-button-lg ps-2.5 pe-3.5 text-sm font-semibold text-foreground shadow-xs";
+const headerButtonClasses = "rounded-button-lg px-3.5 text-sm font-semibold text-foreground shadow-xs";
 
 /**
  * The concept's name in its header (sparks.ds "Sparks Project", 79:7175): xl semibold (20/30), `foreground`, with a 22px chevron, 4px after it, opening a menu:
@@ -494,8 +500,11 @@ function SparksWorkspace({
 	composerContext,
 	share,
 	concept,
+	planDocument: planEditing,
 	decisions,
 	paths,
+	nextStepAction,
+	publish,
 	onClose,
 	onRename,
 }: SparksWorkspaceProps) {
@@ -526,6 +535,41 @@ function SparksWorkspace({
 		observer.observe(scroller);
 		return () => observer.disconnect();
 	}, []);
+	// Steps in the conversation (prds/sparks.md, "Steps in the conversation"): each step shows its own conversation, so
+	// Plan's never shows in Prototype, or the other way round. A reply belongs to the step it came on (without one, the
+	// reply before's; Plan for the first); Dana's message belongs with the reply that answers it ("Generate a prototype…"
+	// starts Prototype's), or, with none yet, with the step she sent it from.
+	const threadStep = currentStep;
+	const stepOf = new Map<string, SparksStep>();
+	{
+		let step: SparksStep = "plan";
+		const waiting: string[] = [];
+		for (const message of messages) {
+			if (message.from === "user") {
+				waiting.push(message.id);
+				continue;
+			}
+			step = message.step ?? step;
+			for (const id of waiting.splice(0)) stepOf.set(id, step);
+			stepOf.set(message.id, step);
+		}
+		for (const id of waiting) stepOf.set(id, threadStep);
+	}
+	const thread = messages.filter((message) => stepOf.get(message.id) === threadStep);
+	const threadLast = thread[thread.length - 1];
+	// Another step's conversation opens at its latest message, at once (a different conversation, not a move in this one).
+	const shownStep = React.useRef(threadStep);
+	// Replies already shown in a step's conversation show whole when she comes back to it: no thinking or streaming again.
+	const settled = React.useRef(new Set<string>());
+	React.useLayoutEffect(() => {
+		if (shownStep.current === threadStep) return;
+		for (const [id, step] of stepOf) if (step === shownStep.current) settled.current.add(id);
+		shownStep.current = threadStep;
+		const latest = threadLast ? itemRefs.current.get(threadLast.id) : undefined;
+		if (latest) scrollIntoViewSmoothly(latest, { reducedMotion: true, align: "nearest" });
+		else scrollRef.current?.scrollTo({ top: 0 });
+	}, [threadStep, threadLast]);
+
 	const last = messages[messages.length - 1];
 	const beforeLast = messages[messages.length - 2];
 	const lastIsNewReply = last?.from === "sparks" && !initialIds.has(last.id);
@@ -547,34 +591,6 @@ function SparksWorkspace({
 	const itemRef = (id: string) => (element: HTMLLIElement | null) => {
 		if (element) itemRefs.current.set(id, element);
 		else itemRefs.current.delete(id);
-	};
-
-	// Steps in the conversation (prds/sparks.md, "Steps in the conversation"): one conversation for the whole concept, with a
-	// divider where it moved to another step. A reply without a step stays on the one before it.
-	const stepStarts = new Map<string, SparksStep>();
-	let conversationStep: SparksStep = "plan";
-	for (const message of messages) {
-		if (message.from !== "sparks") continue;
-		const step: SparksStep = message.step ?? conversationStep;
-		if (step !== conversationStep) stepStarts.set(message.id, step);
-		conversationStep = step;
-	}
-	/**
-	 * Selecting a step she has reached scrolls the conversation to where that step last began (Plan's first stretch starts
-	 * at the introduction). The step the conversation is on now scrolls to its last message instead.
-	 */
-	const introRef = React.useRef<HTMLLIElement>(null);
-	const scrollToStep = (step: SparksStep) => {
-		const latest = step === conversationStep;
-		const startId = [...stepStarts].reverse().find(([, s]) => s === step)?.[0];
-		const element = latest
-			? itemRefs.current.get(messages[messages.length - 1]?.id ?? "")
-			: startId
-				? itemRefs.current.get(startId)
-				: step === "plan"
-					? introRef.current
-					: undefined;
-		if (element) scrollIntoViewSmoothly(element, { reducedMotion: Boolean(prefersReducedMotion), align: latest ? "nearest" : "start" });
 	};
 
 	const send = (text: string) => onSend?.(text);
@@ -606,14 +622,16 @@ function SparksWorkspace({
 		const buttons = itemRefs.current.get(last.id)?.querySelectorAll("button") ?? [];
 		[...buttons].find((button) => notAnswers.has(button.textContent?.trim() ?? ""))?.focus();
 	}, [answering, last]);
-	// The Blueprint and its sections (prds/sparks.md, "The Blueprint"): Plan's panel once Plan is done.
+	// The finished plan and its sections (prds/sparks.md, "The finished plan"): what Plan shows once it's done.
+	// Edit mode: its parts are editable, and the conversation shows beside it; otherwise the plan is on its own.
+	const [editingPlan, setEditingPlan] = React.useState(false);
 	const logged = useDecisionLog([...planDecisions(messages, user.firstName), ...(decisions ?? [])]);
-	const sections: BlueprintSection[] = [
-		...planSections(messages, paths),
+	const sections: PlanSection[] = [
+		...planSections(messages, paths, planEditing ? { ...planEditing, editable: editingPlan } : undefined),
 		...(concept ?? []),
 		...(logged.length ? [{ id: "decisions", title: "Decisions", content: <DecisionLog decisions={logged} /> }] : []),
 	];
-	// A direction's call to action, on its card and in the Blueprint alike.
+	// A direction's call to action, on its card and in the PlanDocument alike.
 	const directionAction = directionActionFor(messages, paths);
 	// Comments: the reviewers' feedback and her comments on the prototype, 480px on the right in every step (DESIGN.md →
 	// "Side panels share one frame"); with no preview, the conversation stays centered in the rest. It opens only from
@@ -630,8 +648,38 @@ function SparksWorkspace({
 	React.useEffect(() => setPeekStep(undefined), [currentStep]);
 	const peeked = sparksSteps.find((step) => step.id === peekStep);
 	const currentLabel = sparksSteps.find((step) => step.id === currentStep)?.label ?? "";
-	// Plan is done once a later step is reached: from then on, Plan's panel is the Blueprint.
-	const blueprint = currentStep === "plan" && reachedIndex > 0 ? <Blueprint sections={sections} /> : undefined;
+	// Plan is done once a later step is reached: from then on, Plan shows the finished plan, on its own; the conversation
+	// shows only in edit mode ("Edit plan"), or when Sparks says something there (an edit's offer, "Build it?" for another
+	// path, going back to the choice). Selecting a step leaves edit mode.
+	const planDone = reachedIndex > 0;
+	React.useEffect(() => setEditingPlan(false), [currentStep]);
+	const repliedTo = React.useRef(last?.id);
+	React.useEffect(() => {
+		if (!last || last.id === repliedTo.current) return;
+		repliedTo.current = last.id;
+		if (currentStep === "plan" && planDone && last.from === "sparks") setEditingPlan(true);
+	}, [last, currentStep, planDone]);
+	// Turning edit mode on brings the conversation's latest message into view.
+	const editPlan = (on: boolean) => {
+		setEditingPlan(on);
+		if (on)
+			requestAnimationFrame(() => {
+				const latest = itemRefs.current.get(threadLast?.id ?? "");
+				if (latest) scrollIntoViewSmoothly(latest, { reducedMotion: Boolean(prefersReducedMotion), align: "nearest" });
+			});
+	};
+	const planView =
+		currentStep === "plan" && planDone ? (
+			<PlanDocument
+				sections={sections}
+				versions={planEditing?.versions}
+				onRestore={planEditing?.onRestore}
+				editing={editingPlan}
+				onEditingChange={planEditing ? editPlan : undefined}
+			/>
+		) : undefined;
+	// The finished plan on its own, or a step not reached yet (its empty state): no conversation, no message box.
+	const conversationHidden = Boolean(peeked?.upcoming) || (Boolean(planView) && !previewProp && !editingPlan);
 	const preview = peeked?.upcoming ? (
 		<section aria-label={peeked.label} className='flex min-h-0 flex-1 flex-col rounded-card bg-background-subtle p-4'>
 			<EmptyState
@@ -642,12 +690,24 @@ function SparksWorkspace({
 				})}
 				title={peeked.upcoming.title}
 				description={peeked.upcoming.description}
-				buttonLabel={`Back to ${currentLabel}`}
-				buttonProps={{ onClick: () => setPeekStep(undefined) }}
+				// The next step, once it can start (Evaluate, with the prototype built): its action, and "Back to …" beside it.
+				{...(nextStepAction && sparksSteps.findIndex((step) => step.id === peeked.id) === reachedIndex + 1
+					? {
+							buttonLabel: nextStepAction.label,
+							buttonProps: {
+								onClick: () => {
+									setPeekStep(undefined);
+									nextStepAction.onClick();
+								},
+							},
+							secondaryButtonLabel: `Back to ${currentLabel}`,
+							secondaryButtonProps: { onClick: () => setPeekStep(undefined) },
+						}
+					: { buttonLabel: `Back to ${currentLabel}`, buttonProps: { onClick: () => setPeekStep(undefined) } })}
 			/>
 		</section>
 	) : (
-		(previewProp ?? blueprint)
+		(previewProp ?? planView)
 	);
 	const centered = !preview;
 
@@ -680,9 +740,8 @@ function SparksWorkspace({
 								onClick={() => {
 									if (index > reachedIndex) return setPeekStep(step.id);
 									setPeekStep(undefined);
+									// Its own conversation opens at its latest message.
 									if (step.id !== currentStep) onStepSelect?.(step.id);
-									// After the layout changes (the Blueprint or the prototype beside the conversation).
-									requestAnimationFrame(() => scrollToStep(step.id));
 								}}
 							>
 								{step.label}
@@ -692,7 +751,7 @@ function SparksWorkspace({
 				}
 			>
 				{/* Figma "Right" (sparks.ds "Sparks Project", 32:1145): Comments, notifications, then Share. No "Blueprint": the
-				    Blueprint is Plan's panel once Plan is done (prds/sparks.md, "The Blueprint"). No close button: "All ideas"
+				    PlanDocument is Plan's panel once Plan is done (prds/sparks.md, "The finished plan"). No close button: "All ideas"
 				    goes back to the start page. */}
 				<HeaderIconButton
 					ref={commentsButtonRef}
@@ -710,15 +769,43 @@ function SparksWorkspace({
 						<Bell aria-hidden />
 					</HeaderIconButton>
 				)}
-				{/* "Share", in every step (prds/sparks.md, "Sharing a concept"): Figma's Share, Button Outlined lg · 36, its icon
-				    on the left. No avatars beside it (32:1145): who has access is in Share's popover. */}
+				{/* "Share", in every step (prds/sparks.md, "Sharing a concept"): Figma's Share, Button Outlined lg · 36, its label
+				    alone (no icon). No avatars beside it (32:1145): who has access is in Share's popover. */}
 				{share ? (
 					<SharePopover {...share}>
 						<Button variant='outline' className={headerButtonClasses}>
-							<Share aria-hidden />
 							Share
 						</Button>
 					</SharePopover>
+				) : null}
+				{/* "Publish", last (sparks.ds "Sparks Project" with Publish): Button Solid · Neutral lg · 36, the header's
+				    button sizes. Share is for people working on the idea with her (the live version); Publish is for the teams
+				    who review and decide (a fixed version). Unavailable, it says why in a tooltip (a disabled button gets no
+				    hover, so the tooltip sits on a wrapper that takes focus). */}
+				{publish ? (
+					publish.disabled && publish.hint ? (
+						<Tooltip>
+							<TooltipTrigger asChild>
+								<span tabIndex={0} className='rounded-button-lg outline-none focus-visible:ring-2 focus-visible:ring-ring'>
+									<Button variant='neutral' disabled className={cn(headerButtonClasses, "text-neutral-foreground")}>
+										{publish.label}
+									</Button>
+								</span>
+							</TooltipTrigger>
+							<TooltipContent side='bottom' sideOffset={6}>
+								{publish.hint}
+							</TooltipContent>
+						</Tooltip>
+					) : (
+						<Button
+							variant='neutral'
+							disabled={publish.disabled}
+							onClick={publish.onClick}
+							className={cn(headerButtonClasses, "text-neutral-foreground")}
+						>
+							{publish.label}
+						</Button>
+					)
 				) : null}
 			</AppHeader>
 
@@ -727,16 +814,28 @@ function SparksWorkspace({
 			    the scrollbar sits at the page's edge and the text scrolls up to the header. */}
 			{/* With a preview (the prototype), the conversation is a 480px column on the left and the preview takes the rest. */}
 			<main className='flex min-h-0 flex-1'>
-			<div className={cn("flex min-h-0 flex-col", preview ? "w-[480px] shrink-0" : "min-w-0 flex-1")}>
+			{/* Hidden, not removed, beside the finished plan: replies keep coming in and the scroll position stays. */}
+			{/* Beside a preview, the narrow column's text is 15px instead of 16px: messages, cards and the message box (every
+			    `text-base` inside it; DESIGN.md → "The conversation beside a preview is 15px"). */}
+			<div
+				className={cn(
+					"flex min-h-0 flex-col",
+					preview ? "w-[480px] shrink-0 [&_.text-base]:text-[15px]" : "min-w-0 flex-1",
+					conversationHidden && "hidden",
+				)}
+			>
 				<div ref={scrollRef} className='scrollbar-subtle min-h-0 flex-1 overflow-y-auto px-8'>
 					<div className='mx-auto w-full max-w-[728px]'>
 						<ol aria-label='Conversation' aria-live='polite' className='flex flex-col gap-4'>
-							{/* The introduction: first in every concept, 32px above what follows it. */}
-							<li ref={introRef} className={cn("mb-4", centered && "pe-16")}>
-								<AssistantMessage text={sparksIntroduction(user.firstName)} stream={isNew && messages.length === 0} />
-							</li>
+							{/* The introduction: first in every concept, in Plan's conversation, 32px above what follows it. */}
+							{threadStep === "plan" ? (
+								<li className={cn("mb-4", centered && "pe-16")}>
+									<AssistantMessage text={sparksIntroduction(user.firstName)} stream={isNew && messages.length === 0} />
+								</li>
+							) : null}
+							{/* Only this step's conversation; the index stays the whole conversation's (quick replies only on the latest). */}
 							{messages.map((message, index) =>
-								message.from === "user" ? (
+								stepOf.get(message.id) !== threadStep ? null : message.from === "user" ? (
 									// Dana's messages sit on the right (UserMessage caps itself at 80% of the column).
 									// 32px below it, as below Sparks's replies (the list's 16px gap plus mb-4).
 									<li
@@ -765,10 +864,9 @@ function SparksWorkspace({
 												: undefined
 										}
 									>
-										{stepStarts.has(message.id) ? <StepDivider step={stepStarts.get(message.id)!} /> : null}
 										<SparksReplyView
 											reply={message}
-											animate={!initialIds.has(message.id)}
+											animate={!initialIds.has(message.id) && !settled.current.has(message.id)}
 											showQuickReplies={index === messages.length - 1}
 											onQuickReply={send}
 											onSuggestionEdit={
@@ -854,7 +952,7 @@ function SparksWorkspace({
 					/>
 				</div>
 			</div>
-			{preview ? <div className='flex min-h-0 min-w-0 flex-1 flex-col pr-8 pb-6'>{preview}</div> : null}
+			{preview ? <div className={cn("flex min-h-0 min-w-0 flex-1 flex-col pr-8 pb-6", conversationHidden && "ps-8")}>{preview}</div> : null}
 			{/* The Comments panel, on the right of whatever's open; it slides in (fades, with reduced motion). */}
 			<AnimatePresence initial={false}>
 				{commentsOpen ? (
@@ -873,6 +971,8 @@ function SparksWorkspace({
 							onRead={comments?.onRead}
 							prototypeComments={comments?.prototype}
 							onOpenPrototypeComment={comments?.onOpenPrototypeComment}
+							ideaComments={comments?.idea}
+							onOpenIdeaComment={comments?.onOpenIdeaComment}
 							onClose={closeComments}
 							autoFocus
 						/>

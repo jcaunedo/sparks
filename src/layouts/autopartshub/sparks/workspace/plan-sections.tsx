@@ -1,20 +1,20 @@
 import { Badge } from "@/components/data-display/badge";
 import { Button } from "@/components/buttons/button";
 
-import { BriefCard } from "../plan/brief-card";
-import { ChosenCard } from "../plan/chosen-card";
+import { briefSummary } from "../plan/brief-card";
+import { chosenSummary } from "../plan/chosen-card";
 import type { DirectionDraft } from "../plan/direction-card";
-import { ProblemCard } from "../plan/problem-card";
-import { SuccessCard } from "../plan/success-card";
-import type { BlueprintSection } from "./blueprint";
+import { problemSummary } from "../plan/problem-card";
+import { successSummary } from "../plan/success-card";
+import { PlanText, type PlanEdits, type PlanPartId, type PlanSection } from "./plan-document";
 import type { DecisionEntry } from "./decision-log";
 import type { SparksMessage, SparksReplyPart } from "./workspace";
 
 /*
- * Plan's sections in the Blueprint (prds/sparks.md, "The Blueprint"): what Dana approved in the conversation,
+ * Plan's sections in the PlanDocument (prds/sparks.md, "The finished plan"): what Dana approved in the conversation,
  * taken from the latest draft of each part. The problem, what we know, what success looks like and what we'll build
  * show the same summaries as the conversation; the directions are listed compactly, with Sparks's pick and the one she
- * chose, as soon as Sparks shows them, each with its action (prds/sparks-plan-compare.md, "Directions in the blueprint").
+ * chose, as soon as Sparks shows them, each with its action (prds/sparks-plan-compare.md, "Directions in the plan").
  */
 
 /**
@@ -25,7 +25,7 @@ import type { SparksMessage, SparksReplyPart } from "./workspace";
 type DirectionPaths = { built: string[]; active?: string; onRun: (direction: DirectionDraft) => void };
 
 /**
- * A direction's call to action, the same on its card in the conversation and in the Blueprint: "Generate prototype"
+ * A direction's call to action, the same on its card in the conversation and in the plan: "Generate prototype"
  * (before Plan is done it picks the direction, and "What we'll build" comes first; after, Sparks offers to build it as
  * another path), or "Open prototype" once it's built. None for the direction already picked while Plan is open.
  */
@@ -131,20 +131,51 @@ function DirectionsSummary({
 	);
 }
 
+/** Editing Plan's parts in the plan: her edits so far, and what saving one does. */
+type PlanEditing = {
+	edits: PlanEdits;
+	onEdit: (part: PlanPartId, text: string, before: string) => void;
+	/** Edit mode is on: the parts take the caret. Off, they read as the summaries, edits included. */
+	editable?: boolean;
+};
+
+/** The titles of Plan's parts, in the PlanDocument, the Versions menu and what Sparks says about an edit. */
+const planPartTitles: Record<PlanPartId, string> = {
+	problem: "The problem",
+	brief: "What we know",
+	success: "What success looks like",
+	chosen: "What we'll build",
+};
+
 /**
  * Plan's sections reached so far: each one once it's in her concept (the problem, what we know, what success looks
- * like, approved; the directions, as soon as Sparks shows them; what we'll build, approved).
+ * like, approved; the directions, as soon as Sparks shows them; what we'll build, approved). The four summaries are
+ * editable in place with `editing` (prds/sparks.md, "The finished plan"); her edit replaces Sparks's summary from then on.
  */
-function planSections(messages: SparksMessage[], paths?: DirectionPaths): BlueprintSection[] {
-	const sections: BlueprintSection[] = [];
+function planSections(messages: SparksMessage[], paths?: DirectionPaths, editing?: PlanEditing): PlanSection[] {
+	const sections: PlanSection[] = [];
+	const part = (id: PlanPartId, summary: { text: string; sources?: string }): PlanSection => {
+		const edit = editing?.edits[id];
+		return {
+			id,
+			title: planPartTitles[id],
+			content: (
+				<PlanText
+					label={planPartTitles[id]}
+					text={edit ?? summary.text}
+					sources={summary.sources}
+					edited={edit !== undefined}
+					onCommit={editing?.editable ? (text, before) => editing.onEdit(id, text, before) : undefined}
+				/>
+			),
+		};
+	};
 	const problem = latest(messages, "problem");
-	if (problem?.problem.approved)
-		sections.push({ id: "problem", title: "The problem", content: <ProblemCard problem={problem.problem} compact /> });
+	if (problem?.problem.approved) sections.push(part("problem", problemSummary(problem.problem)));
 	const brief = latest(messages, "brief");
-	if (brief?.brief.approved) sections.push({ id: "brief", title: "What we know", content: <BriefCard brief={brief.brief} compact /> });
+	if (brief?.brief.approved) sections.push(part("brief", briefSummary(brief.brief)));
 	const success = latest(messages, "success");
-	if (success?.success.approved)
-		sections.push({ id: "success", title: "What success looks like", content: <SuccessCard success={success.success} compact /> });
+	if (success?.success.approved) sections.push(part("success", successSummary(success.success)));
 	const chosen = latest(messages, "chosen");
 	const directions = directionsIn(messages);
 	if (directions.length)
@@ -153,8 +184,7 @@ function planSections(messages: SparksMessage[], paths?: DirectionPaths): Bluepr
 			title: "Directions",
 			content: <DirectionsSummary directions={directions} chosen={chosen?.chosen.name} paths={paths} actionFor={directionActionFor(messages, paths)} />,
 		});
-	if (chosen?.chosen.approved)
-		sections.push({ id: "chosen", title: "What we'll build", content: <ChosenCard chosen={chosen.chosen} compact /> });
+	if (chosen?.chosen.approved) sections.push(part("chosen", chosenSummary(chosen.chosen)));
 	return sections;
 }
 
@@ -179,7 +209,7 @@ function planDecisions(messages: SparksMessage[], who: string): DecisionEntry[] 
 			entries.push({
 				id: "plan-target-kept",
 				what: "Kept the target over the data",
-				detail: `${target.text} It's marked as an assumption for Validate to check.`,
+				detail: `${target.text} It's marked as an assumption for Evaluate to check.`,
 				who,
 				step: "Plan",
 			});
@@ -211,4 +241,18 @@ function planDecisions(messages: SparksMessage[], who: string): DecisionEntry[] 
 	return entries;
 }
 
-export { type DirectionPaths, directionActionFor, planDecisions, planSections };
+/** The text a part shows now: her edit, or Sparks's summary. What an edit is compared with. */
+function planPartText(messages: SparksMessage[], id: PlanPartId, edits: PlanEdits = {}) {
+	const edit = edits[id];
+	if (edit !== undefined) return edit;
+	const problem = latest(messages, "problem");
+	const brief = latest(messages, "brief");
+	const success = latest(messages, "success");
+	const chosen = latest(messages, "chosen");
+	if (id === "problem") return problem ? problemSummary(problem.problem).text : "";
+	if (id === "brief") return brief ? briefSummary(brief.brief).text : "";
+	if (id === "success") return success ? successSummary(success.success).text : "";
+	return chosen ? chosenSummary(chosen.chosen).text : "";
+}
+
+export { type PlanEditing, type DirectionPaths, planPartTitles, directionActionFor, planDecisions, planPartText, planSections };

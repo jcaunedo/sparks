@@ -1,9 +1,10 @@
 import * as React from "react";
-import { ArrowUp, Trash2 } from "lucide-react";
+import { ArrowUp, CircleCheck, RotateCcw, Trash2 } from "lucide-react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/data-display/avatar";
 import { Button } from "@/components/buttons/button";
 import { Popover, PopoverAnchor, PopoverContent, PopoverTrigger } from "@/components/overlays/popover";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/overlays/tooltip";
 import { formatRelativeDate } from "@/lib/relative-date";
 import { cn } from "@/lib/utils";
 
@@ -12,7 +13,11 @@ import { cn } from "@/lib/utils";
  * prototype drops a pin there and opens a popover to write the comment; once added, the pin stays. Not in Figma yet.
  */
 
-type PrototypeCommentAuthor = { name: string; avatarSrc?: string };
+/** Who wrote it: name and photo, and for a reviewer their team ("UX team"), shown after the name. */
+type PrototypeCommentAuthor = { name: string; avatarSrc?: string; role?: string };
+
+/** A reply in a comment's thread. */
+type PrototypeCommentReply = { id: string; text: string; createdAt: string; author: PrototypeCommentAuthor };
 
 /**
  * Where a comment sits: an element she can point at (`point`, so the pin comes back when its screen does), or else the
@@ -31,6 +36,10 @@ type PrototypeComment = CommentAnchor & {
 	text: string;
 	createdAt: string;
 	author: PrototypeCommentAuthor;
+	/** The thread: replies, oldest first. */
+	replies?: PrototypeCommentReply[];
+	/** Marked as resolved: its pin leaves the prototype (it shows again when it's opened from the Comments panel). */
+	resolved?: boolean;
 };
 
 type PrototypeCommentsProps = {
@@ -41,7 +50,10 @@ type PrototypeCommentsProps = {
 	scope: CommentScope;
 	comments: PrototypeComment[];
 	onAdd: (comment: PrototypeComment) => void;
+	/** Deleting a comment: only `author`'s own. */
 	onDelete: (id: string) => void;
+	/** A reply added, or the comment resolved or reopened. Without it, the thread is read-only. */
+	onUpdate?: (comment: PrototypeComment) => void;
 	/** The comment whose popover is open, e.g. opened from the Comments panel; with `onOpenChange`, controlled. */
 	openId?: string;
 	onOpenChange?: (id: string | undefined) => void;
@@ -89,7 +101,7 @@ function Pin({ author, open, className, ...props }: React.ComponentProps<"button
 }
 
 /** The box she writes in: Enter adds the comment, Shift+Enter a new line, Esc (the popover's) drops it. */
-function CommentForm({ onSubmit }: { onSubmit: (text: string) => void }) {
+function CommentForm({ onSubmit, label = "Comment", placeholder = "Add a comment", autoFocus = true, rows = 3 }: { onSubmit: (text: string) => void; label?: string; placeholder?: string; autoFocus?: boolean; rows?: number }) {
 	const [text, setText] = React.useState("");
 	const submit = () => text.trim() && onSubmit(text.trim());
 	return (
@@ -97,25 +109,27 @@ function CommentForm({ onSubmit }: { onSubmit: (text: string) => void }) {
 			onSubmit={(event) => {
 				event.preventDefault();
 				submit();
+				setText("");
 			}}
 		>
 			<textarea
-				autoFocus
-				aria-label='Comment'
-				placeholder='Add a comment'
-				rows={3}
+				autoFocus={autoFocus}
+				aria-label={label}
+				placeholder={placeholder}
+				rows={rows}
 				value={text}
 				onChange={(event) => setText(event.target.value)}
 				onKeyDown={(event) => {
 					if (event.key === "Enter" && !event.shiftKey) {
 						event.preventDefault();
 						submit();
+						setText("");
 					}
 				}}
 				className='block w-full resize-none bg-transparent px-4 pt-4 text-sm text-foreground outline-none placeholder:text-muted-foreground'
 			/>
 			<div className='flex justify-end border-t border-border px-3 py-2'>
-				<Button type='submit' size='icon' aria-label='Add comment' disabled={!text.trim()} className='size-8 rounded-full'>
+				<Button type='submit' size='icon' aria-label={label === "Comment" ? "Add comment" : `Send ${label.toLowerCase()}`} disabled={!text.trim()} className='size-8 rounded-full'>
 					<ArrowUp aria-hidden />
 				</Button>
 			</div>
@@ -123,11 +137,49 @@ function CommentForm({ onSubmit }: { onSubmit: (text: string) => void }) {
 	);
 }
 
+/** One message in a thread: avatar, name, team, when, then the text. */
+function ThreadEntry({ author, createdAt, text, actions }: { author: PrototypeCommentAuthor; createdAt: string; text: string; actions?: React.ReactNode }) {
+	const time = formatRelativeDate(createdAt);
+	return (
+		<div className='flex flex-col gap-1'>
+			<div className='flex items-center gap-2'>
+				<Avatar className='size-6'>
+					{author.avatarSrc ? <AvatarImage src={author.avatarSrc} alt='' /> : null}
+					<AvatarFallback className='text-[10px]'>{initials(author.name)}</AvatarFallback>
+				</Avatar>
+				<span className='text-sm font-semibold text-foreground'>{author.name}</span>
+				{author.role ? <span className='text-xs text-muted-foreground'>{author.role}</span> : null}
+				<time dateTime={createdAt} title={time.title} className='text-xs text-muted-foreground'>
+					{time.label}
+				</time>
+				{actions ? <span className='ms-auto flex items-center gap-0.5'>{actions}</span> : null}
+			</div>
+			<p className='ps-8 text-sm whitespace-pre-line text-foreground'>{text}</p>
+		</div>
+	);
+}
+
+/** A small icon action in a thread's header, named in a tooltip. */
+function ThreadAction({ label, onClick, children }: { label: string; onClick: () => void; children: React.ReactNode }) {
+	return (
+		<Tooltip>
+			<TooltipTrigger asChild>
+				<Button variant='ghost' size='icon' aria-label={label} className='size-7 text-icon' onClick={onClick}>
+					{children}
+				</Button>
+			</TooltipTrigger>
+			<TooltipContent side='bottom' sideOffset={6}>
+				{label}
+			</TooltipContent>
+		</Tooltip>
+	);
+}
+
 /**
  * The prototype with its comment pins over it. The pins sit in a layer of their own beside the screens, placed from the
  * element each is anchored to, and move with it as the screen changes or scrolls.
  */
-function PrototypeComments({ active, author, scope, comments, onAdd, onDelete, openId: openIdProp, onOpenChange, children }: PrototypeCommentsProps) {
+function PrototypeComments({ active, author, scope, comments, onAdd, onDelete, onUpdate, openId: openIdProp, onOpenChange, children }: PrototypeCommentsProps) {
 	const contentRef = React.useRef<HTMLDivElement>(null);
 	const wrapperRef = React.useRef<HTMLDivElement>(null);
 	const [draft, setDraft] = React.useState<CommentAnchor | null>(null);
@@ -135,7 +187,8 @@ function PrototypeComments({ active, author, scope, comments, onAdd, onDelete, o
 	const openId = onOpenChange ? openIdProp : openIdState;
 	const setOpenId = onOpenChange ?? setOpenIdState;
 	const [positions, setPositions] = React.useState<Record<string, { x: number; y: number } | null>>({});
-	const shown = comments.filter((comment) => comment.scope.key === scope.key);
+	// Resolved comments leave the prototype, unless one is opened (from the Comments panel).
+	const shown = comments.filter((comment) => comment.scope.key === scope.key && (!comment.resolved || comment.id === openId));
 
 	// Where an anchor is now, in the layer's coordinates; null while its element isn't on screen.
 	const place = React.useCallback((anchor: CommentAnchor) => {
@@ -226,35 +279,76 @@ function PrototypeComments({ active, author, scope, comments, onAdd, onDelete, o
 							<Pin
 								author={comment.author}
 								open={openId === comment.id}
-								aria-label={`${comment.author.name}'s comment: ${comment.text}`}
+								aria-label={`${comment.author.name}'s comment: ${comment.text}${comment.replies?.length ? `, ${comment.replies.length} ${comment.replies.length === 1 ? "reply" : "replies"}` : ""}`}
 								style={{ left: at.x, top: at.y }}
 							/>
 						</PopoverTrigger>
-						<PopoverContent side='bottom' align='start' sideOffset={8} className='flex w-80 flex-col gap-2'>
-							<div className='flex items-center gap-2'>
-								<Avatar className='size-6'>
-									{comment.author.avatarSrc ? <AvatarImage src={comment.author.avatarSrc} alt='' /> : null}
-									<AvatarFallback className='text-[10px]'>{initials(comment.author.name)}</AvatarFallback>
-								</Avatar>
-								<span className='text-sm font-semibold text-foreground'>{comment.author.name}</span>
-								<time dateTime={comment.createdAt} title={time.title} className='text-xs text-muted-foreground'>
-									{time.label}
-								</time>
-								<Button
-									variant='ghost'
-									size='icon'
-									aria-label='Delete comment'
-									title='Delete comment'
-									className='ms-auto size-7 text-icon'
-									onClick={() => {
-										onDelete(comment.id);
-										setOpenId(undefined);
-									}}
-								>
-									<Trash2 aria-hidden />
-								</Button>
+						{/* The thread: the comment, its replies, a box to reply; resolve or reopen, and delete her own. */}
+						<PopoverContent side='bottom' align='start' sideOffset={8} aria-label={`${comment.author.name}'s comment`} className='flex w-80 flex-col gap-3 p-0'>
+							<div className='flex flex-col gap-3 px-4 pt-4'>
+								{comment.resolved ? (
+									<p className='flex items-center gap-1.5 text-xs font-medium text-success'>
+										<CircleCheck aria-hidden className='size-3.5' /> Resolved
+									</p>
+								) : null}
+								<ThreadEntry
+									author={comment.author}
+									createdAt={comment.createdAt}
+									text={comment.text}
+									actions={
+										<>
+											{onUpdate ? (
+												comment.resolved ? (
+													<ThreadAction label='Reopen' onClick={() => onUpdate({ ...comment, resolved: false })}>
+														<RotateCcw aria-hidden />
+													</ThreadAction>
+												) : (
+													<ThreadAction
+														label='Mark as resolved'
+														onClick={() => {
+															onUpdate({ ...comment, resolved: true });
+															setOpenId(undefined);
+														}}
+													>
+														<CircleCheck aria-hidden />
+													</ThreadAction>
+												)
+											) : null}
+											{comment.author.name === author.name ? (
+												<ThreadAction
+													label='Delete comment'
+													onClick={() => {
+														onDelete(comment.id);
+														setOpenId(undefined);
+													}}
+												>
+													<Trash2 aria-hidden />
+												</ThreadAction>
+											) : null}
+										</>
+									}
+								/>
+								{(comment.replies ?? []).map((reply) => (
+									<ThreadEntry key={reply.id} author={reply.author} createdAt={reply.createdAt} text={reply.text} />
+								))}
 							</div>
-							<p className='text-sm whitespace-pre-line text-foreground'>{comment.text}</p>
+							{onUpdate ? (
+								<div className='border-t border-border'>
+									<CommentForm
+										label='Reply'
+										placeholder='Reply'
+										rows={1}
+										autoFocus={false}
+										onSubmit={(text) =>
+											onUpdate({
+												...comment,
+												resolved: false,
+												replies: [...(comment.replies ?? []), { id: `reply-${Date.now()}`, text, createdAt: new Date().toISOString(), author }],
+											})
+										}
+									/>
+								</div>
+							) : null}
 						</PopoverContent>
 					</Popover>
 				);
@@ -287,4 +381,4 @@ function PrototypeComments({ active, author, scope, comments, onAdd, onDelete, o
 	);
 }
 
-export { PrototypeComments, type CommentScope, type PrototypeComment, type PrototypeCommentAuthor, type PrototypeCommentsProps };
+export { PrototypeComments, type CommentScope, type PrototypeComment, type PrototypeCommentAuthor, type PrototypeCommentReply, type PrototypeCommentsProps };

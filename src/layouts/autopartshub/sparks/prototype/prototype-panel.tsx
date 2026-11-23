@@ -1,5 +1,5 @@
 import * as React from "react";
-import { History, Maximize2, MessageCirclePlus, Monitor, MousePointerClick, RotateCcw, Smartphone } from "lucide-react";
+import { Maximize2, TriangleAlert, MessageCirclePlus, Monitor, MousePointerClick, RotateCcw, Smartphone } from "lucide-react";
 
 import { Button } from "@/components/buttons/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/forms/select";
@@ -7,6 +7,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/overlays/t
 import { cn } from "@/lib/utils";
 
 import { HeaderIconButton } from "../../header-icon-button";
+import { VersionsMenu } from "../shared/versions-menu";
 import { PrototypeComments, type PrototypeComment, type PrototypeCommentAuthor } from "./prototype-comments";
 
 type PrototypeAudience = { id: string; label: string; /** The device it suits (customers on a phone, staff at the counter); the prototype opens on the first audience's, and switching audience keeps the device. */ device: PrototypeDevice };
@@ -42,6 +43,11 @@ type PrototypePanelProps = {
 	paths?: { id: string; label: string }[];
 	path?: string;
 	onPathChange?: (id: string) => void;
+	/**
+	 * A note above the prototype, e.g. that it was built from an earlier version of the plan (prds/sparks-prototype.md, "When the
+	 * plan changes"), with an optional action ("Update prototype"). It stays until the story clears it.
+	 */
+	notice?: { text: string; actionLabel?: string; onAction?: () => void };
 	/** Open a comment's pin (from the Comments panel): shows its audience and device and opens its popover. */
 	openComment?: string;
 	onOpenCommentChange?: (id: string | undefined) => void;
@@ -104,69 +110,6 @@ function Switcher<T extends string>({
  * versions, "Start over" (fresh sample data) and "Try it full screen" (Esc or "Back to Sparks" returns, focus back on the
  * button), with the prototype in a phone or desktop frame. Not in Figma yet.
  */
-/** The versions, newest first, each restorable but the current one. Closes on Esc or a click outside. */
-function VersionsMenu({ versions, onRestore }: { versions: { id: string; name: string }[]; onRestore?: (id: string) => void }) {
-	const [open, setOpen] = React.useState(false);
-	const ref = React.useRef<HTMLDivElement>(null);
-	const listId = React.useId();
-	React.useEffect(() => {
-		if (!open) return;
-		const close = (event: MouseEvent | KeyboardEvent) => {
-			if (event instanceof KeyboardEvent ? event.key === "Escape" : !ref.current?.contains(event.target as Node)) setOpen(false);
-		};
-		window.addEventListener("mousedown", close);
-		window.addEventListener("keydown", close);
-		return () => {
-			window.removeEventListener("mousedown", close);
-			window.removeEventListener("keydown", close);
-		};
-	}, [open]);
-	const newestFirst = [...versions].reverse();
-	return (
-		<div ref={ref} className='relative'>
-			<HeaderIconButton
-				label={`Versions (${versions.length})`}
-				aria-expanded={open}
-				aria-controls={listId}
-				onClick={() => setOpen((value) => !value)}
-			>
-				<History aria-hidden />
-			</HeaderIconButton>
-			{open ? (
-				<ol
-					id={listId}
-					aria-label='Versions, newest first'
-					className='absolute right-0 z-20 mt-1 flex max-h-80 w-80 flex-col overflow-y-auto rounded-card border border-border bg-background p-1 shadow-lg'
-				>
-					{newestFirst.map((version, index) => (
-						<li key={version.id} className='flex items-center justify-between gap-3 rounded-md px-3 py-2 text-sm'>
-							<span className='flex min-w-0 flex-col'>
-								<span className='truncate text-foreground' title={version.name}>{version.name}</span>
-								<span className='text-xs text-muted-foreground'>Version {versions.length - index}</span>
-							</span>
-							{index === 0 ? (
-								<span className='shrink-0 text-xs text-muted-foreground'>Current</span>
-							) : (
-								<Button
-									variant='outline'
-									size='sm'
-									className='shrink-0 rounded-button-md'
-									onClick={() => {
-										onRestore?.(version.id);
-										setOpen(false);
-									}}
-								>
-									Restore
-								</Button>
-							)}
-						</li>
-					))}
-				</ol>
-			) : null}
-		</div>
-	);
-}
-
 function PrototypePanel({
 	audiences,
 	readyScreens,
@@ -176,6 +119,7 @@ function PrototypePanel({
 	onPointingChange,
 	versions = [],
 	onRestore,
+	notice,
 	commentAuthor,
 	comments: commentsProp,
 	onCommentsChange,
@@ -257,6 +201,7 @@ function PrototypePanel({
 						comments={comments}
 						onAdd={(comment) => setComments((current) => [...current, comment])}
 						onDelete={(id) => setComments((current) => current.filter((comment) => comment.id !== id))}
+						onUpdate={(updated) => setComments((current) => current.map((comment) => (comment.id === updated.id ? updated : comment)))}
 						openId={onOpenCommentChange ? openComment : undefined}
 						onOpenChange={onOpenCommentChange}
 					>
@@ -273,13 +218,14 @@ function PrototypePanel({
 		<section aria-label='Prototype' className={cn("flex min-h-0 flex-1 flex-col gap-3 rounded-card bg-background-subtle p-4", className)}>
 			{/* Three parts: the direction (or the path switcher) on the left, the audience and device together in the middle
 			    (centered on the panel: both sides take an equal share), the actions on the right. When the panel is narrow
-			    (beside the Blueprint), the actions keep their width and the direction's name truncates. */}
+			    (beside the plan), the actions keep their width and the direction's name truncates. */}
 			<div className='grid grid-cols-[1fr_auto_1fr] items-center gap-4'>
 				<div className='flex min-w-0 items-center gap-2'>
 					{/* Which direction this is, numbered as on its card: its name with one path; with more, the switcher in
-					    the same place (the directions she's built, in the order built). */}
+					    the same place (the directions she's built, in the order built). The name in the style of a heading in
+					    Sparks's messages ("Ready for me to put it through its paces?"): base semibold, foreground-prominent. */}
 					{paths.length === 1 ? (
-						<h2 className='min-w-0 truncate text-sm font-semibold text-foreground' title={paths[0].label}>
+						<h2 className='min-w-0 truncate text-base font-semibold text-foreground-prominent' title={paths[0].label}>
 							{paths[0].label}
 						</h2>
 					) : null}
@@ -359,6 +305,18 @@ function PrototypePanel({
 					</HeaderIconButton>
 				</div>
 			</div>
+			{/* The prototype isn't in step with the plan: what changed, and the way to update it. */}
+			{notice ? (
+				<div role='status' className='flex items-center gap-3 rounded-lg border border-warning-muted bg-warning-subtle px-3 py-2 text-sm text-foreground'>
+					<TriangleAlert aria-hidden className='size-4 shrink-0 text-warning' />
+					<span className='min-w-0 flex-1'>{notice.text}</span>
+					{notice.actionLabel && notice.onAction ? (
+						<Button variant='outline' size='sm' className='shrink-0 rounded-button-md bg-background shadow-xs' onClick={notice.onAction}>
+							{notice.actionLabel}
+						</Button>
+					) : null}
+				</div>
+			) : null}
 			{fullScreen ? null : frame}
 			{fullScreen ? (
 				<div role='dialog' aria-modal='true' aria-label='Prototype, full screen' className='fixed inset-0 z-50 flex flex-col gap-3 bg-background-subtle p-4'>

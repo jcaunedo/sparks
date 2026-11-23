@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 
 import { StepNav, StepNavItem } from "./step-nav";
 
-const steps = ["Plan", "Prototype", "Validate", "Review"] as const;
+const steps = ["Plan", "Prototype", "Evaluate", "Review"] as const;
 
 const meta = {
 	title: "Navigation/StepNav",

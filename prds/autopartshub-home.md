@@ -1,7 +1,7 @@
 <!--
 Created: Nov 20, 2026
 Created by: Julio Caunedo
-Last updated: Nov 22, 2026 (selecting a notification opens its concept; notifications open a popover, with Unread and All; Sparks's "Add from library" opens the home on "My library"; the "Knowledge" tab is named "My library"; a notifications button in the header, before the profile photo; Cards open their app in a new tab)
+Last updated: Nov 22, 2026 (the second tab is "My library" again; ~~the tabs are "Apps" and "Library", without "My"~~; selecting a notification opens its concept; notifications open a popover, with Unread and All; Sparks's "Add from library" opens the home on "My library"; the "Knowledge" tab is named "My library"; a notifications button in the header, before the profile photo; Cards open their app in a new tab)
 Scope: the AutoPartsHUB home screen (`AutoPartsHubHome`) and the app frame it sits in (`AutoPartsHubShell`): header, welcome, tabs and the user's apps.
 Purpose: defines what a signed-in user sees and can do on AutoPartsHUB's first screen, and records what's still undecided for the tabs that aren't designed yet.
 -->
@@ -13,7 +13,7 @@ Purpose: defines what a signed-in user sees and can do on AutoPartsHUB's first s
 **Description:** a start page that welcomes the user and opens each app they have access to.
 **Source:** `src/layouts/autopartshub/home/home.tsx`, inside `src/layouts/autopartshub/autopartshub.tsx`
 **Figma:** Sparks "AutoPartsHUB" (7:1021)
-**Status:** "My apps" is designed and built. ~~"Knowledge"~~ "My library" and "Connections" are not yet designed.
+**Status:** ~~"My apps"~~ "Apps" is designed and built. ~~"Knowledge"~~ ~~"Library"~~ "My library" and "Connections" are not yet designed.
 
 ---
 
@@ -49,12 +49,14 @@ In order, top to bottom:
 
 1. "Welcome back, {first name}", for example "Welcome back, Dana".
 2. "Connect with the tools, knowledge, and intelligence that power your work."
-3. Three tabs: "My apps" (selected when the page opens), ~~"Knowledge"~~ "My library" and "Connections".
+3. Three tabs: ~~"My apps"~~ "Apps" (selected when the page opens), ~~"Knowledge"~~ ~~"Library"~~ "My library" and "Connections".
 
-✅ **Resolved:** the second tab is named "My library" (Sparks → "AutoPartsHUB", 7:1021), the same word as the message box's "Add from library" in Sparks. What it holds is unchanged ("Knowledge and Connections"). Sparks's "Add from library" opens the home on it, in its own tab.
+~~✅ **Resolved:** the tabs are "Apps" and "Library", without "My": shorter, and the page is already hers ("Welcome back, Dana").~~ ✅ **Resolved:** the tabs are "Apps" and "My library". Why: "Apps" are the company's apps she uses; "My library" is hers (her notes, reports and files), and "My" says so.
+
+~~✅ **Resolved:** the second tab is named "My library" (Sparks → "AutoPartsHUB", 7:1021), the same word as the message box's "Add from library" in Sparks. What it holds is unchanged ("Knowledge and Connections"). Sparks's "Add from library" opens the home on it, in its own tab.~~ ✅ **Resolved:** the second tab is "Library", without "My" (see above).
 4. The selected tab's content.
 
-## My apps
+## Apps
 
 One card per app the user has access to. Each card shows the app's logo and a one-line description of what it's for:
 
@@ -77,7 +79,7 @@ Both tabs can be selected. Until they have content, each shows the product's sta
 
 | Tab | Title | Description |
 | --- | --- | --- |
-| ~~Knowledge~~ My library | ~~"Nothing in Knowledge yet"~~ "Nothing in your library yet" | ~~"When knowledge is added, it'll show up here."~~ "Files, notes and research you add will show up here." |
+| ~~Knowledge~~ ~~Library~~ My library | ~~"Nothing in Knowledge yet"~~ "Nothing in your library yet" | ~~"When knowledge is added, it'll show up here."~~ "Files, notes and research you add will show up here." |
 | Connections | "No connections yet" | "When connections are added, they'll show up here." |
 
 ✅ **Resolved:** the two tabs use the same empty state as every other empty view in the product, not a blank panel. A blank panel reads as broken; the empty state says what's missing and that it will appear here. The copy says only that, because neither tab's content is designed yet.
@@ -98,11 +100,11 @@ The user doesn't need either tab to use knowledge: apps like Sparks bring it int
 | State | What shows | What the user can do |
 | --- | --- | --- |
 | Apps listed | The user's app cards | Open any app, switch tabs |
-| My library or Connections selected | That tab's empty state ("Knowledge and Connections") | Switch tabs |
+| Library or Connections selected | That tab's empty state ("Knowledge and Connections") | Switch tabs |
 | No photo | The first initial in the header | Same as above |
 | No apps | Not designed | — |
 
-🙋 **Open question:** what "My apps" shows when the user has no apps.
+🙋 **Open question:** what "Apps" shows when the user has no apps.
 
 ## On Phones
 
@@ -116,17 +118,17 @@ The header keeps the full logo and the photo. The welcome lines wrap, the three 
 
 ## Acceptance Criteria
 
-- Given a signed-in user named Dana, when home opens, then it reads "Welcome back, Dana" and "My apps" is selected.
+- Given a signed-in user named Dana, when home opens, then it reads "Welcome back, Dana" and "Apps" is selected.
 - Each of the user's apps shows as a card with its logo and description; selecting a card opens that app in a new tab, and home stays open.
 - A user with no profile photo sees their first initial in the header, in the same color on every visit.
-- Selecting "Knowledge" shows "Nothing in Knowledge yet" and "When knowledge is added, it'll show up here."; selecting "Connections" shows "No connections yet" and "When connections are added, they'll show up here."; selecting "My apps" brings the cards back.
+- Selecting "Knowledge" shows "Nothing in Knowledge yet" and "When knowledge is added, it'll show up here."; selecting "Connections" shows "No connections yet" and "When connections are added, they'll show up here."; selecting "Apps" brings the cards back.
 - Arrow keys move between the tabs.
 - On desktop the cards show three per row, on tablet two, on phones one, with no sideways scrolling.
 
 ## Open Questions
 
 - 🙋 Which apps does a user see: every app AutoPartsHUB has, or only the ones their role gives them? And in what order? Recommended: only the apps they can open, in the order above.
-- 🙋 What does "My apps" show when the user has no apps?
+- 🙋 What does "Apps" show when the user has no apps?
 - 🙋 How does the user add personal knowledge, and what can they add (files, notes, links)? The empty state's action depends on it.
 - 🙋 What one action should each empty state offer (for example, adding knowledge or connecting a tool), and who can take it?
 - 🙋 What does selecting the profile photo do?

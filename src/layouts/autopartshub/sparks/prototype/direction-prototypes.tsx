@@ -24,7 +24,7 @@ type DirectionPrototype = {
 	/** The elements she can point at or type over, by id, and how Sparks names them. */
 	elements: Record<string, string>;
 	render: (props: PrototypeProps) => React.ReactNode;
-	/** What's in it, for the Blueprint: each audience's screens and the steps of "How it works" they cover. */
+	/** What's in it, for the plan: each audience's screens and the steps of "How it works" they cover. */
 	contents: PrototypeContents[];
 	/** What happens on screen but not for real. */
 	pretend: (changes: FitCheckChanges) => string[];

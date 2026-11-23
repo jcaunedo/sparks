@@ -1,14 +1,14 @@
 <!--
 Created: Nov 21, 2026
 Created by: Julio Caunedo
-Last updated: Nov 22, 2026 (Plan becomes the Blueprint once it's done: what this part adds shows there, not in a panel during Plan; Sparks thinks one line at a time, in automotive terms, before it replies; Success starts with "Now, let's define what success looks like."; Sparks's confirmation says "in your blueprint"; what success looks like is approved with "Looks right, continue", no question; "What success looks like" is a conversational summary in Sparks's reply, not a card; after "Not quite", Tab puts Sparks's answer in the message box to edit; "Not quite" leaves the question open for her answer in the message box; the card renamed "What success looks like", with a line on what it's for; Sparks calls the brief "what we know", as its card does; after a correction, Sparks says what changed and why it matters before the next question; "Looks right, continue" goes straight into the first direction; the Success criteria card and its approval built; how Sparks gets a starting point for repeat purchases; a target beyond the experiment gets Sparks's reason and "Keep my target" or "Use 25%"; the fourth and last question, what must not get worse, built: online sales; the third question, the target and by when, built: from a past experiment for the returns, an assumption with no starting point; the second question, the main measure, built: Sparks recommends one and says why, the other one quick reply away; one question at a time, starting with the goal, the card only at the end; the first question, the goal, built; Non-goal example: the return policy, not fit data)
+Last updated: Nov 22, 2026 (the step "Validate" renamed "Evaluate"; after a correction, Sparks shows the updated summary before asking again; "in your plan" instead of "in your blueprint"; Plan becomes the Blueprint once it's done: what this part adds shows there, not in a panel during Plan; Sparks thinks one line at a time, in automotive terms, before it replies; Success starts with "Now, let's define what success looks like."; Sparks's confirmation says "in your blueprint"; what success looks like is approved with "Looks right, continue", no question; "What success looks like" is a conversational summary in Sparks's reply, not a card; after "Not quite", Tab puts Sparks's answer in the message box to edit; "Not quite" leaves the question open for her answer in the message box; the card renamed "What success looks like", with a line on what it's for; Sparks calls the brief "what we know", as its card does; after a correction, Sparks says what changed and why it matters before the next question; "Looks right, continue" goes straight into the first direction; the Success criteria card and its approval built; how Sparks gets a starting point for repeat purchases; a target beyond the experiment gets Sparks's reason and "Keep my target" or "Use 25%"; the fourth and last question, what must not get worse, built: online sales; the third question, the target and by when, built: from a past experiment for the returns, an assumption with no starting point; the second question, the main measure, built: Sparks recommends one and says why, the other one quick reply away; one question at a time, starting with the goal, the card only at the end; the first question, the goal, built; Non-goal example: the return policy, not fit data)
 Scope: the Define success part of Plan, the third of Plan's five parts: how Sparks turns the problem brief into a goal and measures, where starting points and targets come from, and the Success criteria it adds to the concept.
 Purpose: defines what "solved" means for a concept before any solution is explored, so directions are compared, evaluated and handed off against the same yardstick.
 -->
 
 # Plan: Define success — Sparks
 
-**Location:** the third part of Plan ([sparks.md](sparks.md), "Plan"). The conversation reaches it as soon as Dana approves the problem brief ([sparks-plan-clarify.md](sparks-plan-clarify.md), "Finishing this part"). She can come back to it by asking Sparks, or, once Plan is done, from the Blueprint ("Let's revisit the success measures").
+**Location:** the third part of Plan ([sparks.md](sparks.md), "Plan"). The conversation reaches it as soon as Dana approves the problem brief ([sparks-plan-clarify.md](sparks-plan-clarify.md), "Finishing this part"). She can come back to it by asking Sparks, or, once Plan is done, from the plan ("Let's revisit the success measures").
 **Audience:** experienced AutoParts Co. employees who know the business but aren't designers or engineers. The reference user is Dana, a Senior Product Manager.
 **Description:** the part of Plan where Sparks proposes what success looks like for the problem, with a starting point and a target for each measure, and Dana chooses what matters.
 **Status:** defined. Built as a reference layout: the first question, "What will be different if this works?", on a clarification card with "Yes, that's right" and "Not quite", in the reply that puts the brief in the concept; then "Which result matters most?", with "Yes, that's right", "Repeat purchases instead" and "Not quite"; then "What's the target?" and "What must not get worse?", each with "Yes, that's right" and "Not quite" (`SparksWorkspace`, `ClarificationCard`). Then the Success criteria as a summary card, with "Looks right, continue" and "Not quite" (`SuccessCard`). "Looks right, continue" goes straight into the first direction ([sparks-plan-generate-directions.md](sparks-plan-generate-directions.md)).
@@ -21,9 +21,9 @@ Before looking at solutions, Dana decides how she'll know the problem is solved.
 
 Sparks proposes the measures from the problem brief, with their starting points taken from AutoParts Co.'s data, so Dana doesn't need to know how to define a metric. She chooses which one matters most and how far it should move.
 
-It works when Dana can say in one sentence what will be different if the concept works, and everything after it can be checked against it: the choice rates the directions on it, Validate estimates it, and Review puts it in front of the people who decide.
+It works when Dana can say in one sentence what will be different if the concept works, and everything after it can be checked against it: the choice rates the directions on it, Evaluate estimates it, and Review puts it in front of the people who decide.
 
-These criteria are solution-free on purpose. What a particular solution is expected to achieve is its hypothesis, written once a direction is chosen ([sparks-plan-compare.md](sparks-plan-compare.md), "What we believe"), and checked in Validate.
+These criteria are solution-free on purpose. What a particular solution is expected to achieve is its hypothesis, written once a direction is chosen ([sparks-plan-compare.md](sparks-plan-compare.md), "What we believe"), and checked in Evaluate.
 
 ℹ️ Related specs: the workspace, Plan and how its parts flow, step states, suggestions, how Sparks talks and company knowledge are in [sparks.md](sparks.md). The problem brief comes from [sparks-plan-clarify.md](sparks-plan-clarify.md).
 
@@ -64,7 +64,7 @@ Sparks asks one question at a time, each on a clarification card with its answer
 
 What's not part of the concept and how the assumptions will be checked are drafted into the card; Dana sees them there at the end.
 
-✅ **Resolved:** Success starts with "**Now, let's define what success looks like.**" (bold, as the start of a new part) instead of confirming that the brief is saved; the brief's save shows on its card and in the Blueprint.
+✅ **Resolved:** Success starts with "**Now, let's define what success looks like.**" (bold, as the start of a new part) instead of confirming that the brief is saved; the brief's save shows on its card and in the plan.
 
 The first question, for "Wrong-part returns":
 
@@ -108,7 +108,7 @@ The third question, in the reply that takes the main measure:
 
 - **The number and its basis:** the target comes from the closest past result, scaled to everyone it applies to, and the lead-in says why in one sentence. The brief has no deadline, so the time frame is one quarter after launch ("Starting points and targets").
 - **The target shows where it lands:** from today's figure to the target figure, so Dana doesn't have to work it out.
-- **With no starting point** (she picked repeat purchases, or a measure in her own words), Sparks says any target is a guess for now and suggests one labeled "Assumption", checked in Validate: "10% more of these customers buy from us again within 6 months of launch." (repeat purchases take longer to show).
+- **With no starting point** (she picked repeat purchases, or a measure in her own words), Sparks says any target is a guess for now and suggests one labeled "Assumption", checked in Evaluate: "10% more of these customers buy from us again within 6 months of launch." (repeat purchases take longer to show).
 - **Quick replies:** "Yes, that's right", "Not quite", as for the goal. Her words replace Sparks's on the card.
 - **Sparks takes the answer** in one line: "Got it, that's the target." or ~~"Thanks, I've updated the target."~~ after a correction, what changed and why it matters ("The goal" lists the lines).
 
@@ -155,21 +155,21 @@ Rules for the measures Sparks proposes:
 ## Starting points and targets
 
 - **Starting points come from data.** Sparks fills them in from company knowledge or Dana's personal knowledge, with the source. With no data, the measure says "No starting point yet", and Sparks suggests how to get one. It never makes one up.
-- **Targets are Dana's choice.** Sparks suggests one and says where it comes from: a previous experiment ("Customers who used last year's vehicle selector returned {percent} fewer parts as 'doesn't fit'"), the brief, or a plain guess. A target with no basis is labeled "Assumption", and Validate checks whether it's realistic.
+- **Targets are Dana's choice.** Sparks suggests one and says where it comes from: a previous experiment ("Customers who used last year's vehicle selector returned {percent} fewer parts as 'doesn't fit'"), the brief, or a plain guess. A target with no basis is labeled "Assumption", and Evaluate checks whether it's realistic.
 - **A target the data says is unlikely:** Sparks says so and shows why, and Dana decides ([sparks.md](sparks.md), "When the data and Dana disagree"). For "Wrong-part returns", any target of 40% or more for the returns (or "half"), typed or edited on the card, gets:
   > That's more than the vehicle selector managed. It cut these returns by about half, but only for the customers who used it, and most skipped it (previous experiments, 2025).
   >
-  > You can keep your target, and I'll mark it as an assumption for Validate to check, or go with 25%.
+  > You can keep your target, and I'll mark it as an assumption for Evaluate to check, or go with 25%.
 
-  Quick replies: "Keep my target", "Use 25%". Her number stays on the card while she decides. "Keep my target" keeps it, labeled "Assumption" in the Success criteria, with "That the target is realistic" under the assumptions Validate checks ("Got it, I've kept your target and marked it as an assumption."); "Use 25%" puts Sparks's target back ("Got it, 25% it is."). Either way, Sparks moves on to the next question.
-- **A measure with no starting point:** Sparks says so and how to get one, in the reply that takes her choice. For repeat purchases: "There's no starting point for it yet, but we can get one: the returns team could match returns to later orders from the same customers. I've added that to what we'll check in Validate." Getting the starting point is listed under "How we'll check the assumptions".
+  Quick replies: "Keep my target", "Use 25%". Her number stays on the card while she decides. "Keep my target" keeps it, labeled "Assumption" in the Success criteria, with "That the target is realistic" under the assumptions Evaluate checks ("Got it, I've kept your target and marked it as an assumption."); "Use 25%" puts Sparks's target back ("Got it, 25% it is."). Either way, Sparks moves on to the next question.
+- **A measure with no starting point:** Sparks says so and how to get one, in the reply that takes her choice. For repeat purchases: "There's no starting point for it yet, but we can get one: the returns team could match returns to later orders from the same customers. I've added that to what we'll check in Evaluate." Getting the starting point is listed under "How we'll check the assumptions".
 - **By when:** Sparks suggests a time frame from the brief's limits (a deadline, a season). When the brief has no deadline, it suggests one quarter. Dana changes it freely.
 
 ## What must not get worse
 
 Most solutions can push one measure up by pushing another down: fewer wrong-part returns, but fewer sales because buying takes an extra step; faster checkout, but more returns. Sparks always suggests at least one measure that must not get worse, from the brief's "Who's involved" and "What it costs", with its starting point.
 
-"What must not get worse" is used in the choice and in Validate the same way as the main measure: a direction that hurts one is flagged.
+"What must not get worse" is used in the choice and in Evaluate the same way as the main measure: a direction that hurts one is flagged.
 
 ## Not part of this concept
 
@@ -182,13 +182,13 @@ Why: it keeps the directions focused, and tells reviewers in Review what's out o
 The brief's "Assumptions to check" ([sparks-plan-clarify.md](sparks-plan-clarify.md), "The Problem brief") come with Dana into this part. Sparks shows, for the most important ones, how each will be checked:
 
 - **By a measure,** when one already covers it: "That missing vehicle details cause most wrong purchases will show in 'doesn't fit' returns."
-- **In Validate,** when no measure does.
+- **In Evaluate,** when no measure does.
 
-No assumption is dropped. Anything not covered by a measure goes to Validate.
+No assumption is dropped. Anything not covered by a measure goes to Evaluate.
 
 ## The Success criteria section
 
-What this part adds to the concept, once Dana approves it. Sparks writes it into the concept's spec automatically; Dana sees it on the Success criteria card and, once Plan is done, in the Blueprint ([sparks.md](sparks.md), "The Blueprint").
+What this part adds to the concept, once Dana approves it. Sparks writes it into the concept's spec automatically; Dana sees it on the Success criteria card and, once Plan is done, in the plan ([sparks.md](sparks.md), "The finished plan").
 
 | Part | Holds | Needed to move on |
 | --- | --- | --- |
@@ -217,13 +217,15 @@ Dana can move on when the goal and the main measure are accepted or written by h
 - **The summary, not a card** (sparks.md, "Talking with Sparks"): "**Here's what success looks like:**", the goal, then "We'll know it worked by:" with a line each for the main measure, the target, what else we're watching, what must not get worse and what's not part of it, each with its source in brackets or called an assumption, then "How we'll check what we're assuming:" as a list, and one sources line.
 - ~~**The Success criteria card** (like the problem card and "What we know", part by part with a line between parts): ~~"Success criteria"~~ "What success looks like", with the line "How we'll know it worked, agreed before we look at any solutions.", and "Draft" until she approves it, then "In your concept"; Goal, Main measure, Target, Other measures, What must not get worse, Not part of this concept, How we'll check the assumptions. Each part says where it came from: "Evidence · {source, period}", "From you" (her words, the goal she confirmed, a measure she picked), "Suggested by Sparks" (what it drafted without asking: other measures, what's not part of the concept) or "Sparks's guess" with the "Assumption" label.~~
 - **What Sparks drafts without asking:** the other measures (the candidate she didn't pick), what's not part of the concept ("Changing the return policy. This is about customers buying the right part in the first place.") and how each assumption will be checked ("Checking the assumptions"). She sees them on the card and can correct them with "Not quite".
-- Quick replies: "Looks right, continue", "Not quite". "Not quite" gets "What's off? Tell me in your own words, and I'll update it." (the card can't be edited in place); her answer gets "Thanks, I've updated it." and the question again.
+- Quick replies: "Looks right, continue", "Not quite". "Not quite" gets "What's off? Tell me in your own words, and I'll update it." (the card can't be edited in place); her answer gets ~~"Thanks, I've updated it." and the question again~~ "Thanks, I've updated it.", then "**Here's what success looks like now:**" with the updated summary, her words worked in, and the question again.
+
+  ✅ **Resolved:** after her correction, Sparks shows the updated summary before asking again. Why: "Thanks, I've updated it." alone asked her to approve a version she couldn't see.
 - Until the goal and the main measure with a target are in place, the card says what's missing ("Choose a main measure"), and Sparks asks for it instead of moving on.
 - Her approval adds the Success criteria to the concept, and Sparks moves on to the directions in the same conversation. There's no button or page between parts ([sparks.md](sparks.md), "Plan").
 
 ~~⚠️ **Gap:** after "Yes, let's see them", the build says "Done. Success is in your concept. Next, ways to get there." and stops, because the directions aren't built yet ([sparks-plan-generate-directions.md](sparks-plan-generate-directions.md)). Plan's rule is that the reply that finishes a part asks the next part's first question.~~ ✅ **Resolved:** after "Looks right, continue", Sparks says "Done. Success is in your concept." and shows the first direction in the same reply ([sparks-plan-generate-directions.md](sparks-plan-generate-directions.md), "Starting this part").
 
-The choice, Validate and Review all use these criteria. Success criteria are always in place before anything is built: if Dana asks to build first, Sparks drafts them with her in the conversation and asks her to confirm the main measure ([sparks.md](sparks.md), "Plan"). They're part of Plan, which must be Done before a concept is submitted for a decision ([sparks.md](sparks.md), "Moving through the steps"). Changing them later marks the sections after them in Plan, and later steps that are Done, as Needs a check ([sparks.md](sparks.md), "Moving through the steps").
+The choice, Evaluate and Review all use these criteria. Success criteria are always in place before anything is built: if Dana asks to build first, Sparks drafts them with her in the conversation and asks her to confirm the main measure ([sparks.md](sparks.md), "Plan"). They're part of Plan, which must be Done before a concept is submitted for a decision ([sparks.md](sparks.md), "Moving through the steps"). Changing them later marks the sections after them in Plan, and later steps that are Done, as Needs a check ([sparks.md](sparks.md), "Moving through the steps").
 
 ## States
 
@@ -269,7 +271,7 @@ What Dana says → what Sparks must do:
 - Every starting point shows its source and period, or "No starting point yet".
 - A target with no basis in company knowledge, Dana's personal knowledge or a previous experiment is labeled "Assumption".
 - Sparks always suggests at least one measure under "What must not get worse".
-- Every assumption from the brief is either covered by a measure or listed for Validate.
+- Every assumption from the brief is either covered by a measure or listed for Evaluate.
 - Sparks moves on to the directions only when the goal and the main measure (with a target) are accepted or written by Dana and she has approved them; there's no button or page in between.
 - The concept for review shows each part's name with the product team's term ("Main measure (primary metric)").
 

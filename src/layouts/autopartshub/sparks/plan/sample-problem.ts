@@ -1,6 +1,7 @@
 import type { SparksReply } from "../workspace/workspace";
 import type { ProblemDraft } from "./problem-card";
 import { sampleClarifyReplies, sampleClarifyTodaySuggestion, sampleSummaryReplies } from "./sample-clarify";
+import { sampleCorrectionSentence } from "./sample-correction";
 
 /*
  * Plan's Problem part for "Wrong-part returns", one thing at a time (prds/sparks-plan-problem.md). What the AI and
@@ -98,14 +99,14 @@ export const sampleProblemStatementReply: SparksReply = {
 export type ProblemCorrectable = "statement" | "who" | "why";
 const problemChanges: Record<ProblemCorrectable, string> = {
 	statement:
-		"Thanks, I've changed the problem to your words. Everything else in your blueprint builds on it, so it should say it the way you see it.",
+		"Thanks, I've changed the problem to your words. Everything else in your plan builds on it, so it should say it the way you see it.",
 	who: "Thanks, I've changed who it affects. It decides whose orders and returns I look at from here, so I'd rather go with what you know.",
 	why: "Thanks, I've changed why it matters. What success looks like comes from it later, so it should be in your words.",
 };
 
 /** The same, when her words started "Add…": added to Sparks's answer, not replacing it. */
 const problemAdditions: Record<ProblemCorrectable, string> = {
-	statement: "Thanks, I've added that to the problem. Everything else in your blueprint builds on it.",
+	statement: "Thanks, I've added that to the problem. Everything else in your plan builds on it.",
 	who: "Thanks, I've added that to who it affects. It decides whose orders and returns I look at from here.",
 	why: "Thanks, I've added that to why it matters. What success looks like comes from it later.",
 };
@@ -191,13 +192,16 @@ export const sampleProblemSummaryNotQuiteReply: SparksReply = {
 	parts: [{ kind: "text", text: "What's off? Tell me in your own words, and I'll update it." }],
 };
 
-/** After her correction: Sparks updates the problem and asks again. */
-export const sampleProblemSummaryAgainReply: SparksReply = {
+/** After her correction: Sparks updates the problem, shows it again with her words worked in, and asks again. */
+export const sampleProblemSummaryAgainReply = (problem: ProblemDraft, words: string): SparksReply => ({
 	id: "problem-summary-again",
 	from: "sparks",
-	parts: [{ kind: "text", text: "Thanks, I've updated it." }],
+	parts: [
+		{ kind: "text", text: "Thanks, I've updated it.\n\n**Here's the problem now:**" },
+		{ kind: "problem", problem: { ...problem, summary: `${problem.summary.trim()}\n\n${sampleCorrectionSentence(words)}`, approved: false } },
+	],
 	quickReplies: sampleProblemSummaryReplies,
-};
+});
 
 /**
  * "Looks right": the problem is in the concept, and Sparks goes straight into Clarify's first question, with no button
@@ -209,7 +213,7 @@ export const sampleProblemApprovedReply: SparksReply = {
 	parts: [
 		{
 			kind: "text",
-			text: "Done. The problem is in your blueprint.\n\n**Now, let's understand it better and clarify a few things.**\n\nThe data already tells me how often this happens and what it costs, so I'll only ask what it can't, one question at a time. At the end, I'll put it all together for you to check.",
+			text: "Done. The problem is in your plan.\n\n**Now, let's understand it better and clarify a few things.**\n\nThe data already tells me how often this happens and what it costs, so I'll only ask what it can't, one question at a time. At the end, I'll put it all together for you to check.",
 		},
 		{ kind: "suggestion", suggestion: sampleClarifyTodaySuggestion },
 	],

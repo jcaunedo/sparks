@@ -1,5 +1,5 @@
 import * as React from "react";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, CircleCheck, MessageSquare } from "lucide-react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/data-display/avatar";
 import { Badge } from "@/components/data-display/badge";
@@ -8,7 +8,7 @@ import { formatRelativeDate } from "@/lib/relative-date";
 import { cn } from "@/lib/utils";
 
 import type { PrototypeComment } from "../prototype/prototype-comments";
-import { ReviewerList, viewTone, type Reviewer } from "../review/review-panel";
+import { ReviewerList, viewTone, type IdeaComment, type Reviewer } from "../review/review-panel";
 import { SidePanel } from "./side-panel";
 
 type CommentsPanelProps = {
@@ -18,21 +18,38 @@ type CommentsPanelProps = {
 	unread?: string[];
 	/** She opened a reviewer's comment: it's read now. */
 	onRead?: (id: string) => void;
-	/** Dana's comments on the prototype ("Add comment"), under "On the prototype", newest first. */
+	/**
+	 * The comments pinned on the prototype, hers and the reviewers' (a reviewer's `author.role` is their team), under "On
+	 * the prototype": open ones newest first, then "Resolved". Each reviewer's also show when their comment is opened.
+	 */
 	prototypeComments?: PrototypeComment[];
-	/** Selecting one opens it on the prototype (its pin's popover); without it, they're only listed. */
+	/** Selecting one opens it on the prototype (its pin's thread, to read, reply or resolve); without it, they're only listed. */
 	onOpenPrototypeComment?: (id: string) => void;
+	/** The reviewers' comments on parts of the idea, under "On the idea", newest first, and in each reviewer's comment. */
+	ideaComments?: IdeaComment[];
+	/** Selecting one opens its part in Review, brought into view. */
+	onOpenIdeaComment?: (id: string) => void;
 	onClose: () => void;
 	/** Take focus when it opens (it only opens from "Comments"). */
 	autoFocus?: boolean;
 	className?: string;
 };
 
+/** Two initials, as on the comment's pin, so the avatar's color matches it (Avatar picks the color from them). */
+const initialsOf = (name: string) =>
+	name
+		.split(/\s+/)
+		.map((word) => word.charAt(0))
+		.slice(0, 2)
+		.join("")
+		.toUpperCase();
+
 /**
  * A comment on the prototype: her avatar, name and when, where it is (the path, the audience, the device, what she clicked), then
  * the comment. A button that opens its pin while the prototype is on screen.
  */
 function PrototypeCommentRow({ comment, onOpen }: { comment: PrototypeComment; onOpen?: (id: string) => void }) {
+	const replies = comment.replies?.length ?? 0;
 	const time = formatRelativeDate(comment.createdAt);
 	const where = [comment.path?.label, comment.scope.audienceLabel, comment.scope.device === "phone" ? "Phone" : "Desktop", comment.where ? `"${comment.where}"` : null]
 		.filter(Boolean)
@@ -41,17 +58,74 @@ function PrototypeCommentRow({ comment, onOpen }: { comment: PrototypeComment; o
 		<>
 			<Avatar className='size-8 shrink-0'>
 				{comment.author.avatarSrc ? <AvatarImage src={comment.author.avatarSrc} alt='' /> : null}
-				<AvatarFallback className='text-xs'>{comment.author.name.charAt(0)}</AvatarFallback>
+				<AvatarFallback className='text-xs'>{initialsOf(comment.author.name)}</AvatarFallback>
 			</Avatar>
 			<span className='flex min-w-0 flex-1 flex-col gap-0.5'>
 				<span className='flex items-baseline gap-2'>
 					<span className='text-sm font-semibold text-foreground'>{comment.author.name}</span>
+					{comment.author.role ? <span className='text-xs text-muted-foreground'>{comment.author.role}</span> : null}
 					<time dateTime={comment.createdAt} title={time.title} className='text-xs text-muted-foreground'>
 						{time.label}
 					</time>
 				</span>
 				<span className='truncate text-xs text-muted-foreground'>{where}</span>
+				<span className={cn("text-sm whitespace-pre-line", comment.resolved ? "text-muted-foreground" : "text-foreground")}>{comment.text}</span>
+				{/* The thread: how many replies, and whether it's resolved. */}
+				{replies || comment.resolved ? (
+					<span className='flex items-center gap-3 pt-0.5 text-xs text-muted-foreground'>
+						{replies ? (
+							<span className='flex items-center gap-1'>
+								<MessageSquare aria-hidden className='size-3.5' />
+								{replies} {replies === 1 ? "reply" : "replies"}
+							</span>
+						) : null}
+						{comment.resolved ? (
+							<span className='flex items-center gap-1 text-success'>
+								<CircleCheck aria-hidden className='size-3.5' />
+								Resolved
+							</span>
+						) : null}
+					</span>
+				) : null}
+			</span>
+		</>
+	);
+	const classes = "flex w-full items-start gap-3 rounded-lg px-2 py-2.5 text-start";
+	return onOpen ? (
+		<button type='button' className={cn(classes, "outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring")} onClick={() => onOpen(comment.id)}>
+			{content}
+		</button>
+	) : (
+		<div className={classes}>{content}</div>
+	);
+}
+
+/** A reviewer's comment on a part of the idea: who, their team, when, which part, the text, and "Unclear". Opens the part in Review. */
+function IdeaCommentRow({ comment, onOpen }: { comment: IdeaComment; onOpen?: (id: string) => void }) {
+	const time = formatRelativeDate(comment.createdAt);
+	const content = (
+		<>
+			<Avatar className='size-8 shrink-0'>
+				{comment.author.avatarSrc ? <AvatarImage src={comment.author.avatarSrc} alt='' /> : null}
+				<AvatarFallback className='text-xs'>{initialsOf(comment.author.name)}</AvatarFallback>
+			</Avatar>
+			<span className='flex min-w-0 flex-1 flex-col gap-0.5'>
+				<span className='flex items-baseline gap-2'>
+					<span className='text-sm font-semibold text-foreground'>{comment.author.name}</span>
+					{comment.author.role ? <span className='text-xs text-muted-foreground'>{comment.author.role}</span> : null}
+					<time dateTime={comment.createdAt} title={time.title} className='text-xs text-muted-foreground'>
+						{time.label}
+					</time>
+				</span>
+				<span className='truncate text-xs text-muted-foreground'>On "{comment.part}"</span>
 				<span className='text-sm whitespace-pre-line text-foreground'>{comment.text}</span>
+				{comment.unclear ? (
+					<span className='pt-0.5'>
+						<Badge variant='flat' tone='amber' size='xxs'>
+							Unclear
+						</Badge>
+					</span>
+				) : null}
 			</span>
 		</>
 	);
@@ -68,8 +142,8 @@ function PrototypeCommentRow({ comment, onOpen }: { comment: PrototypeComment; o
 /**
  * "Comments" (prds/sparks.md, "The concept workspace"): the reviewers' feedback beside the conversation, in the same
  * frame as any side panel (`SidePanel`). The list is Review's (`ReviewerList`); a reviewer who has commented or given
- * their view opens their comment, with the unread dot while it's new. Under "On the prototype", Dana's comments pinned on
- * the prototype, each opening its pin. Not in Figma yet.
+ * their view opens their comment, with the unread dot while it's new.Under "On the prototype", the comments pinned on
+ * the prototype (hers and the reviewers'), open first, then resolved, each opening its thread on the prototype. Not in Figma yet.
  */
 function CommentsPanel({
 	reviewers,
@@ -77,6 +151,8 @@ function CommentsPanel({
 	onRead,
 	prototypeComments = [],
 	onOpenPrototypeComment,
+	ideaComments = [],
+	onOpenIdeaComment,
 	onClose,
 	autoFocus,
 	className,
@@ -86,6 +162,11 @@ function CommentsPanel({
 	const backRef = React.useRef<HTMLButtonElement>(null);
 	const listFocus = React.useRef<string | undefined>(undefined);
 	const given = reviewers.filter((reviewer) => reviewer.status === "view").length;
+	const pinsBy = (department: string) => prototypeComments.filter((comment) => comment.author.role === department);
+	const ideaBy = (department: string) => ideaComments.filter((comment) => comment.author.role === department);
+	const newestIdea = [...ideaComments].reverse();
+	const openPins = [...prototypeComments].reverse().filter((comment) => !comment.resolved);
+	const resolvedPins = [...prototypeComments].reverse().filter((comment) => comment.resolved);
 
 	const openComment = (id: string) => {
 		setOpenId(id);
@@ -126,9 +207,39 @@ function CommentsPanel({
 							<p className='text-sm text-foreground'>"{open.why}"</p>
 						</div>
 					) : null}
-					{open.status === "commented" ? <p className='text-xs text-muted-foreground'>Their view on whether it should advance is still to come.</p> : null}
-				</article>
-			) : reviewers.length || prototypeComments.length ? (
+						{open.status === "commented" ? <p className='text-xs text-muted-foreground'>Their view on whether it should advance is still to come.</p> : null}
+						{/* What they said on parts of the idea: each opens its part in Review. */}
+						{ideaBy(open.department).length ? (
+							<section aria-labelledby='comments-their-parts' className='flex flex-col gap-1 border-t border-border pt-4'>
+								<h4 id='comments-their-parts' className='pb-1 text-sm font-semibold text-foreground'>
+									On the idea
+								</h4>
+								<ul className='flex flex-col gap-0.5'>
+									{ideaBy(open.department).map((comment) => (
+										<li key={comment.id}>
+											<IdeaCommentRow comment={comment} onOpen={onOpenIdeaComment} />
+										</li>
+									))}
+								</ul>
+							</section>
+						) : null}
+						{/* What they pinned on the prototype: each opens its thread there. */}
+						{pinsBy(open.department).length ? (
+							<section aria-labelledby='comments-their-pins' className='flex flex-col gap-1 border-t border-border pt-4'>
+								<h4 id='comments-their-pins' className='pb-1 text-sm font-semibold text-foreground'>
+									On the prototype
+								</h4>
+								<ul className='flex flex-col gap-0.5'>
+									{pinsBy(open.department).map((comment) => (
+										<li key={comment.id}>
+											<PrototypeCommentRow comment={comment} onOpen={onOpenPrototypeComment} />
+										</li>
+									))}
+								</ul>
+							</section>
+						) : null}
+					</article>
+			) : reviewers.length || prototypeComments.length || ideaComments.length ? (
 				<>
 					{reviewers.length ? (
 						<section aria-labelledby='comments-reviewers' className='flex flex-col gap-3'>
@@ -149,22 +260,64 @@ function CommentsPanel({
 									element.querySelectorAll("li")[index]?.querySelector("button")?.focus();
 								}}
 							>
-								<ReviewerList reviewers={reviewers} unread={unread} onOpen={openComment} />
+								<ReviewerList
+									reviewers={reviewers}
+									unread={unread}
+									onOpen={openComment}
+									notes={Object.fromEntries(
+										reviewers.map((reviewer) => {
+											const onIdea = ideaBy(reviewer.department).length;
+											const onPrototype = pinsBy(reviewer.department).filter((comment) => !comment.resolved).length;
+											const lines = [
+												onIdea ? `${onIdea} ${onIdea === 1 ? "comment" : "comments"} on the idea` : "",
+												onPrototype ? `${onPrototype} open on the prototype` : "",
+											].filter(Boolean);
+											return [reviewer.id, lines.join(" · ")];
+										}),
+									)}
+								/>
 							</div>
 						</section>
 					) : null}
-					{prototypeComments.length ? (
-						<section aria-labelledby='comments-prototype' className={cn("flex flex-col gap-1", reviewers.length && "border-t border-border pt-4")}>
-							<h3 id='comments-prototype' className='pb-2 text-sm font-semibold text-foreground'>
-								On the prototype
+					{newestIdea.length ? (
+						<section aria-labelledby='comments-idea' className={cn("flex flex-col gap-1", reviewers.length && "border-t border-border pt-4")}>
+							<h3 id='comments-idea' className='pb-2 text-sm font-semibold text-foreground'>
+								On the idea
 							</h3>
 							<ul className='flex flex-col gap-0.5'>
-								{[...prototypeComments].reverse().map((comment) => (
+								{newestIdea.map((comment) => (
 									<li key={comment.id}>
-										<PrototypeCommentRow comment={comment} onOpen={onOpenPrototypeComment} />
+										<IdeaCommentRow comment={comment} onOpen={onOpenIdeaComment} />
 									</li>
 								))}
 							</ul>
+						</section>
+					) : null}
+					{prototypeComments.length ? (
+						<section aria-labelledby='comments-prototype' className={cn("flex flex-col gap-1", (reviewers.length || newestIdea.length) && "border-t border-border pt-4")}>
+							<h3 id='comments-prototype' className='pb-2 text-sm font-semibold text-foreground'>
+								On the prototype
+							</h3>
+								<ul className='flex flex-col gap-0.5'>
+									{openPins.map((comment) => (
+										<li key={comment.id}>
+											<PrototypeCommentRow comment={comment} onOpen={onOpenPrototypeComment} />
+										</li>
+									))}
+								</ul>
+								{openPins.length === 0 ? <p className='px-2 text-sm text-muted-foreground'>Everything on the prototype is resolved.</p> : null}
+								{resolvedPins.length ? (
+									<>
+										<h4 className='px-2 pt-3 pb-1 text-xs font-semibold text-muted-foreground'>Resolved ({resolvedPins.length})</h4>
+										<ul className='flex flex-col gap-0.5'>
+											{resolvedPins.map((comment) => (
+												<li key={comment.id}>
+													<PrototypeCommentRow comment={comment} onOpen={onOpenPrototypeComment} />
+												</li>
+											))}
+										</ul>
+									</>
+								) : null}
 						</section>
 					) : null}
 				</>

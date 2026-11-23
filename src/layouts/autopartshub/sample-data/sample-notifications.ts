@@ -34,7 +34,7 @@ export const sampleNotifications: AppNotification[] = [
 	{
 		id: "n3",
 		kind: "success",
-		title: "Validate finished for Reorder in one tap",
+		title: "Evaluate finished for Reorder in one tap",
 		href: "#shop-reorders",
 		description: "83% of scenarios worked. One finding is still open.",
 		createdAt: ago(60 * 26),

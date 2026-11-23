@@ -1,5 +1,6 @@
 import type { SparksReply, SparksSuggestion } from "../workspace/workspace";
 import type { SuccessAssumptionCheck, SuccessDraft, SuccessPartDraft } from "./success-card";
+import { sampleWithCorrection } from "./sample-correction";
 
 /*
  * Plan's Success part for "Wrong-part returns", one question at a time (prds/sparks-plan-define-success.md). What the AI
@@ -89,7 +90,7 @@ export const sampleSuccessTargetReplies = ["Yes, that's right", "Not quite"];
 /**
  * The third question, after the main measure: the target and by when. For the returns, Sparks aims lower than the
  * vehicle selector did for the customers who used it, since most skipped it. With no starting point (repeat purchases,
- * or a measure in her words), any target is a guess, so it's an assumption Validate checks.
+ * or a measure in her words), any target is a guess, so it's an assumption Evaluate checks.
  */
 const targetQuestions: Record<SuccessAnswer, { leadIn: string; suggestion: SparksSuggestion }> = {
 	yes: {
@@ -104,7 +105,7 @@ const targetQuestions: Record<SuccessAnswer, { leadIn: string; suggestion: Spark
 	},
 	alternative: {
 		leadIn:
-			"Got it: repeat purchases is the main measure, and the returns another one.\n\nThere's no starting point for it yet, but we can get one: the returns team could match returns to later orders from the same customers. I've added that to what we'll check in Validate.\n\nNext, the target: how far it should move, and by when. Until we have a starting point, any target is a guess, so I've marked it as an assumption:",
+			"Got it: repeat purchases is the main measure, and the returns another one.\n\nThere's no starting point for it yet, but we can get one: the returns team could match returns to later orders from the same customers. I've added that to what we'll check in Evaluate.\n\nNext, the target: how far it should move, and by when. Until we have a starting point, any target is a guess, so I've marked it as an assumption:",
 		suggestion: {
 			part: "success-target",
 			question: "What's the target?",
@@ -113,7 +114,7 @@ const targetQuestions: Record<SuccessAnswer, { leadIn: string; suggestion: Spark
 		},
 	},
 	typed: {
-		leadIn: `${successChanges.measure}\n\nNext, the target: how far it should move, and by when.\n\nI don't have data on that measure yet, so any target is a guess for now. I've marked it as an assumption, and we'll check it in Validate:`,
+		leadIn: `${successChanges.measure}\n\nNext, the target: how far it should move, and by when.\n\nI don't have data on that measure yet, so any target is a guess for now. I've marked it as an assumption, and we'll check it in Evaluate:`,
 		suggestion: {
 			part: "success-target",
 			question: "What's the target?",
@@ -199,7 +200,7 @@ export const sampleSuccessTargetUnlikelyReply: SparksReply = {
 	parts: [
 		{
 			kind: "text",
-			text: `That's more than the vehicle selector managed. It cut these returns by about half, but only for the customers who used it, and most skipped it (previous experiments, 2025).\n\nYou can keep your target, and I'll mark it as an assumption for Validate to check, or go with ${sampleSuccessSuggestedTarget}%.`,
+			text: `That's more than the vehicle selector managed. It cut these returns by about half, but only for the customers who used it, and most skipped it (previous experiments, 2025).\n\nYou can keep your target, and I'll mark it as an assumption for Evaluate to check, or go with ${sampleSuccessSuggestedTarget}%.`,
 		},
 	],
 	quickReplies: sampleSuccessUnlikelyReplies,
@@ -264,16 +265,16 @@ export function sampleSuccessFrom(answers: SuccessAnswers): SuccessDraft {
 
 	const assumptionChecks: SuccessAssumptionCheck[] = answers.briefAssumptions.map((assumption) =>
 		/buy less from us/.test(assumption)
-			? { assumption, checkedBy: "Shown by repeat purchases, once we have a starting point. In Validate until then." }
-			: { assumption, checkedBy: "Checked in Validate." },
+			? { assumption, checkedBy: "Shown by repeat purchases, once we have a starting point. In Evaluate until then." }
+			: { assumption, checkedBy: "Checked in Evaluate." },
 	);
 	if (measureChoice !== "returns")
 		assumptionChecks.push({
 			assumption: "A starting point for repeat purchases.",
-			checkedBy: "The returns team matches returns to later orders from the same customers, in Validate.",
+			checkedBy: "The returns team matches returns to later orders from the same customers, in Evaluate.",
 		});
 	if (answers.target.assumption)
-		assumptionChecks.push({ assumption: "That the target is realistic.", checkedBy: "Checked in Validate." });
+		assumptionChecks.push({ assumption: "That the target is realistic.", checkedBy: "Checked in Evaluate." });
 
 	return {
 		goal: { text: answers.goal.text, source: "dana" },
@@ -326,10 +327,16 @@ export const sampleSuccessNotQuiteReply: SparksReply = {
 	parts: [{ kind: "text", text: "What's off? Tell me in your own words, and I'll update it." }],
 };
 
-/** After her correction: Sparks updates the Success criteria and asks again. */
-export const sampleSuccessAgainReply: SparksReply = {
+/** After her correction: Sparks updates the Success criteria, shows them again with her words worked in, and asks again. */
+export const sampleSuccessAgainReply = (success: SuccessDraft, words: string): SparksReply => ({
 	id: "success-again",
 	from: "sparks",
-	parts: [{ kind: "text", text: "Thanks, I've updated it." }],
+	parts: [
+		{ kind: "text", text: "Thanks, I've updated it.\n\n**Here's what success looks like now:**" },
+		{
+			kind: "success",
+			success: { ...success, goal: { ...success.goal, text: sampleWithCorrection(success.goal.text, words), source: "dana" }, approved: false },
+		},
+	],
 	quickReplies: sampleSuccessSummaryReplies,
-};
+});

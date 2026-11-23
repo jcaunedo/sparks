@@ -113,12 +113,15 @@ function PromptComposer({
 			data-slot='prompt-composer'
 			data-has-value={hasValue}
 			className={cn(
-				// Figma frame: background, 2px border, 20px radius, 8px gap, 14px padding measured from the
-				// outer edge (Figma's stroke sits inside it): 2px border + 12px padding = 14px, 120px tall.
-				"flex w-full flex-col justify-end gap-2 overflow-clip rounded-composer border-2 bg-background p-3 transition-colors",
-				// Figma "Default": accent border at 20%, with a soft shadow. "HasValue" (and focus, so keyboard users see where
-				// they are): full accent; HasValue drops the shadow.
-				"border-sparks-accent/20 shadow-composer focus-within:border-sparks-accent data-[has-value=true]:border-sparks-accent data-[has-value=true]:shadow-none",
+				// Figma frame: background, 20px radius, no gap between the input and the controls, 14px padding measured from
+				// the outer edge (Figma's stroke sits inside it), 112px tall in both states.
+				"flex w-full flex-col justify-end gap-0 overflow-clip rounded-composer bg-background transition-colors",
+				// Figma "Default": a 1px colors/border/defined border (1 + 13px padding = 14px), with a soft shadow.
+				"border border-border-defined p-[13px] shadow-composer",
+				// Figma "HasValue" (and focus, so keyboard users see where they are): a 2px accent border (2 + 12px = 14px, so
+				// nothing moves); HasValue drops the shadow.
+				"focus-within:border-2 focus-within:border-sparks-accent focus-within:p-3",
+				"data-[has-value=true]:border-2 data-[has-value=true]:border-sparks-accent data-[has-value=true]:p-3 data-[has-value=true]:shadow-none",
 				className,
 			)}
 		>

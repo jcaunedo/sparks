@@ -2,6 +2,7 @@ import type { SparksReply } from "../workspace/workspace";
 import type { ChosenDraft } from "./chosen-card";
 import type { DirectionDraft } from "./direction-card";
 import { sampleSummaryReplies } from "./sample-success";
+import { sampleWithCorrection } from "./sample-correction";
 
 /*
  * Choosing, the end of Plan (prds/sparks-plan-compare.md): once Dana picks a direction, Sparks drafts everything the
@@ -67,7 +68,7 @@ export function sampleChosenReply(chosen: DirectionDraft, card: ChosenDraft): Sp
 	return {
 		id: "chosen-summary",
 		from: "sparks",
-		thinking: ["Assembling the parts of your blueprint…", "Running a final inspection…"],
+		thinking: ["Assembling the parts of your plan…", "Running a final inspection…"],
 		parts: [
 			{ kind: "text", text: opening },
 			{ kind: "chosen", chosen: card },
@@ -84,10 +85,13 @@ export const sampleChosenNotQuiteReply: SparksReply = {
 	parts: [{ kind: "text", text: "What's off? Tell me in your own words, and I'll update it." }],
 };
 
-/** After her correction: Sparks updates it and asks again. */
-export const sampleChosenAgainReply: SparksReply = {
+/** After her correction: Sparks updates it, shows it again with her words worked in, and asks again. */
+export const sampleChosenAgainReply = (chosen: ChosenDraft, words: string): SparksReply => ({
 	id: "chosen-again",
 	from: "sparks",
-	parts: [{ kind: "text", text: "Thanks, I've updated it." }],
+	parts: [
+		{ kind: "text", text: "Thanks, I've updated it.\n\n**Here's what we'll build now:**" },
+		{ kind: "chosen", chosen: { ...chosen, why: sampleWithCorrection(chosen.why, words), approved: false } },
+	],
 	quickReplies: sampleChosenReplies,
-};
+});

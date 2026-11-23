@@ -1,9 +1,9 @@
 <!--
 Created: Nov 21, 2026
 Created by: Julio Caunedo
-Last updated: Nov 22, 2026 (Plan becomes the Blueprint once it's done: "What we built" stays in it, the evaluation becomes one line in "Where it stands"; switching the audience keeps the device; the toolbar names the direction the prototype was built from; paths: each direction built is a path in the prototype, with a switcher, its own versions, comments and Validate runs; comments on the prototype show in the Comments panel; comments on the prototype: "Add comment" drops a pin and opens a box to write in, and the pin stays; the toolbar's actions are icon buttons named in tooltips, the device switcher icons; "Point at something" renamed "Edit element"; the spec panel is "Blueprint"; the Prototype section in the Concept panel built; changes in words for the three newer prototypes; Validate's fixes for the three newer prototypes; going back to the choice from Prototype: after a change beyond the direction, or asking for another direction; Validate and Review follow the chosen direction; a new direction starts its prototype at version 1; a prototype for every direction, with product photos; "Yes, test it" opens Validate's plan; changing it built: pointing, typing over text, changes in the conversation, versions; Prototype starts from "Looks right, continue" on what we'll build; built as a reference layout: the Prototype step opens beside the conversation, Sparks builds "Fit check before you buy" screen by screen, then asks if it's ready to test; Prototype starts from "Looks right, continue" and ends with a question and quick replies, not buttons; Prototype shows the first screens Dana sees: Plan has no screen previews; it starts from "Looks right, continue"; Going to Review without Validate needs the same coverage; version at submission; "Needs a check")
-Scope: the Prototype step of a Sparks concept, the second of four (Plan, Prototype, Validate, Review): what Sparks builds from the chosen direction, how Dana tries it and changes it without design or engineering skills, versions, and the Prototype section of the concept.
-Purpose: defines how the chosen direction becomes a working concept Dana can try (a clickable prototype, or another testable artifact), built from AutoParts Co.'s own design system, ready to be evaluated in Validate.
+Last updated: Nov 22, 2026 ("Yes, test it" renamed "Yes, evaluate it", after the step; comments on the prototype have threads: replies, "Mark as resolved" and "Reopen"; reviewers pin comments too, with their team, and Dana opens them from the Comments panel in any step; the step "Validate" renamed "Evaluate"; "Blueprint" is now the plan: "Built from an earlier version of the plan"; after a change in the Blueprint, Sparks offers to update the prototype, and a prototype built from an earlier blueprint shows a note with "Update prototype"; Plan becomes the Blueprint once it's done: "What we built" stays in it, the evaluation becomes one line in "Where it stands"; switching the audience keeps the device; the toolbar names the direction the prototype was built from; paths: each direction built is a path in the prototype, with a switcher, its own versions, comments and Evaluate runs; comments on the prototype show in the Comments panel; comments on the prototype: "Add comment" drops a pin and opens a box to write in, and the pin stays; the toolbar's actions are icon buttons named in tooltips, the device switcher icons; "Point at something" renamed "Edit element"; the spec panel is "Blueprint"; the Prototype section in the Concept panel built; changes in words for the three newer prototypes; Evaluate's fixes for the three newer prototypes; going back to the choice from Prototype: after a change beyond the direction, or asking for another direction; Evaluate and Review follow the chosen direction; a new direction starts its prototype at version 1; a prototype for every direction, with product photos; "Yes, evaluate it" opens Evaluate's plan; changing it built: pointing, typing over text, changes in the conversation, versions; Prototype starts from "Looks right, continue" on what we'll build; built as a reference layout: the Prototype step opens beside the conversation, Sparks builds "Fit check before you buy" screen by screen, then asks if it's ready to test; Prototype starts from "Looks right, continue" and ends with a question and quick replies, not buttons; Prototype shows the first screens Dana sees: Plan has no screen previews; it starts from "Looks right, continue"; Going to Review without Evaluate needs the same coverage; version at submission; "Needs a check")
+Scope: the Prototype step of a Sparks concept, the second of four (Plan, Prototype, Evaluate, Review): what Sparks builds from the chosen direction, how Dana tries it and changes it without design or engineering skills, versions, and the Prototype section of the concept.
+Purpose: defines how the chosen direction becomes a working concept Dana can try (a clickable prototype, or another testable artifact), built from AutoParts Co.'s own design system, ready to be evaluated in Evaluate.
 -->
 
 # Prototype — Sparks
@@ -11,9 +11,9 @@ Purpose: defines how the chosen direction becomes a working concept Dana can try
 **Location:** the second of a Sparks concept's four steps. It opens when Dana ~~selects "Continue to Prototype"~~ says "Looks right, continue" to "What we'll build" at the end of Plan ([sparks-plan-compare.md](sparks-plan-compare.md), "Finishing Plan"), in the same conversation, with no button, and whenever she selects Prototype in the steps once Plan is Done. It needs Plan's success criteria and chosen direction; if Dana asks to build before Plan is Done, Sparks finishes Plan with her in a few messages first ([sparks.md](sparks.md), "Plan").
 **Audience:** experienced AutoParts Co. employees who know the business but aren't designers or engineers. The reference user is Dana, a Senior Product Manager.
 **Description:** the step where Sparks builds a clickable prototype of the chosen direction, or another testable artifact when the direction isn't mainly software, and Dana tries it and asks for changes in plain words.
-**Status:** defined. Built as a reference layout from this PRD (not in Figma yet): after "Looks right, continue", the steps move to Prototype and the prototype opens beside the conversation (`SparksWorkspace` `preview`, `PrototypePanel`), Sparks builds "Fit check before you buy" screen by screen with its progress in place, then introduces it and asks "Ready for me to put it through its paces?" (`FitCheckPrototype`). ~~Not built: changing it (in words, typing over text, pointing), versions,~~ Changing it is built too: in words, typing over text, pointing ("Point at something", then what to change in the message box), and versions (the "Versions" menu, restoring as the newest). Every direction has its prototype: "Fit check before you buy"; "Flag often-returned parts" (search results with the flag, a flagged part with how often it comes back and its fit list, the cart); "Fit check at checkout" (the shop, the cart, the fit check at checkout with a swap, the store staff order lookup); and "Complete fit data", a routine, so the pieces it uses and a walkthrough ("When the direction isn't software": the walkthrough, the return screen at the counter, the catalog team's weekly list, the fit list customers see). Product photos are freely licensed stand-ins for AutoParts Co.'s own. Validate's fixes work in every prototype: the flag worded as a reminder; the fit checked in the cart and "Another vehicle" at checkout; at the counter, the vehicle filled in from the account, or picked when none is saved ([sparks-validate.md](sparks-validate.md), "Findings"). Going back to the choice in Plan works too: "Go back to the choice" after a change beyond the direction, or asking for it in words ("Let's try a different direction"). The Prototype section is in the Concept panel ("The Prototype section"). Not built: ~~the Prototype section in the Concept panel,~~ "Building failed", ~~going back to the choice in Plan from a change,~~ ~~and, for the three newer prototypes, changes asked for in words (beyond Validate's fixes, typing over text and pointing).~~ Changes in words work in every prototype ("Changing it").
+**Status:** defined. Built as a reference layout from this PRD (not in Figma yet): after "Looks right, continue", the steps move to Prototype and the prototype opens beside the conversation (`SparksWorkspace` `preview`, `PrototypePanel`), Sparks builds "Fit check before you buy" screen by screen with its progress in place, then introduces it and asks "Ready for me to put it through its paces?" (`FitCheckPrototype`). ~~Not built: changing it (in words, typing over text, pointing), versions,~~ Changing it is built too: in words, typing over text, pointing ("Point at something", then what to change in the message box), and versions (the "Versions" menu, restoring as the newest). Every direction has its prototype: "Fit check before you buy"; "Flag often-returned parts" (search results with the flag, a flagged part with how often it comes back and its fit list, the cart); "Fit check at checkout" (the shop, the cart, the fit check at checkout with a swap, the store staff order lookup); and "Complete fit data", a routine, so the pieces it uses and a walkthrough ("When the direction isn't software": the walkthrough, the return screen at the counter, the catalog team's weekly list, the fit list customers see). Product photos are freely licensed stand-ins for AutoParts Co.'s own. Evaluate's fixes work in every prototype: the flag worded as a reminder; the fit checked in the cart and "Another vehicle" at checkout; at the counter, the vehicle filled in from the account, or picked when none is saved ([sparks-validate.md](sparks-validate.md), "Findings"). Going back to the choice in Plan works too: "Go back to the choice" after a change beyond the direction, or asking for it in words ("Let's try a different direction"). The Prototype section is in the Concept panel ("The Prototype section"). Not built: ~~the Prototype section in the Concept panel,~~ "Building failed", ~~going back to the choice in Plan from a change,~~ ~~and, for the three newer prototypes, changes asked for in words (beyond Evaluate's fixes, typing over text and pointing).~~ Changes in words work in every prototype ("Changing it").
 
-~~⚠️ **Gap:** Validate's scenarios and Review's concept are written for "Fit check before you buy"; after another direction, they still describe it.~~ ✅ **Resolved:** Validate and Review follow the chosen direction: its own scenarios, findings and results in Validate ([sparks-validate.md](sparks-validate.md)), its own user stories, reviewers, recommendation and decision in Review ([sparks-review.md](sparks-review.md)). After going back to the choice, the new direction's prototype starts at version 1; the earlier one stays in the concept.
+~~⚠️ **Gap:** Evaluate's scenarios and Review's concept are written for "Fit check before you buy"; after another direction, they still describe it.~~ ✅ **Resolved:** Evaluate and Review follow the chosen direction: its own scenarios, findings and results in Evaluate ([sparks-validate.md](sparks-validate.md)), its own user stories, reviewers, recommendation and decision in Review ([sparks-review.md](sparks-review.md)). After going back to the choice, the new direction's prototype starts at version 1; the earlier one stays in the concept.
 
 ---
 
@@ -76,7 +76,7 @@ In the Prototype step, the prototype shows beside the conversation, large enough
 
 ~~⚠️ **Gap:** what she types while trying it isn't applied yet.~~ ✅ **Resolved:** changes are applied ("Changing it").
 
-The conversation stays beside the prototype, so Dana can ask for changes as she tries it. The full concept stays one click away ~~in the "Blueprint" panel~~ in the Blueprint (Plan in the steps), as supporting context ([sparks.md](sparks.md), "The concept workspace").
+The conversation stays beside the prototype, so Dana can ask for changes as she tries it. The full concept stays one click away ~~in the "Blueprint" panel~~ in the plan (Plan in the steps), as supporting context ([sparks.md](sparks.md), "The concept workspace").
 
 ## Changing it
 
@@ -86,7 +86,7 @@ Dana changes the prototype in plain words, or by typing over its text:
 - **By typing over text:** she selects any text in the prototype and types over it, as in a document.
 - **By pointing:** she selects ~~"Point at something"~~ "Edit element", selects any element in the prototype, and types what she wants changed. Sparks knows which element she means.
 
-Sparks makes the change, says what it changed in one line, and saves a new version ("Versions"): "Done: the "Add to cart" button now says "Add to my cart". I've saved it as version 4." The question that finishes the step stays under each change ("Yes, test it", "Go to Review instead").
+Sparks makes the change, says what it changed in one line, and saves a new version ("Versions"): "Done: the "Add to cart" button now says "Add to my cart". I've saved it as version 4." The question that finishes the step stays under each change ("Yes, evaluate it", "Go to Review instead").
 
 How each way works, as built:
 
@@ -111,23 +111,23 @@ When a change goes beyond simple edits:
 
 ✅ **Resolved:** going back to the choice from Prototype, from "Go back to the choice" or in her words, reopens the choice in Plan in the same conversation ([sparks-plan-compare.md](sparks-plan-compare.md), "Going back to the choice"). The prototype she leaves stays in the concept; a new pick is built from version 1.
 - **Against the design system or its accessibility standards** ("Make the text light gray"): Sparks explains in one sentence and offers the closest option that follows them. If Dana insists, Sparks makes the change and records it under "Departs from the design system", so the UX team sees it in Review.
-- **Needs something AutoParts Co. doesn't have** (live stock at the nearest store, which stores don't report in real time): Sparks builds it as pretend and records it under "Needs what AutoParts Co. doesn't have yet", from engineering context. Validate and Review pick it up.
+- **Needs something AutoParts Co. doesn't have** (live stock at the nearest store, which stores don't report in real time): Sparks builds it as pretend and records it under "Needs what AutoParts Co. doesn't have yet", from engineering context. Evaluate and Review pick it up.
 
 ## Paths
 
-Each direction Dana builds is a path in the prototype: Plan's pick first, then each one she tries from a direction card or the Blueprint ("Generate prototype", [sparks-plan-compare.md](sparks-plan-compare.md), "Directions in the blueprint") or picks after going back to the choice. Nothing is replaced.
+Each direction Dana builds is a path in the prototype: Plan's pick first, then each one she tries from a direction card or the plan ("Generate prototype", [sparks-plan-compare.md](sparks-plan-compare.md), "Directions in the plan") or picks after going back to the choice. Nothing is replaced.
 
 - **Which direction it is:** the toolbar always starts with the direction the prototype was built from, numbered as on its card ("1. Fit check before you buy"), so it's clear what she's trying.
 
   ✅ **Resolved:** the prototype names its direction, with one path too.
 - **Switching:** with more than one path, ~~a switcher leads the toolbar~~ that name becomes a switcher, in the same place ("Path"), each path named as in the directions ("2. Flag often-returned parts"), in the order built. Switching shows that path where she left it; pointing stops.
-- **Each path has its own** build, versions ("Versions ({n})" and restoring), comments ("Commenting on it") and Validate runs ([sparks-validate.md](sparks-validate.md)). A path being built keeps building while she looks at another.
-- **In the Blueprint,** "What we built" ~~and "The evaluation"~~ and the Prototype and Validate lines in "Where it stands" are the path shown's, named after it once there's more than one path ("What we built: Flag often-returned parts").
+- **Each path has its own** build, versions ("Versions ({n})" and restoring), comments ("Commenting on it") and Evaluate runs ([sparks-validate.md](sparks-validate.md)). A path being built keeps building while she looks at another.
+- **In the plan,** "What we built" ~~and "The evaluation"~~ and the Prototype and Evaluate lines in "Where it stands" are the path shown's, named after it once there's more than one path ("What we built: Flag often-returned parts").
 - **Review** is about one path: the one she sends there ([sparks-review.md](sparks-review.md)).
 
 ✅ **Resolved:** another direction becomes another path, beside the first, not a replacement. Each path keeps its own versions, comments and evaluation; any path can be validated; one goes to Review.
 
-⚠️ **Gap:** Review doesn't show the other paths as alternatives considered yet, with their results; the Blueprint shows one path's prototype ~~and evaluation~~ and where its evaluation stands at a time (the one shown), not each path's.
+⚠️ **Gap:** Review doesn't show the other paths as alternatives considered yet, with their results; the plan shows one path's prototype ~~and evaluation~~ and where its evaluation stands at a time (the one shown), not each path's.
 
 ## Commenting on it
 
@@ -135,20 +135,36 @@ Dana can leave comments on the prototype itself, pinned where they apply, as not
 
 - **"Add comment"** (a speech bubble with a plus) turns commenting on; Esc or the button again turns it off. While it's on, the prototype doesn't respond to clicks: a click drops a pin there instead (Enter does it on the element with focus).
 - **The pin and its box:** the pin is her avatar in a white drop whose point marks the spot (blue while it's open). Under it, a box to write in, "Add a comment", with a send button; Enter adds the comment, Shift+Enter starts a new line, Esc or a click outside drops it.
-- **After adding it,** the pin stays where she put it. Selecting it opens the comment: who, when, the text and "Delete comment". Commenting stays on, so she can add another.
+- **After adding it,** the pin stays where she put it. Selecting it opens the comment: who (and a reviewer's team, "UX team"), when, the text~~ and "Delete comment"~~, then its thread. Commenting stays on, so she can add another.
+- **The thread:** the replies, oldest first, and a box to reply (Enter sends). "Mark as resolved" (a check) closes it: its pin leaves the prototype and the comment moves to "Resolved" in the Comments panel, from where it can be opened and reopened ("Reopen"). A reply reopens a resolved comment. "Delete comment" only on one's own.
+- **Reviewers comment the same way** on the published version ([sparks-review.md](sparks-review.md), "What reviewers see and do"). Their pins show on Dana's prototype too, with their name and team, and she replies or resolves them there.
 - **Where pins show:** a pin is attached to what she clicked, so it moves with it and shows only while it's on screen; on the audience and device it was added on.
 
 ✅ **Resolved:** comments on the prototype are pinned where she clicks, with a popover to write the comment, and the pin stays after it's added. Built as `PrototypeComments` (`prototype/prototype-comments.tsx`), after a typical comment pin and box from a reference screenshot (not in Figma yet).
 
 ✅ **Resolved:** the comments show in the header's Comments panel, under "On the prototype" ([sparks.md](sparks.md), "The concept workspace"); selecting one there opens its pin.
 
-⚠️ **Gap:** ~~the comments stay in the prototype: they don't show in the header's Comments panel,~~ reviewers can't see them or reply in Review, and Sparks doesn't act on them (that's "Edit element"). Not designed: whether a comment can also be sent to Sparks as a change, and mentioning someone (@) or reacting with an emoji, which the example showed.
+✅ **Resolved:** comments are threads: anyone who can see them replies, and Dana or the reviewer resolves them. Selecting one in the Comments panel, from any step, opens Prototype on its path with its thread open on its pin. Why: reviewers' feedback on the prototype is a conversation about a spot on the screen; it should be answered and closed there.
+
+⚠️ **Gap:** ~~the comments stay in the prototype: they don't show in the header's Comments panel,~~ ~~reviewers can't see them or reply in Review,~~ Sparks doesn't act on them (that's "Edit element"). Not designed: whether a comment can also be sent to Sparks as a change, and mentioning someone (@) or reacting with an emoji, which the example showed.
 
 ## Versions
 
 - Every change Dana asks for saves a version, named for what changed ("Fit message names the vehicle first").
-- She can open any earlier version and restore it. Restoring saves it as the newest version; nothing is lost.
-- Validate evaluates the version that's current when it runs; Review shows the version that's current when she submits for a decision.
+- She can open any earlier version and restore it. Restoring saves it as the newest version; nothing is lost. The plan's versions use the same "Versions ({n})" menu ([sparks.md](sparks.md), "The finished plan").
+- Evaluate evaluates the version that's current when it runs; Review shows the version that's current when she submits for a decision.
+
+## When the plan changes
+
+Once Plan is done, Dana can change it in the plan ([sparks.md](sparks.md), "The finished plan"). When a change alters what Plan says (not only its wording), the prototype may no longer fit:
+
+- **Sparks offers first:** "Want me to update the prototype to match?", with "Yes, update it" and "Not now". It never updates the prototype on its own.
+- **"Yes, update it"** opens Prototype and saves a new version that matches the plan ("Matched to the plan"), so the earlier one can still be restored.
+- **While it doesn't match,** the prototype shows a note above it: "Built from an earlier version of the plan: you've since changed what success looks like." (every part changed since, in words), with "Update prototype", which does the same as "Yes, update it". "Where it stands" in the plan says "Built from an earlier version of the plan." for the prototype and "Run on an earlier version of the plan." for Evaluate's last run.
+
+✅ **Resolved:** after a change in the plan, Sparks offers to update the prototype and waits for her yes; a prototype built from an earlier version of the plan says so until it's updated.
+
+ℹ️ Built: `PrototypePanel` `notice` (`text`, `actionLabel`, `onAction`), a `role='status'` note on `warning-subtle` between the toolbar and the prototype. In the demo, the update saves a version without changing the screens, since the fit check's screens don't depend on the edited text. One note covers every path.
 
 ## When the direction isn't software
 
@@ -162,13 +178,13 @@ For those, Prototype builds the most appropriate testable artifact instead: the 
 
 Sparks says which kind of artifact it's building and why, before it starts: "This direction is mostly a new store routine, so I'll build the counter screen with its script and a walkthrough of a customer's visit."
 
-Everything else in this step works the same: trying it, changing it in plain words or by pointing, versions, and finishing. Validate evaluates the artifact the same way ([sparks-validate.md](sparks-validate.md), "What gets evaluated").
+Everything else in this step works the same: trying it, changing it in plain words or by pointing, versions, and finishing. Evaluate evaluates the artifact the same way ([sparks-validate.md](sparks-validate.md), "What gets evaluated").
 
 ✅ **Resolved:** Prototype builds a clickable prototype or another appropriate testable artifact, depending on the direction. Not every business experiment needs an interactive screen; what matters is that it can be tried and evaluated.
 
 ## The Prototype section
 
-What the step adds to the concept (~~the "Concept" "Blueprint" panel~~ the Blueprint, [sparks.md](sparks.md), "The Blueprint"):
+What the step adds to the concept (~~the "Concept" "Blueprint" panel~~ the plan, [sparks.md](sparks.md), "The finished plan"):
 
 | Part | Holds | Needed to continue |
 | --- | --- | --- |
@@ -180,7 +196,7 @@ What the step adds to the concept (~~the "Concept" "Blueprint" panel~~ the Bluep
 | Departs from the design system | Changes Dana kept that the design system or its standards don't support | No |
 | Versions | Every version, newest first | Yes (kept automatically) |
 
-How it shows, as built (`PrototypeSection` in the Blueprint, titled "What we built", after Plan's "What we'll build"; ~~under the "Prototype" step~~ the Blueprint no longer groups sections by step). It stays in the Blueprint, unlike the evaluation and the review, because it's spec: what's pretend and what the real thing would need aren't in the Prototype step's panel, which is the prototype itself. "Where it stands" adds one line for the prototype ("Version 3: …"), with "Open":
+How it shows, as built (`PrototypeSection` in the plan, titled "What we built", after Plan's "What we'll build"; ~~under the "Prototype" step~~ the plan no longer groups sections by step). It stays in the plan, unlike the evaluation and the review, because it's spec: what's pretend and what the real thing would need aren't in the Prototype step's panel, which is the prototype itself. "Where it stands" adds one line for the prototype ("Version 3: …"), with "Open":
 
 - It appears once the prototype is built, and follows every change: the current version and its name, with "Try it" (the prototype beside the conversation).
 - "What's in it" says whether every step of the chosen direction's "How it works" is covered ("Covers every step of "How it works" (3 of 3)"), then each audience and device with its screens, and under each screen the steps it covers, one per line. A screen that isn't a step (the cart, the store lookup) says it "shows what happens around it".
@@ -197,13 +213,13 @@ How it shows, as built (`PrototypeSection` in the Blueprint, titled "What we bui
 Dana can continue when the prototype covers every step of the chosen direction's "How it works", or she has accepted that a step is left out.
 
 - **A step not covered:** Sparks says which, and offers to build it or record it under "What comes later".
-- When it's complete, Sparks asks: "**Ready for me to put it through its paces?** In Validate, I'll work it through realistic scenarios for customers and store staff, and check it against AutoParts Co.'s data." Quick replies: "Yes, test it", "Go to Review instead". She can keep trying and changing it first; the question stays.
-- ~~Selecting "Continue to Validate" marks Prototype as Done and opens Validate.~~ "Yes, test it" marks Prototype as Done and starts Validate in the same conversation, with no button: Sparks shows its evaluation plan ([sparks-validate.md](sparks-validate.md), "The evaluation plan").
-- Validate is optional. With the same condition, Dana can go to Review instead ("Go to Review instead"): Prototype is marked Done and Validate shows as Skipped ([sparks.md](sparks.md), "Moving through the steps").
+- When it's complete, Sparks asks: "**Ready for me to put it through its paces?** In Evaluate, I'll work it through realistic scenarios for customers and store staff, and check it against AutoParts Co.'s data." Quick replies: "Yes, evaluate it", "Go to Review instead". She can keep trying and changing it first; the question stays.
+- ~~Selecting "Continue to Evaluate" marks Prototype as Done and opens Evaluate.~~ "Yes, evaluate it" marks Prototype as Done and starts Evaluate in the same conversation, with no button: Sparks shows its evaluation plan ([sparks-validate.md](sparks-validate.md), "The evaluation plan").
+- Evaluate is optional. With the same condition, Dana can go to Review instead ("Go to Review instead"): Prototype is marked Done and Evaluate shows as Skipped ([sparks.md](sparks.md), "Moving through the steps").
 
-✅ **Resolved:** Prototype starts from "Looks right, continue" and ends with a question and its quick replies, not "Continue to Prototype" or "Continue to Validate" buttons. Why: like the parts of Plan, the conversation moves on when Dana answers; a button adds a stop it doesn't need (sparks.md, "Moving through the steps").
+✅ **Resolved:** Prototype starts from "Looks right, continue" and ends with a question and its quick replies, not "Continue to Prototype" or "Continue to Evaluate" buttons. Why: like the parts of Plan, the conversation moves on when Dana answers; a button adds a stop it doesn't need (sparks.md, "Moving through the steps").
 
-Changing the prototype after Validate is Done marks Validate and Review as Needs a check, if they're Done ([sparks.md](sparks.md), "Moving through the steps"). Changing something in Plan after Prototype is Done doesn't rebuild the prototype on its own: Sparks suggests the changes it would make, and Dana accepts them.
+Changing the prototype after Evaluate is Done marks Evaluate and Review as Needs a check, if they're Done ([sparks.md](sparks.md), "Moving through the steps"). Changing something in Plan after Prototype is Done doesn't rebuild the prototype on its own: Sparks suggests the changes it would make, and Dana accepts them.
 
 The prototype isn't shared with anyone before Review ([sparks.md](sparks.md), "Bringing others in").
 
@@ -218,7 +234,9 @@ The prototype isn't shared with anyone before Review ([sparks.md](sparks.md), "B
 | Change goes against the design system | Sparks's reason and the closest option | Take the option, or keep her change |
 | Building failed | "I couldn't finish building {screen}. Your last version is still here." and "Try again" | Try again, keep using the last version |
 | A step not covered | Which step, and Sparks's offer | Build it, leave it for later |
-| Ready to continue | Sparks's question, with "Yes, test it" and "Go to Review instead" | Continue, go to Review without Validate, or keep changing it |
+| Ready to continue | Sparks's question, with "Yes, evaluate it" and "Go to Review instead" | Continue, go to Review without Evaluate, or keep changing it |
+
+✅ **Resolved:** the answer that starts Evaluate is "Yes, evaluate it", not "Yes, test it", like the step and its "Evaluate the prototype". Why: one word for the step everywhere; "test" also suggested testing with real people, which Evaluate isn't.
 
 ## Checks
 

@@ -1,29 +1,29 @@
 <!--
 Created: Nov 21, 2026
 Created by: Julio Caunedo
-Last updated: Nov 22, 2026 (the Blueprint no longer repeats the evaluation: one line in "Where it stands", with "Open"; each path in the prototype has its own runs; the spec panel is "Blueprint"; the Evaluation section in the Concept panel built; fixes built for every direction; the evaluation follows the chosen direction; "Go back to the choice" when the read is "Needs another look"; "Fix this in the prototype" only for fixes the prototype can make; "Go ahead to Review" opens Review; built as a reference layout: the plan, the run beside the conversation, the results, fixing in the prototype and running again, and the go-ahead; Validate starts from "Yes, test it", not a button; Example range reaches the target (35–50%); what "reaches" means; counts aligned; "Needs a check")
-Scope: the Validate step of a Sparks concept, the third of four (Plan, Prototype, Validate, Review): the scenario-based AI evaluation (scenarios worked through the prototype, and checks against business data, previous experiments, engineering context and the design system), the findings, the evidence status of the hypothesis, Dana's go-ahead, and the Evaluation section of the concept.
+Last updated: Nov 22, 2026 (the step "Validate" renamed "Evaluate"; back at the choice, she picks on the direction cards, not quick replies; the finished plan, no longer "Blueprint"; the Blueprint no longer repeats the evaluation: one line in "Where it stands", with "Open"; each path in the prototype has its own runs; the spec panel is "Blueprint"; the Evaluation section in the Concept panel built; fixes built for every direction; the evaluation follows the chosen direction; "Go back to the choice" when the read is "Needs another look"; "Fix this in the prototype" only for fixes the prototype can make; "Go ahead to Review" opens Review; built as a reference layout: the plan, the run beside the conversation, the results, fixing in the prototype and running again, and the go-ahead; Evaluate starts from "Yes, evaluate it", not a button; Example range reaches the target (35–50%); what "reaches" means; counts aligned; "Needs a check")
+Scope: the Evaluate step of a Sparks concept, the third of four (Plan, Prototype, Evaluate, Review): the scenario-based AI evaluation (scenarios worked through the prototype, and checks against business data, previous experiments, engineering context and the design system), the findings, the evidence status of the hypothesis, Dana's go-ahead, and the Evaluation section of the concept.
 Purpose: defines how Dana learns, on her own and in minutes, what could go wrong with her concept and whether it can be built, before anyone else sees it, and how the evaluation stays honest about what an AI evaluation can and can't show.
 -->
 
-# Validate — Sparks
+# Evaluate — Sparks
 
-**Location:** the third of a Sparks concept's four steps. It opens when Dana ~~selects "Continue to Validate"~~ answers "Yes, test it" to "Ready for me to put it through its paces?" at the end of Prototype ([sparks-prototype.md](sparks-prototype.md), "Finishing the step"), and whenever she selects Validate in the steps. It's optional, the only step that can be skipped ([sparks.md](sparks.md), "Moving through the steps").
+**Location:** the third of a Sparks concept's four steps. It opens when Dana ~~selects "Continue to Evaluate"~~ answers "Yes, evaluate it" to "Ready for me to put it through its paces?" at the end of Prototype ([sparks-prototype.md](sparks-prototype.md), "Finishing the step"), and whenever she selects Evaluate in the steps. It's optional, the only step that can be skipped ([sparks.md](sparks.md), "Moving through the steps").
 **Audience:** experienced AutoParts Co. employees who know the business but aren't designers or engineers. The reference user is Dana, a Senior Product Manager.
 **Description:** the step where Sparks works the prototype through realistic scenarios and checks the concept against AutoParts Co.'s data and resources, to surface potential risks, assumptions and usability concerns before Dana brings anyone in.
-**Status:** defined. Built as a reference layout from this PRD (not in Figma yet): "Yes, test it" opens Validate with the plan in the conversation; "Looks right, continue" runs it, with progress in place and the results filling in beside the conversation (`ValidatePanel`); Sparks's read, the evidence status and "Do you want to take this to review, or keep improving it?" follow. "Fix this in the prototype", "Run it again" (with what changed since the last run), Stop, and the go-ahead (which needs a run on the current prototype version, and opens Review) work. Each direction gets its own evaluation: its scenarios (for "Complete fit data", the people in the routine: stores, the returns team, the catalog team, customers), findings, assumptions, build needs and estimate, honest about what it can and can't do. "Go back to the choice" reopens the choice in Plan. Every direction has fixes the prototype can make, and the results follow them. Not built: adding a scenario to the run itself, deep links from a finding to its screen, "A run failed" and "A source can't be reached".
+**Status:** defined. Built as a reference layout from this PRD (not in Figma yet): "Yes, evaluate it" opens Evaluate with the plan in the conversation; "Looks right, continue" runs it, with progress in place and the results filling in beside the conversation (`ValidatePanel`); Sparks's read, the evidence status and "Do you want to take this to review, or keep improving it?" follow. "Fix this in the prototype", "Run it again" (with what changed since the last run), Stop, and the go-ahead (which needs a run on the current prototype version, and opens Review) work. Each direction gets its own evaluation: its scenarios (for "Complete fit data", the people in the routine: stores, the returns team, the catalog team, customers), findings, assumptions, build needs and estimate, honest about what it can and can't do. "Go back to the choice" reopens the choice in Plan. Every direction has fixes the prototype can make, and the results follow them. Not built: adding a scenario to the run itself, deep links from a finding to its screen, "A run failed" and "A source can't be reached".
 
 ---
 
 ## Purpose
 
-Before Dana brings anyone in, she wants to know: where could people struggle, how much could it move the measures she chose, and can AutoParts Co. actually build it. Validate gives her an early, honest read with a scenario-based AI evaluation: Sparks works the prototype through realistic situations drawn from what AutoParts Co. knows about its customers and teams, and checks the concept against business data, previous experiments, engineering context and the design system.
+Before Dana brings anyone in, she wants to know: where could people struggle, how much could it move the measures she chose, and can AutoParts Co. actually build it. Evaluate gives her an early, honest read with a scenario-based AI evaluation: Sparks works the prototype through realistic situations drawn from what AutoParts Co. knows about its customers and teams, and checks the concept against business data, previous experiments, engineering context and the design system.
 
 It works when Dana knows the likely risks and weak spots, has fixed what she can, and reaches Review with an honest account of what's been checked, how, and what still needs real people.
 
 **An AI evaluation isn't research with real people.** It explores possible outcomes under assumptions; it doesn't observe anyone. Sparks never presents scenarios as research participants, never shows their reasoning as quotes from customers, and never says "validated" for what it found ([sparks.md](sparks.md), "Evidence and decisions").
 
-✅ **Resolved:** Validate uses scenario-based AI evaluation, not simulated personas presented as research participants. Results are potential risks, assumptions and usability concerns, clearly told apart from real-user validation.
+✅ **Resolved:** Evaluate uses scenario-based AI evaluation, not simulated personas presented as research participants. Results are potential risks, assumptions and usability concerns, clearly told apart from real-user validation.
 
 When Prototype made another testable artifact instead of a clickable prototype (a store routine, a process walkthrough), the scenarios are worked through that artifact the same way ([sparks-prototype.md](sparks-prototype.md), "When the direction isn't software").
 
@@ -43,11 +43,11 @@ When Prototype made another testable artifact instead of a clickable prototype (
 
 Every result says which method it comes from.
 
-ℹ️ **Paths:** with more than one path in the prototype ([sparks-prototype.md](sparks-prototype.md), "Paths"), Validate runs on the path shown, and each path keeps its own runs and results, so they can be compared. A run on one path pauses while she looks at another.
+ℹ️ **Paths:** with more than one path in the prototype ([sparks-prototype.md](sparks-prototype.md), "Paths"), Evaluate runs on the path shown, and each path keeps its own runs and results, so they can be compared. A run on one path pauses while she looks at another.
 
 ## The evaluation plan
 
-When Validate opens, Sparks drafts a plan and shows it before running anything:
+When Evaluate opens, Sparks drafts a plan and shows it before running anything:
 
 - **Scenarios:** realistic situations for each audience in the prototype, built from the segments in the brief's "Who's involved" and from customer intelligence. Each is described as a situation, not a person: "A do-it-yourself customer buys brake pads for a 2012 Honda Civic on a phone." "A store associate helps a customer whose part showed 'We're not sure this fits', during a busy hour."
 - **Accessibility scenarios:** at least one with a screen reader and one with only a keyboard, for each audience.
@@ -137,7 +137,7 @@ Sparks's reasoning is never written as a customer's words or thoughts, and never
 
 ### Assumptions
 
-Each assumption from "To check in Validate", and any others in the concept, with one of:
+Each assumption from "To check in Evaluate", and any others in the concept, with one of:
 
 - **Supported,** with the evidence and its method.
 - **Not supported,** with the evidence, and what it changes.
@@ -161,7 +161,7 @@ What an AI evaluation can't answer well: whether customers trust the fit message
 
 ## Fixing and running again
 
-- **"Fix this in the prototype"** opens Prototype with the suggested fix ready as a suggestion. Dana accepts it or changes it there, and comes back to Validate.
+- **"Fix this in the prototype"** opens Prototype with the suggested fix ready as a suggestion. Dana accepts it or changes it there, and comes back to Evaluate.
 - Dana can also go back to the part of Plan a finding points to: the choice, if the direction doesn't hold; the success criteria, if a target turns out unrealistic. Sparks reopens that part in the conversation ([sparks.md](sparks.md), "Plan").
 - **"Run again"** runs the plan on the current prototype version. Sparks shows what changed since the last run: "3 of 4 findings fixed. 'Doesn't fit' returns: now likely 40–55% fewer."
 - Every run is kept, with the prototype version it evaluated.
@@ -171,18 +171,18 @@ What an AI evaluation can't answer well: whether customers trust the fit message
 When Dana has read the results, Sparks asks: "Do you want to take this to review, or keep improving it?", with "Go ahead to Review" and "Keep improving" as quick replies, right after its read and the evidence status
 
 - **"Go ahead to Review"** records her go-ahead and the evidence status, with a note if she wants to add one, and continues.
-- **"Keep improving"** keeps her in Validate to fix and run again.
-- **"Go back to the choice"** comes first when Sparks's read is "Needs another look" because the direction is unlikely to reach the target on its own. The question becomes "Do you want to go back to the choice, take this to review as it is, or keep improving it?" The choice reopens in the conversation, with the four directions where they were and the one she tried left out of the quick replies ([sparks-plan-compare.md](sparks-plan-compare.md), "Going back to the choice").
+- **"Keep improving"** keeps her in Evaluate to fix and run again.
+- **"Go back to the choice"** comes first when Sparks's read is "Needs another look" because the direction is unlikely to reach the target on its own. The question becomes "Do you want to go back to the choice, take this to review as it is, or keep improving it?" The choice reopens in the conversation, with the four directions where they were ~~and the one she tried left out of the quick replies~~, picked again with a card's "Generate prototype" ([sparks-plan-compare.md](sparks-plan-compare.md), "Going back to the choice").
 
 ✅ **Resolved:** with a "Needs another look" read, "Go back to the choice" is the first answer offered; going ahead to Review as it is and keeping on improving stay open.
 
 **Going ahead with open findings is allowed.** Any finding marked "Blocks" or "Hurts" that's still open, and any assumption not supported, is listed as a known issue for review. Sparks says so once before she continues: "Two findings are still open. They'll go to review as known issues."
 
-**Skipping Validate is allowed** ([sparks.md](sparks.md), "Moving through the steps"). The evidence status stays "Not tested", and Review lists it as a gap.
+**Skipping Evaluate is allowed** ([sparks.md](sparks.md), "Moving through the steps"). The evidence status stays "Not tested", and Review lists it as a gap.
 
 ## The Evaluation section
 
-What the step adds to the concept, shown in Validate's panel beside the conversation; the Blueprint has one line for it in "Where it stands" ([sparks.md](sparks.md), "The Blueprint"):
+What the step adds to the concept, shown in Evaluate's panel beside the conversation; the plan has one line for it in "Where it stands" ([sparks.md](sparks.md), "The finished plan"):
 
 | Part | Holds | Needed to finish |
 | --- | --- | --- |
@@ -199,28 +199,28 @@ What the step adds to the concept, shown in Validate's panel beside the conversa
 | Runs | Every run, its prototype version and its read | Yes (kept automatically) |
 | Dana's go-ahead | Her go-ahead and her note | Yes |
 
-~~How it shows, as built ("The evaluation" in the Concept panel, under "Validate"):~~
+~~How it shows, as built ("The evaluation" in the Concept panel, under "Evaluate"):~~
 
 - ~~It appears once the first run starts. Until a run finishes, it shows the plan ("9 scenarios, then business data, engineering context, the design system and how teams work."), "The results show here once the run finishes." and the run as "running".~~
 - ~~Once a run finishes, it shows that run's results, part by part as in the table: Sparks's read, the hypothesis (the outcome by method, what was found, what it rests on), the effect on each measure (estimate, confidence or status, and why), findings marked "Open" or "Fixed" with how much each matters and its method, assumptions with their status and evidence, then what it needs to be built, design and accessibility, teams and what only real people can tell us.~~
 - ~~"Runs" lists every run, newest first, with its prototype version and its read ("stopped before finishing", "running"). "Your go-ahead" says whether she went ahead to Review.~~
-- ~~"See the results" opens Validate beside the conversation.~~
-- ~~With Validate skipped, the section says so: "Validate was skipped, so the hypothesis isn't tested. Review lists it as a gap."~~
+- ~~"See the results" opens Evaluate beside the conversation.~~
+- ~~With Evaluate skipped, the section says so: "Evaluate was skipped, so the hypothesis isn't tested. Review lists it as a gap."~~
 
 ~~✅ **Resolved:** the Evaluation section shows the last finished run, never a run in progress, so the concept always holds results that are complete; a run in progress shows only in "Runs".~~
 
-How it shows in the Blueprint, as built ("Where it stands" → Validate, once Validate is reached): "Not run yet.", "Run 2 on version 3, running.", "Run 2 on version 3, stopped.", "Run 2 on version 3: Ready for review. Simulation supports hypothesis." (the last run's read and its evidence status), or "Skipped: the hypothesis isn't tested."; "Open" goes to Validate, where the full evaluation is.
+How it shows in the plan, as built ("Where it stands" → Evaluate, once Evaluate is reached): "Not run yet.", "Run 2 on version 3, running.", "Run 2 on version 3, stopped.", "Run 2 on version 3: Ready for review. Simulation supports hypothesis." (the last run's read and its evidence status), or "Skipped: the hypothesis isn't tested."; "Open" goes to Evaluate, where the full evaluation is.
 
-✅ **Resolved:** the Blueprint no longer repeats the evaluation; it has one line on where Validate stands, with "Open". Why: the evaluation has its own panel in Validate, and the Blueprint keeps the spec ([sparks.md](sparks.md), "The Blueprint").
+✅ **Resolved:** the plan no longer repeats the evaluation; it has one line on where Evaluate stands, with "Open". Why: the evaluation has its own panel in Evaluate, and the plan keeps the spec ([sparks.md](sparks.md), "The finished plan").
 
 ⚠️ **Gap:** her note with the go-ahead isn't built.
 
 ## Finishing the step
 
-Validate is Done when there's a complete run on the current prototype version and Dana has chosen "Go ahead to Review".
+Evaluate is Done when there's a complete run on the current prototype version and Dana has chosen "Go ahead to Review".
 
 - **The prototype changed since the last run:** "Go ahead to Review" isn't available, and the section says why: "The prototype changed after the last run. Run it again to evaluate the current version."
-- Selecting "Go ahead to Review" marks Validate as Done and opens Review.
+- Selecting "Go ahead to Review" marks Evaluate as Done and opens Review.
 
 ✅ **Resolved:** the go-ahead needs a run on the current prototype version, so the review never presents results for a prototype that no longer exists.
 
@@ -243,7 +243,7 @@ What Dana says → what Sparks must do:
 
 | Dana | Sparks must |
 | --- | --- |
-| Opens Validate | Show the plan as scenarios, including screen-reader and keyboard scenarios, and run nothing until she starts it |
+| Opens Evaluate | Show the plan as scenarios, including screen-reader and keyboard scenarios, and run nothing until she starts it |
 | "So customers will love it?" | Say what the evaluation suggests, that it's an AI evaluation, and that how people feel is under "What only real people can tell us" |
 | "Add my neighbor as a test customer, she orders a lot." | Explain that scenarios come from patterns, not real people, and offer a scenario like the one she describes |
 | "Give me the exact number of returns we'll save." | Give the range, method and confidence, and explain why it can't be exact |
@@ -263,17 +263,17 @@ What Dana says → what Sparks must do:
 
 ## Acceptance Criteria
 
-- Given a finished prototype, when Validate opens, then Sparks shows a plan of six to ten scenarios across audiences, including screen-reader and keyboard scenarios, and runs nothing until Dana selects "Run the evaluation".
+- Given a finished prototype, when Evaluate opens, then Sparks shows a plan of six to ten scenarios across audiences, including screen-reader and keyboard scenarios, and runs nothing until Dana selects "Run the evaluation".
 - Scenarios are described as situations; none is presented as a research participant or based on a real customer's or employee's record.
 - Sparks's reasoning in a scenario is labeled "AI evaluation" and never written as a customer's words.
 - The hypothesis shows an outcome (Supports, Inconclusive or Does not support) with its method, and "Simulation supports hypothesis" shows "Based on simulated scenarios. Real-user testing is recommended before implementation."
 - Results from AI simulation alone never show high confidence; the word "validated" never appears for them.
 - Every estimate of a measure is a range with its method, confidence and reasons, and says whether it reaches Dana's target.
 - Every finding shows what could go wrong, where, how much it matters, its method, and a suggested fix when there is one.
-- Every assumption from "To check in Validate" shows Supported, Not supported or Still unknown.
+- Every assumption from "To check in Evaluate" shows Supported, Not supported or Still unknown.
 - "Fix this in the prototype" opens Prototype with the fix as a suggestion; "Run again" shows what changed since the last run.
 - "Go ahead to Review" is available only after a complete run on the current prototype version.
-- Given Validate is skipped, the evidence status is "Not tested" and Review lists it as a gap.
+- Given Evaluate is skipped, the evidence status is "Not tested" and Review lists it as a gap.
 - Open findings marked "Blocks" or "Hurts", and unsupported assumptions, appear in review as known issues.
 
 ## Out of scope
@@ -281,4 +281,4 @@ What Dana says → what Sparks must do:
 - The workspace, step states, suggestions, Sparks's voice, evidence and decisions, and knowledge: [sparks.md](sparks.md).
 - Building and changing the prototype: [sparks-prototype.md](sparks-prototype.md).
 - Testing with real people, and bringing others in: [sparks-review.md](sparks-review.md).
-- Comparing Validate's estimates with real outcomes after implementation: a future direction, with Pulse ([sparks.md](sparks.md), "Out of scope").
+- Comparing Evaluate's estimates with real outcomes after implementation: a future direction, with Pulse ([sparks.md](sparks.md), "Out of scope").

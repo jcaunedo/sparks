@@ -3,7 +3,7 @@ import { PlanSummary, lowerFirst } from "./plan-summary";
 /**
  * The Chosen direction section (prds/sparks-plan-compare.md, "The Chosen direction section"), drafted by Sparks in one
  * go once Dana picks a direction: what it is, why it's the one, what we believe it will do, what it gives up, the others,
- * and what Validate checks.
+ * and what Evaluate checks.
  */
 type ChosenDraft = {
 	name: string;
@@ -21,7 +21,7 @@ type ChosenDraft = {
 };
 
 type ChosenCardProps = {
-	/** Smaller text, for the Blueprint. */
+	/** Smaller text, for the plan. */
 	compact?: boolean;
 	chosen: ChosenDraft;
 	className?: string;
@@ -32,6 +32,12 @@ type ChosenCardProps = {
  * why, what we believe, what it gives up, the others and what's still to check. No card around it. Not in Figma yet.
  */
 function ChosenCard({ chosen, compact, className }: ChosenCardProps) {
+	const { text, sources } = chosenSummary(chosen);
+	return <PlanSummary label="What we'll build" text={text} sources={sources} compact={compact} className={className} />;
+}
+
+/** The summary's text (AssistantMessage's format) and its sources line: what the card shows, and what the plan edits. */
+function chosenSummary(chosen: ChosenDraft) {
 	const text = [
 		`**${chosen.name}:** ${lowerFirst(chosen.idea)} ${chosen.why}`,
 		chosen.believe,
@@ -43,14 +49,7 @@ function ChosenCard({ chosen, compact, className }: ChosenCardProps) {
 	]
 		.filter(Boolean)
 		.join("\n\n");
-	return (
-		<PlanSummary
-			label="What we'll build"
-			text={text}
-			sources='From the direction you chose and what success looks like.'
-			compact={compact} className={className}
-		/>
-	);
+	return { text, sources: "From the direction you chose and what success looks like." };
 }
 
-export { ChosenCard, type ChosenCardProps, type ChosenDraft };
+export { ChosenCard, chosenSummary, type ChosenCardProps, type ChosenDraft };

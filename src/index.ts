@@ -100,6 +100,13 @@ export {
 	ClarificationCard,
 	type ClarificationCardProps,
 } from "@/components/chat/clarification-card";
+export {
+	DirectionCard,
+	directionCardVariants,
+	type DirectionCardLine,
+	type DirectionCardProps,
+	type DirectionCardRating,
+} from "@/components/chat/direction-card";
 export { PromptComposer, type PromptComposerProps } from "@/components/chat/prompt-composer";
 export { QuickReplies, type QuickRepliesProps } from "@/components/chat/quick-replies";
 export { ThinkingIndicator, type ThinkingIndicatorProps } from "@/components/chat/thinking-indicator";

@@ -42,13 +42,13 @@ type AutoPartsHubHomeProps = {
 	user: AutoPartsHubUser;
 	/** The user's apps, in display order. */
 	apps: HomeApp[];
-	/** The tab open on arrival: "My apps" by default; "My library" when Sparks's "Add from library" opens the home. */
+	/** The tab open on arrival: "Apps" by default; "My library" when Sparks's "Add from library" opens the home. */
 	defaultTab?: HomeTab;
 	/** The bell's notifications (the same in every AutoPartsHUB header). */
 	notifications?: NotificationsPopoverProps;
 };
 
-/** The home's tabs: "My apps", "My library", "Connections". */
+/** The home's tabs: "Apps", "My library", "Connections". */
 type HomeTab = "apps" | "library" | "connections";
 
 /**
@@ -72,7 +72,7 @@ function AutoPartsHubHome({ user, apps, defaultTab = "apps", notifications }: Au
 				{/* Keyed on the tab asked for, so a link to another tab opens on it. */}
 				<Tabs key={defaultTab} defaultValue={defaultTab} className='flex-1 gap-6'>
 					<TabsList variant='line' size='lg'>
-						<TabsTrigger value='apps'>My apps</TabsTrigger>
+						<TabsTrigger value='apps'>Apps</TabsTrigger>
 						<TabsTrigger value='library'>My library</TabsTrigger>
 						<TabsTrigger value='connections'>Connections</TabsTrigger>
 					</TabsList>

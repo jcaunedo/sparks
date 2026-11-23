@@ -5,7 +5,7 @@ import { otherEvaluations } from "./sample-evaluations";
 import type { Evaluation, EvaluationFinding, EvaluationScenario } from "./validate-panel";
 
 /*
- * Validate for "Wrong-part returns" (prds/sparks-validate.md): the evaluation plan, the run and its results, which
+ * Evaluate for "Wrong-part returns" (prds/sparks-validate.md): the evaluation plan, the run and its results, which
  * depend on the prototype version evaluated (a fix changes the findings, the estimate and the read). What the AI would
  * supply: every number is illustrative, and nothing here is research with real people.
  */
@@ -322,7 +322,7 @@ export function sampleRunProgress(evaluation: Evaluation, done: number, stopped 
 }
 
 /**
- * "Yes, test it": the prototype is in the concept, and Sparks shows how it'll test it before running anything
+ * "Yes, evaluate it": the prototype is in the concept, and Sparks shows how it'll test it before running anything
  * (prds/sparks-validate.md, "The evaluation plan"), as a summary she approves.
  */
 export function sampleValidatePlanReply(scenarios: EvaluationScenario[]): SparksReply {
@@ -337,7 +337,7 @@ export function sampleValidatePlanReply(scenarios: EvaluationScenario[]): Sparks
 		parts: [
 			{
 				kind: "text",
-				text: `Done. The prototype is in your blueprint.\n\n**Here's how I'll test it:**\n\n${scenarios.length} scenarios, worked through the prototype. Each is a realistic situation built from what AutoParts Co. knows about its customers and stores, never a real person:\n\n${lines}\n\nThen I'll check it against business data, engineering context, the design system and how the teams work. It's an AI evaluation: it shows what could go wrong, not what real people will do.`,
+				text: `Done. The prototype is in your plan.\n\n**Here's how I'll test it:**\n\n${scenarios.length} scenarios, worked through the prototype. Each is a realistic situation built from what AutoParts Co. knows about its customers and stores, never a real person:\n\n${lines}\n\nThen I'll check it against business data, engineering context, the design system and how the teams work. It's an AI evaluation: it shows what could go wrong, not what real people will do.`,
 			},
 		],
 		quickReplies: sampleSummaryReplies,
@@ -426,7 +426,7 @@ export const sampleValidateKeepImprovingReply = (evaluation?: Evaluation): Spark
 export function sampleValidateGoAheadOpening(open: number) {
 	const issues =
 		open > 0 ? `${open === 1 ? "One finding is" : `${["", "", "Two", "Three", "Four"][open] ?? open} findings are`} still open. ${open === 1 ? "It goes" : "They'll go"} to review as known issues.\n\n` : "";
-	return `${issues}Done. Validate is finished, and the evaluation is in your blueprint.\n\n`;
+	return `${issues}Done. Evaluate is finished, and the evaluation is in your plan.\n\n`;
 }
 
 export function sampleValidateGoAheadReply(open: number): SparksReply {
@@ -438,7 +438,7 @@ export function sampleValidateGoAheadReply(open: number): SparksReply {
 		parts: [
 			{
 				kind: "text",
-				text: `${issues}Done. Validate is finished, and the evaluation is in your blueprint.\n\n**Next, Review.**\n\nI'll put the idea together for others to see.`,
+				text: `${issues}Done. Evaluate is finished, and the evaluation is in your plan.\n\n**Next, Review.**\n\nI'll put the idea together for others to see.`,
 			},
 		],
 	};
@@ -472,7 +472,7 @@ export const sampleFixNotNowReply: SparksReply = {
 	parts: [{ kind: "text", text: "Okay. It's still under Findings when you want it." }],
 };
 
-/** What she might ask in Validate (prds/sparks-validate.md, "Checks"), and how Sparks answers. */
+/** What she might ask in Evaluate (prds/sparks-validate.md, "Checks"), and how Sparks answers. */
 export function sampleValidateQuestionReply(text: string, evaluation?: Evaluation): SparksReply {
 	const t = text.toLowerCase();
 	const say = (answer: string): SparksReply => ({ id: "validate-answer", from: "sparks", parts: [{ kind: "text", text: answer }], quickReplies: sampleValidateResultsRepliesFor(evaluation) });

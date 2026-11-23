@@ -35,7 +35,7 @@ export function samplePrototypeBuildingReply(name: string, screens: string[], re
 		parts: [
 			{
 				kind: "text",
-				text: `Done. Plan is finished, and it's all in your blueprint.\n\n**Now, let's build "${name}".**\n\nI'll use AutoParts Co.'s design system and made-up data, screen by screen. ${buildingNotes[directionId] ? `${buildingNotes[directionId]} ` : ""}You can try each one on the right as soon as it's ready.`,
+				text: `Done. Your plan is finished.\n\n**Now, let's build "${name}".**\n\nI'll use AutoParts Co.'s design system and made-up data, screen by screen. ${buildingNotes[directionId] ? `${buildingNotes[directionId]} ` : ""}You can try each one on the right as soon as it's ready.`,
 			},
 			{ kind: "progress", ...sampleBuildProgress(screens, ready) },
 		],
@@ -43,7 +43,7 @@ export function samplePrototypeBuildingReply(name: string, screens: string[], re
 }
 
 /**
- * Another direction as a path, from the Blueprint (prds/sparks-plan-compare.md, "Directions in the blueprint"): Sparks
+ * Another direction as a path, from the plan (prds/sparks-plan-compare.md, "Directions in the plan"): Sparks
  * says what it will build, next to what, and what it will test, and asks once. The id carries the direction.
  */
 export function samplePathConfirmReply(directionId: string, name: string, current: string, believe: string): SparksReply {
@@ -67,7 +67,7 @@ export const samplePathConfirmReplies = ["Yes, build it", "Not now"];
 export const samplePathNotNowReply: SparksReply = {
 	id: "path-not-now",
 	from: "sparks",
-	parts: [{ kind: "text", text: "Okay. It's in your blueprint whenever you want to try it." }],
+	parts: [{ kind: "text", text: "Okay. It's in your plan whenever you want to try it." }],
 };
 
 /** "Yes, build it": the new path, built screen by screen like the first (its id starts like every build's). */
@@ -79,7 +79,7 @@ export function samplePathBuildingReply(name: string, screens: string[], ready =
 		parts: [
 			{
 				kind: "text",
-				text: `Done. "${name}" is a new path in your blueprint.\n\n**Now, let's build it.**\n\nI'll use AutoParts Co.'s design system and made-up data, screen by screen. ${buildingNotes[directionId] ? `${buildingNotes[directionId]} ` : ""}Your other path stays as it was; switch between them at the top of the prototype.`,
+				text: `Done. "${name}" is a new path in your plan.\n\n**Now, let's build it.**\n\nI'll use AutoParts Co.'s design system and made-up data, screen by screen. ${buildingNotes[directionId] ? `${buildingNotes[directionId]} ` : ""}Your other path stays as it was; switch between them at the top of the prototype.`,
 			},
 			{ kind: "progress", ...sampleBuildProgress(screens, ready) },
 		],
@@ -87,7 +87,7 @@ export function samplePathBuildingReply(name: string, screens: string[], ready =
 }
 
 /** The answers to the question that finishes the step. */
-export const samplePrototypeReadyReplies = ["Yes, test it", "Go to Review instead"];
+export const samplePrototypeReadyReplies = ["Yes, evaluate it", "Go to Review instead"];
 
 /** Where to start in each direction's prototype, and what's pretend. */
 const readyIntros: Record<string, string> = {
@@ -108,13 +108,13 @@ export const samplePrototypeReadyReply = (directionId = "fit-check"): SparksRepl
 	parts: [
 		{
 			kind: "text",
-			text: `${readyIntros[directionId] ?? readyIntros["fit-check"]}\n\n**Ready for me to put it through its paces?**\n\nIn Validate, I'll work it through realistic scenarios for customers and store staff, and check it against AutoParts Co.'s data. Try it first if you like, and tell me what to change, or point at something.`,
+			text: `${readyIntros[directionId] ?? readyIntros["fit-check"]}\n\n**Ready for me to put it through its paces?**\n\nIn Evaluate, AI agents with the profiles of different customers and store staff will try it in realistic scenarios, and I'll check it against AutoParts Co.'s data. Try it first if you like, and tell me what to change, or point at something.`,
 		},
 	],
 	quickReplies: samplePrototypeReadyReplies,
 });
 
-/** "Yes, test it" or "Go to Review instead": the prototype is in the concept. Validate and Review aren't built yet. */
+/** "Yes, evaluate it" or "Go to Review instead": the prototype is in the concept. Evaluate and Review aren't built yet. */
 export function samplePrototypeDoneReply(answer: string): SparksReply {
 	return {
 		id: "prototype-done",
@@ -124,8 +124,8 @@ export function samplePrototypeDoneReply(answer: string): SparksReply {
 				kind: "text",
 				text:
 					answer === "Go to Review instead"
-						? "Done. The prototype is in your blueprint, and we'll skip Validate.\n\n**Next, Review.**\n\nI'll put the idea together for others to see."
-						: "Done. The prototype is in your blueprint.\n\n**Next, Validate.**\n\nI'll work it through realistic scenarios and tell you what holds up.",
+						? "Done. The prototype is in your plan, and we'll skip Evaluate.\n\n**Next, Review.**\n\nI'll put the idea together for others to see."
+						: "Done. The prototype is in your plan.\n\n**Next, Evaluate.**\n\nI'll work it through realistic scenarios and tell you what holds up.",
 			},
 		],
 	};
@@ -262,7 +262,7 @@ export const sampleVehicleFirstSummary = 'the fit message names the vehicle firs
 export const sampleLiveStockReply = (version: number) =>
 	prototypeReply(
 		"prototype-change",
-		`Done: product pages show stock at the nearest store. It's pretend: AutoParts Co.'s stores don't report stock in real time today (engineering context), so I've added it under "Needs what AutoParts Co. doesn't have yet" for Validate and Review. Saved as version ${version}.`,
+		`Done: product pages show stock at the nearest store. It's pretend: AutoParts Co.'s stores don't report stock in real time today (engineering context), so I've added it under "Needs what AutoParts Co. doesn't have yet" for Evaluate and Review. Saved as version ${version}.`,
 	);
 
 /** Beyond the chosen direction: not built, and three ways forward. */
@@ -270,13 +270,13 @@ export const sampleBeyondReplies = ["Add it to What comes later", "Go back to th
 export const sampleBeyondReply = (direction: string) =>
 	prototypeReply(
 		"prototype-beyond",
-		`That goes beyond "${direction}", so I haven't built it: the prototype gets evaluated against the direction you chose, and adding to it would drift from it without anyone noticing.\n\nI can add it to "What comes later" in your blueprint, or we can go back to the choice in Plan.`,
+		`That goes beyond "${direction}", so I haven't built it: the prototype gets evaluated against the direction you chose, and adding to it would drift from it without anyone noticing.\n\nI can add it to "What comes later" in your plan, or we can go back to the choice in Plan.`,
 		sampleBeyondReplies,
 	);
 /** "Add it to What comes later" or "Drop it"; "Go back to the choice" reopens the choice in Plan (the stories). */
 export function sampleBeyondAnswerReply(answer: string): SparksReply {
 	if (answer === "Add it to What comes later")
-		return prototypeReply("prototype-change", `Done. It's under "What comes later" in your blueprint, so reviewers see it.`);
+		return prototypeReply("prototype-change", `Done. It's under "What comes later" in your plan, so reviewers see it.`);
 	return prototypeReply("prototype-change", "Okay, I've dropped it.");
 }
 

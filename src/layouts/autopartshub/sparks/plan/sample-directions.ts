@@ -3,7 +3,7 @@ import type { DirectionDraft } from "./direction-card";
 
 /*
  * Plan's directions for "Wrong-part returns" (prds/sparks-plan-generate-directions.md): all four in one reply, rated,
- * with Sparks's pick and one question. What the AI and company knowledge would supply: every number is illustrative
+ * Sparks's recommendation above them, picked with a card's "Generate prototype". What the AI and company knowledge would supply: every number is illustrative
  * (prds/sparks.md, "The demo").
  */
 
@@ -148,22 +148,23 @@ const recommendations: Record<string, string> = {
 	"flag-returns": "It's the quickest to build. The catch: it says a part comes back a lot, not whether it fits.",
 };
 
-/** The answer to Sparks's pick: go with it. The other directions follow, by name. */
+/**
+ * Typed instead of using a card: go with Sparks's pick. There are no quick replies under the directions; she picks with
+ * a card's "Generate prototype", or types a direction's name.
+ */
 export const sampleGoWithIt = "Yes, go with it";
 
-/** The question that closes the directions, and its answers. */
-function pickQuestion(directions: DirectionDraft[]) {
-	const pick = directions.find((direction) => direction.recommended) ?? directions[0];
-	return {
-		text: `**Want to go with "${pick.name}"?** Or pick another below.`,
-		quickReplies: [sampleGoWithIt, ...directions.filter((direction) => direction !== pick).map((direction) => direction.name)],
-	};
-}
+/**
+ * How she picks, once the cards are shown: no question and no quick replies, the cards' "Generate prototype". The
+ * reply keeps `quickReplies: []`, so what she types still answers it (a direction's name picks it).
+ */
+const pickOnCard = 'Select "Generate prototype" on the one you want to start with.';
 
 /**
  * "Yes, let's see them": what success looks like is in the concept, and Sparks shows every direction at once, its pick
  * first, and recommends one, weighing what Dana already agreed (her main measure) instead of asking what matters most.
- * One question: go with it, or pick another. `measure` is the main measure she picked.
+ * Its recommendation comes before the cards, so she reads why before she compares; no question and no quick replies
+ * after them: she picks with a card's "Generate prototype". `measure` is the main measure she picked.
  */
 export function sampleSuccessApprovedReply(measure: "returns" | "repeat" | "own" = "returns"): SparksReply {
 	const pick = sampleRecommended(sampleDirections);
@@ -176,7 +177,6 @@ export function sampleSuccessApprovedReply(measure: "returns" | "repeat" | "own"
 			? "Your main measure is fewer \"doesn't fit\" returns, so I weighed which one cuts them most, without putting online sales at risk."
 			: "Nothing tells us yet how these would move your main measure, so I weighed which one cuts \"doesn't fit\" returns most, without putting online sales at risk.";
 	const hers = directions.find((direction) => direction.fromDana && !direction.recommended);
-	const question = pickQuestion(directions);
 	return {
 		id: "directions",
 		from: "sparks",
@@ -188,33 +188,29 @@ export function sampleSuccessApprovedReply(measure: "returns" | "repeat" | "own"
 		parts: [
 			{
 				kind: "text",
-				text: `Done. What success looks like is in your blueprint.\n\n**Next, pick the path to prototype first.**\n\nI found four ways to get there, from a quick fix to a bigger change, and your idea is one of them. ${weighing} Each one can become its own prototype: we'll start with one, and you can try the others later from your blueprint. Here they are, my pick first:`,
-			},
-			...directions.map((direction) => ({ kind: "direction" as const, direction })),
-			{
-				kind: "text",
 				text: [
+					`Done. What success looks like is in your plan.\n\n**Next, pick the path to prototype first.**\n\nI found four ways to get there, from a quick fix to a bigger change, and your idea is one of them. ${weighing} Each one can become its own prototype: we'll start with one, and you can try the others later from your plan.`,
 					`I'd go with "${pick.name}". ${recommendations[pick.id]}`,
 					hers
 						? `Your idea, "${hers.name}", is the quickest to build. But it says a part comes back a lot, not whether it fits, so it would cut fewer of these returns. It could work alongside "${pick.name}" later.`
 						: undefined,
-					question.text,
+					`Here they are, my pick first. ${pickOnCard}`,
 				]
 					.filter(Boolean)
 					.join("\n\n"),
 			},
+			...directions.map((direction) => ({ kind: "direction" as const, direction })),
 		],
-		quickReplies: question.quickReplies,
+		quickReplies: [],
 	};
 }
 
 /**
- * Back at the choice, from Prototype, Validate or Review (prds/sparks-plan-compare.md, "Going back to the choice"): the
- * directions are where they were, `reason` says why she's back, and the question again, without the one she tried.
- * `evaluated`: Validate has run on it, so there's something learned to keep.
+ * Back at the choice, from Prototype, Evaluate or Review (prds/sparks-plan-compare.md, "Going back to the choice"): the
+ * directions are where they were, `reason` says why she's back, and she picks another with its card's "Generate
+ * prototype" (no quick replies). `evaluated`: Evaluate has run on it, so there's something learned to keep.
  */
 export function sampleBackToChoiceReply(directions: DirectionDraft[], tried: string, reason: string, evaluated = true): SparksReply {
-	const question = pickQuestion(directions);
 	const pick = directions.find((direction) => direction.recommended) ?? directions[0];
 	return {
 		id: "directions-back",
@@ -222,20 +218,19 @@ export function sampleBackToChoiceReply(directions: DirectionDraft[], tried: str
 		parts: [
 			{
 				kind: "text",
-				text: `Okay, we're back at the choice in Plan. ${reason}\n\nThe four directions are where we left them, above. Your prototype of "${tried}"${evaluated ? " and what we learned from it stay" : " stays"} in your blueprint.\n\n${pick.name === tried ? "**Which would you like to try instead?**" : question.text}`,
+				text: `Okay, we're back at the choice in Plan. ${reason}\n\nThe four directions are where we left them, above. Your prototype of "${tried}"${evaluated ? " and what we learned from it stay" : " stays"} in your plan.\n\n**Which would you like to try instead?** ${pick.name === tried ? "" : `I'd go with "${pick.name}". `}Select "Generate prototype" on its card above.`,
 			},
 		],
-		quickReplies: question.quickReplies.filter((reply) => reply !== tried && !(pick.name === tried && reply === sampleGoWithIt)),
+		quickReplies: [],
 	};
 }
 
-/** Something else typed at the question (a doubt, a change): Sparks takes it and asks again. */
-export function sampleDirectionsAgainReply(directions: DirectionDraft[]): SparksReply {
-	const question = pickQuestion(directions);
+/** Something else typed at the directions (a doubt, a change): Sparks takes it and points back to the cards. */
+export function sampleDirectionsAgainReply(): SparksReply {
 	return {
 		id: "directions-again",
 		from: "sparks",
-		parts: [{ kind: "text", text: `Thanks, I'll work that in.\n\n${question.text}` }],
-		quickReplies: question.quickReplies,
+		parts: [{ kind: "text", text: 'Thanks, I\'ll work that in.\n\nWhen you\'re ready, select "Generate prototype" on the one you want to start with.' }],
+		quickReplies: [],
 	};
 }

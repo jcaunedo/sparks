@@ -113,6 +113,7 @@ const storyIds = {
 	autoPartsHubHome: "layouts-autopartshub-home--default",
 	sparksStartPage: "layouts-autopartshub-sparks-start-page--default",
 	sparksWorkspace: "layouts-autopartshub-sparks-workspace--default",
+	sparksPublishedIdea: "layouts-autopartshub-sparks-published-idea--default",
 } as const;
 
 export { goToStory, openStoryInNewTab, closeStoryTab, withStoryLinks, storyIds, type StoryLink };

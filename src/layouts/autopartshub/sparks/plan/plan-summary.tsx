@@ -18,7 +18,7 @@ function PlanSummary({
 	text: string;
 	/** Where it comes from, in one line: "From your message, customer intelligence and business performance." */
 	sources?: string;
-	/** Smaller text, for the Blueprint; the conversation uses the default. */
+	/** Smaller text, for the plan; the conversation uses the default. */
 	compact?: boolean;
 	className?: string;
 }) {
