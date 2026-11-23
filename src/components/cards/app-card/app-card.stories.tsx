@@ -31,7 +31,7 @@ type Story = StoryObj<typeof meta>;
 /** Figma "app-card": a static card, no hover. */
 export const Default: Story = {};
 
-/** As a link (`asChild`): lifts on hover and shows the focus ring on keyboard focus. */
+/** As a link (`asChild`), Figma "Hover": lifts, the border darkens, the shadow grows and the description turns foreground. Shows the focus ring on keyboard focus. */
 export const AsLink: Story = {
 	args: {
 		asChild: true,

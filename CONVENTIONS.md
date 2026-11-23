@@ -1,7 +1,7 @@
 <!--
 Created: Nov 9, 2026
 Created by: Julio Caunedo
-Last updated: Nov 20, 2026
+Last updated: Nov 21, 2026
 Scope: how this repo's work is branched, committed, versioned, tagged and traced, and how docs under `prds/` are written.
 Purpose: keep the team's workflow and writing rules in the repo, so they're the same on every machine and for every person or assistant.
 -->
@@ -109,11 +109,14 @@ The profile the PRD skill (`ucl-generate-prd`) reads before writing a PRD.
 
 - **PRD folder:** `prds/`, flat (no category folders yet). One file per screen, flow or shared rule, named for it (`autopartshub-home.md`).
 - **Products and audiences:**
-  - **AutoPartsHUB:** the customer workspace. Its team members sign in and open the apps they use. Layouts in `src/layouts/autopartshub/`.
+  - **AutoParts Co.:** the company (a national auto parts retailer). **AutoPartsHUB:** its internal workspace. Its team members sign in and open the apps they use. Layouts in `src/layouts/autopartshub/`.
   - **The apps** opened from it: Pulse, Sparks, Flow, Sales, Care. Written by those names in copy (DESIGN.md → "Brand names" for Sparks).
+  - **Sparks:** the AI-powered innovation and experimentation platform, for experienced employees who know the business but aren't designers or engineers, shown through Dana's workflow (Senior Product Manager). Its assistant is also called Sparks. Specs come first; no Figma or layouts yet.
   - ⚠️ **Decision needed:** the user roles (who sees which apps, admins vs. members).
-- **Shared rules and their owners:** none yet. The first rule several screens share (permissions, which apps a user sees) gets its own PRD, listed here.
+- **Shared rules and their owners:**
+  - [prds/sparks.md](prds/sparks.md): everything the Sparks steps share: the workspace (the centered conversation, cards and the Concept panel), the four steps (Plan, Prototype, Validate, Review), how Plan moves through its five parts, step states and moving between steps, suggestions, company knowledge (what Sparks may read, how it cites it, and what it does when the data and Dana disagree), evidence and decision status, sharing, Knowledge and Connections, bringing others in, the decision log, and how the Sparks assistant talks and what it may do alone. Plan's parts each have a PRD (`prds/sparks-plan-<part>.md`: problem, clarify, define-success, generate-directions, compare), and so does each later step (`prds/sparks-prototype.md`, `prds/sparks-validate.md`, `prds/sparks-review.md`); they link to it instead of restating it. The decision (reviewers, recommendation, decision owner) is owned by [prds/sparks-review.md](prds/sparks-review.md).
+  - The first rule several AutoPartsHUB screens share (permissions, which apps a user sees) gets its own PRD, listed here.
 - **Copy:** load `sparks-copywriter` before writing UI copy. Copy quoted from Figma is used as is.
 - **Building decisions:** a decision about something already built changes the layout or component in the same change. Try it in Storybook (`npm run storybook`); checks: `npm run lint`, `npm run build`.
 - **Screen sizes:** phones, tablet (`md`) and desktop (`lg` and up), with the breakpoints in DESIGN.md → "Breakpoints include their own width".
-- **Model PRD:** [prds/autopartshub-home.md](prds/autopartshub-home.md) (a screen).
+- **Model PRDs:** [prds/autopartshub-home.md](prds/autopartshub-home.md) (a screen), [prds/sparks.md](prds/sparks.md) (an app overview with an AI assistant).

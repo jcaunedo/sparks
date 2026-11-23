@@ -12,7 +12,7 @@ import samplePhotoW1 from "./sample-photos/w1.png";
 import samplePhotoM1 from "./sample-photos/m1.png";
 
 const meta = {
-	title: "Data Display/Avatar",
+	title: "Data display/Avatar",
 	component: Avatar,
 	parameters: {
 		layout: "centered",

@@ -3,18 +3,22 @@ import * as React from "react";
 import { cn } from "@/lib/utils";
 
 type AppHeaderProps = Omit<React.ComponentProps<"header">, "children"> & {
-	/** The app's logo, on the left (e.g. `<AutoPartsHubLogo />`). */
+	/** What sits on the left: the app's logo (e.g. `<AutoPartsHubLogo />`), or the page's name. */
 	logo: React.ReactNode;
-	/** What sits on the right, such as the user's avatar. */
+	/** Optional navigation centered in the header, such as a concept's steps (`<StepNav>`). */
+	nav?: React.ReactNode;
+	/** What sits on the right, such as the user's avatar, or Share and a close button. */
 	children?: React.ReactNode;
 };
 
 /**
- * The app's top bar: logo on the left, actions (such as the user's avatar) on the right.
- * Figma sparks.ds → "header-autopartshub" set (node 32:1145): "AutoPartsHUB" (`<AutoPartsHubLogo />`)
- * and "Sparks" (`<Logo className='h-8' />`, the Sparks logo at 32px tall).
+ * The app's top bar: logo on the left, optional navigation in the center, actions (such as the user's avatar) on the right.
+ * Figma sparks.ds → "header-autopartshub" set (node 32:1145): "AutoPartsHUB" (`<AutoPartsHubLogo />`),
+ * "Sparks" (`<Logo className='h-7' />`, the Sparks logo at 28px tall) and "Sparks Project" (the concept's name on
+ * the left, the steps as `nav`, Share and the close button on the right). All three are 92px tall: a 36px row between
+ * 28px top and bottom. The AutoPartsHUB and Sparks right sides are notifications and a 36px avatar.
  */
-function AppHeader({ className, logo, children, ...props }: AppHeaderProps) {
+function AppHeader({ className, logo, nav, children, ...props }: AppHeaderProps) {
 	return (
 		<header
 			data-slot='app-header'
@@ -26,8 +30,21 @@ function AppHeader({ className, logo, children, ...props }: AppHeaderProps) {
 			)}
 			{...props}
 		>
-			{logo}
-			<div data-slot='app-header-actions' className='flex shrink-0 items-center'>
+			{/* Figma "Left"/"Right": with `nav`, both sides take an equal share of the width (flex 1) so the nav stays
+			    centered on the page, whatever the widths of the logo and the actions. 16px between items on the left, 12px on
+			    the right (sparks.ds "header-autopartshub", every variant's "Right" gap 12). */}
+			<div data-slot='app-header-start' className={cn("flex items-center gap-4", nav && "min-w-0 flex-1")}>
+				{logo}
+			</div>
+			{nav && (
+				<div data-slot='app-header-nav' className='flex shrink-0 justify-center'>
+					{nav}
+				</div>
+			)}
+			<div
+				data-slot='app-header-actions'
+				className={cn("flex shrink-0 items-center gap-3", nav && "min-w-0 flex-1 justify-end")}
+			>
 				{children}
 			</div>
 		</header>

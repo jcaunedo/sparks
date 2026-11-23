@@ -1,0 +1,50 @@
+import * as React from "react";
+import { CornerDownLeft } from "lucide-react";
+
+import { Button } from "@/components/buttons/button";
+import { useEnterShortcut } from "@/lib/hooks/use-enter-shortcut";
+import { cn } from "@/lib/utils";
+
+type QuickRepliesProps = Omit<React.ComponentProps<"div">, "children"> & {
+	/** The likely answers, the main one ("Yes, that's right", "Looks right, continue") first. */
+	replies: string[];
+	/** Picking one. */
+	onReply?: (reply: string) => void;
+	/**
+	 * The first reply is the "continue": it shows the ↵ key and Enter picks it, while focus is on the page or in the empty
+	 * message box. On by default; turn it off when another set of replies on the screen has it.
+	 */
+	enter?: boolean;
+};
+
+/**
+ * The answers under an assistant's question (sparks.ds "ctas"): Button Outlined, 36px, 14px sides, sm semibold,
+ * radius/button/lg, shadow-xs, 10px apart, on the right. The first reply (the "continue") is last, at the right edge, with
+ * the ↵ key after its label; the order on screen is the order in the page, so Tab follows it.
+ */
+function QuickReplies({ replies, onReply, enter = true, className, ...props }: QuickRepliesProps) {
+	const main = replies[0];
+	useEnterShortcut(enter && main !== undefined && onReply ? () => onReply(main) : undefined);
+	return (
+		<div data-slot='quick-replies' className={cn("flex w-full flex-wrap justify-end gap-2.5", className)} {...props}>
+			{[...replies].reverse().map((reply) => {
+				const isMain = enter && reply === main;
+				return (
+					<Button
+						key={reply}
+						variant='outline'
+						// The main reply: the label's 14px on the left, the key's 10px on the right (Figma: 8px padding, the icon's 2px).
+						className={cn("rounded-button-lg px-3.5 text-sm font-semibold text-foreground shadow-xs", isMain && "pe-2.5")}
+						aria-keyshortcuts={isMain ? "Enter" : undefined}
+						onClick={() => onReply?.(reply)}
+					>
+						{reply}
+						{isMain ? <CornerDownLeft aria-hidden /> : null}
+					</Button>
+				);
+			})}
+		</div>
+	);
+}
+
+export { QuickReplies, type QuickRepliesProps };

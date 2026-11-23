@@ -51,6 +51,7 @@ export {
 	autoPartsHubLogoVariants,
 	type AutoPartsHubLogoProps,
 } from "@/components/brand/autoparts-hub-logo";
+export { AutoPartsLogo, autoPartsLogoVariants, type AutoPartsLogoProps } from "@/components/brand/autoparts-logo";
 export { CareLogo, type CareLogoProps } from "@/components/brand/care-logo";
 export { FlowLogo, type FlowLogoProps } from "@/components/brand/flow-logo";
 export { Logo, logoVariants, type LogoProps } from "@/components/brand/logo";
@@ -68,10 +69,41 @@ export {
 } from "@/components/buttons/button";
 
 /* -------------------------------------------------------------------------- */
+/* Forms                                                                      */
+/* -------------------------------------------------------------------------- */
+
+export {
+	Select,
+	SelectContent,
+	SelectGroup,
+	SelectItem,
+	SelectLabel,
+	SelectScrollDownButton,
+	SelectScrollUpButton,
+	SelectSeparator,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/forms/select";
+
+/* -------------------------------------------------------------------------- */
 /* Cards                                                                      */
 /* -------------------------------------------------------------------------- */
 
 export { AppCard, type AppCardProps } from "@/components/cards/app-card";
+
+/* -------------------------------------------------------------------------- */
+/* Chat                                                                       */
+/* -------------------------------------------------------------------------- */
+
+export { AssistantMessage, type AssistantMessageProps } from "@/components/chat/assistant-message";
+export {
+	ClarificationCard,
+	type ClarificationCardProps,
+} from "@/components/chat/clarification-card";
+export { PromptComposer, type PromptComposerProps } from "@/components/chat/prompt-composer";
+export { QuickReplies, type QuickRepliesProps } from "@/components/chat/quick-replies";
+export { ThinkingIndicator, type ThinkingIndicatorProps } from "@/components/chat/thinking-indicator";
+export { UserMessage, type UserMessageProps } from "@/components/chat/user-message";
 
 /* -------------------------------------------------------------------------- */
 /* Data display                                                               */
@@ -91,6 +123,7 @@ export {
 	type AvatarAddProps,
 	type AvatarColor,
 } from "@/components/data-display/avatar";
+export { Badge, badgeVariants, type BadgeProps } from "@/components/data-display/badge";
 
 /* -------------------------------------------------------------------------- */
 /* Feedback                                                                   */
@@ -99,10 +132,48 @@ export {
 export { EmptyState, type EmptyStateProps } from "@/components/feedback/empty-state";
 
 /* -------------------------------------------------------------------------- */
+/* Overlays                                                                   */
+/* -------------------------------------------------------------------------- */
+
+export {
+	DropdownMenu,
+	DropdownMenuPortal,
+	DropdownMenuTrigger,
+	DropdownMenuContent,
+	DropdownMenuGroup,
+	DropdownMenuLabel,
+	DropdownMenuItem,
+	DropdownMenuCheckboxItem,
+	DropdownMenuRadioGroup,
+	DropdownMenuRadioItem,
+	DropdownMenuSeparator,
+	DropdownMenuShortcut,
+	DropdownMenuSub,
+	DropdownMenuSubTrigger,
+	DropdownMenuSubContent,
+} from "@/components/overlays/dropdown-menu";
+export {
+	Popover,
+	PopoverTrigger,
+	PopoverContent,
+	PopoverAnchor,
+	PopoverHeader,
+	PopoverTitle,
+	PopoverDescription,
+} from "@/components/overlays/popover";
+export { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/overlays/tooltip";
+
+/* -------------------------------------------------------------------------- */
 /* Navigation                                                                 */
 /* -------------------------------------------------------------------------- */
 
 export { AppHeader, type AppHeaderProps } from "@/components/navigation/app-header";
+export {
+	StepNav,
+	StepNavItem,
+	type StepNavProps,
+	type StepNavItemProps,
+} from "@/components/navigation/step-nav";
 export {
 	Tabs,
 	TabsList,

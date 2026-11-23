@@ -1,0 +1,65 @@
+import { Meta } from "@storybook/addon-docs/blocks";
+
+<Meta title='Foundations/Radius and shadows' />
+
+# Radius and shadows
+
+## Radius
+
+shadcn's `rounded-sm`, `rounded-md` and `rounded-lg` derive from one `--radius` token (`0.5rem`, Figma's `radius/default`). Components with their own radius in Figma use a named token instead. Badges, pills and chips are `rounded-full`.
+
+<div style={{ display: "flex", gap: "1.5rem", flexWrap: "wrap", margin: "1.5rem 0" }}>
+	{[
+		["rounded-sm", "calc(var(--radius) - 4px)", "4px"],
+		["rounded-md", "calc(var(--radius) - 2px)", "6px"],
+		["rounded-lg", "var(--radius)", "8px, radius/default"],
+		["rounded-menu-item", "var(--radius-menu-item)", "8px"],
+		["rounded-button-xs", "var(--radius-button-xs)", "8px"],
+		["rounded-input", "var(--radius-input)", "10px"],
+		["rounded-button-sm", "var(--radius-button-sm)", "10px"],
+		["rounded-button-md / lg / xl", "var(--radius-button-md)", "12px"],
+		["rounded-avatar-square", "var(--radius-avatar-square)", "12px"],
+		["rounded-message", "var(--radius-message)", "12px, tail 2px"],
+		["rounded-card", "var(--radius-card)", "16px"],
+		["rounded-modal", "var(--radius-modal)", "16px"],
+		["rounded-menu", "var(--radius-menu)", "16px"],
+		["rounded-composer", "var(--radius-composer)", "20px"],
+	].map(([name, value, px]) => (
+		<div key={name} style={{ width: 136, fontSize: "0.8125rem" }}>
+			<div
+				style={{
+					width: 96,
+					height: 64,
+					borderRadius: value,
+					background: "var(--secondary)",
+					border: "1px solid var(--border)",
+					marginBottom: 8,
+				}}
+			/>
+			<code>{name}</code>
+			<div style={{ color: "var(--muted-foreground)" }}>{px}</div>
+		</div>
+	))}
+</div>
+
+## Shadows
+
+sparks.ds's effect styles, colored by the `shadow/sm`, `shadow/md` and `shadow/lg` variables. Use them as `shadow-xs` … `shadow-2xl`. `shadow-sonner` is for toasts.
+
+<div style={{ display: "flex", gap: "2rem", flexWrap: "wrap", margin: "1.5rem 0", padding: "1.5rem", background: "var(--background-subtle)", borderRadius: 16 }}>
+	{["xs", "sm", "md", "lg", "xl", "2xl", "sonner"].map((name) => (
+		<div key={name} style={{ textAlign: "center", fontSize: "0.8125rem" }}>
+			<div
+				style={{
+					width: 112,
+					height: 72,
+					borderRadius: 12,
+					background: "var(--card)",
+					boxShadow: `var(--shadow-${name})`,
+					marginBottom: 10,
+				}}
+			/>
+			<code>shadow-{name}</code>
+		</div>
+	))}
+</div>

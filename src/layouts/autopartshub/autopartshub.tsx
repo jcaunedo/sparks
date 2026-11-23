@@ -1,12 +1,10 @@
 import * as React from "react";
 
 import { AutoPartsHubLogo } from "@/components/brand/autoparts-hub-logo";
-import {
-	Avatar,
-	AvatarFallback,
-	AvatarImage,
-} from "@/components/data-display/avatar";
 import { AppHeader } from "@/components/navigation/app-header";
+
+import { HeaderActions } from "./header-actions";
+import type { NotificationsPopoverProps } from "./notifications-popover";
 
 /** The signed-in user, as the AutoPartsHUB shell and its pages show them. */
 type AutoPartsHubUser = {
@@ -17,21 +15,20 @@ type AutoPartsHubUser = {
 
 type AutoPartsHubShellProps = {
 	user: AutoPartsHubUser;
+	/** The bell's notifications (the same in every AutoPartsHUB header). */
+	notifications?: NotificationsPopoverProps;
 	children?: React.ReactNode;
 };
 
 /**
  * The AutoPartsHUB app frame every page shares: subtle background, header with the
- * logo and the user's avatar. Figma: Sparks → "AutoPartsHUB" (node 7:1021).
+ * logo, notifications and the user's avatar. Figma: Sparks → "AutoPartsHUB" (node 7:1021).
  */
-function AutoPartsHubShell({ user, children }: AutoPartsHubShellProps) {
+function AutoPartsHubShell({ user, notifications, children }: AutoPartsHubShellProps) {
 	return (
 		<div className='flex min-h-screen flex-col bg-background-subtle text-foreground'>
 			<AppHeader logo={<AutoPartsHubLogo />}>
-				<Avatar size='lg'>
-					{user.avatarSrc && <AvatarImage src={user.avatarSrc} alt={user.firstName} />}
-					<AvatarFallback>{user.firstName.charAt(0).toUpperCase()}</AvatarFallback>
-				</Avatar>
+				<HeaderActions user={user} notifications={notifications} />
 			</AppHeader>
 			{/* Fills the screen below the header, so a page can stretch into it (e.g. an empty state centered in the rest of the screen). */}
 			<main className='flex flex-1 flex-col'>{children}</main>

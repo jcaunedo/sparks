@@ -24,6 +24,9 @@ Each entry says what the rule is, why it exists, and how to apply it. Don't rest
 ## Brand names
 
 - **Sparks:** written "Sparks" in all UI copy (titles, running text, buttons). The all-caps "SPARKS" appears only inside the logo artwork (`Logo`, `brand/logo/`). Never "SPARKS" or "sparks" in copy.
+- **AutoParts Co.:** the company, a national auto parts retailer (more than 4,000 stores and a large e-commerce business). Written "AutoParts Co.", with the period.
+- **AutoPartsHUB:** AutoParts Co.'s internal workspace, where employees open the apps (Pulse, Sparks, Flow, Sales, Care). Use it for the workspace (its home, header, notifications), never for the company.
+- **Sparks, the assistant:** the AI inside the Sparks app is also called Sparks ("Ask Sparks", "Message Sparks…"). Never "Archie", "the AI" or "the bot" in copy. See [prds/sparks.md](prds/sparks.md).
 - Identifiers that aren't user-facing (the npm package `@jcaunedo/ucl`, CSS/JS names) keep their lowercase forms.
 - ⚠️ **Decision needed:** any other product or feature names, and which names must never be used interchangeably.
 
@@ -41,14 +44,18 @@ The `sparks-copywriter` skill reads this section. Sparks uses the base voice bel
   - Errors say what happened and what to do next.
   - Empty states say why it's empty and offer one action.
   - No exclamation marks, no "please", no "oops".
-- **Audiences:** ⚠️ **Decision needed:** who reads the UI (e.g. builders creating apps, team admins, internal operators), and the tone for each.
-- **Terminology:** ⚠️ **Decision needed:** the words the product uses for its core objects and states (e.g. "project", "workspace", "draft"), and words to avoid.
+- **Audiences:**
+  - **Sparks app users:** experienced employees who know the business but aren't designers or engineers: product managers, operations, sales, customer care (reference user: Dana, Senior Product Manager). Tone: conversational, warm and clear, like a patient colleague who has done this before. No design or engineering jargon unless the user uses it first; a needed term is explained in the same sentence.
+  - ⚠️ **Decision needed:** the other audiences (AutoPartsHUB members, admins) and the tone for each.
+- **Terminology:**
+  - **Sparks app:** concept, step (Plan, Prototype, Validate, Review), card, Blueprint, evidence status, decision status, feedback ("Unclear"), spec, suggestion, assumption, what we believe (hypothesis), company knowledge, your knowledge, decision owner, decisions, defined in [prds/sparks.md](prds/sparks.md), "The words Sparks uses".
+  - ⚠️ **Decision needed:** the words AutoPartsHUB and the other apps use for their core objects and states, and words to avoid.
 
 ---
 
 ## Logo artwork keeps its literal colors (`brand/logo/logo.tsx`)
 
-**Rule:** the Logo's letter colors (`#0063F7`, `#F78000`, `#9139DA`, `#05B328`, `#E4C202`, `#00ADF7`) and its sparkle colors (`#0063F7` on light, the first S's blue; white on dark) stay literal hex in `logo.tsx`. They're the one exception to "never raw hex". The path data is Figma's SVG export (sparks.ds, node `1:31`), copied verbatim. The artwork sits at the top of its 197.842 × 37.1451 box: about 1px above it and 4px below, as in Figma. The `auto` tone switches the sparkle with `in-[.dark]:text-white`, not `dark:text-white`.
+**Rule:** the Logo's letter colors (`#0063F7`, `#F78000`, `#9139DA`, `#05B328`, `#E4C202`, `#00ADF7`) and its sparkle colors (`#0063F7` on light, the first S's blue; white on dark) stay literal hex in `logo.tsx`. They're the one exception to "never raw hex". The path data is Figma's SVG export (sparks.ds, node `1:31`), copied verbatim. The artwork sits near the top of its 197.842 × 37.1451 box: about 2px above it and 3px below, as in Figma (the letters run from y≈2.15 to 34.15). Figma's "Variant2" is `on-light` (blue sparkle) and "Default" is `on-dark` (white sparkle). The `auto` tone switches the sparkle with `in-[.dark]:text-white`, not `dark:text-white`.
 
 **Why:** these are artwork, not UI colors, and sparks.ds doesn't define them as variables. Turning them into theme tokens would let a theme change recolor the brand mark. `dark:` in Tailwind 4 follows the OS color scheme by default, while `theme.css` switches on the `.dark` class. With `dark:`, the sparkle could turn white on a light page.
 
@@ -68,6 +75,20 @@ The `sparks-copywriter` skill reads this section. Sparks uses the base voice bel
 - A fixed gradient id (`paint0_linear…`) is shared by every logo on the page; if the first one unmounts or is hidden, the others lose their blue fill.
 
 **How to apply:** don't tokenize these colors, redraw the paths, render the letters as text, or replace `useId()` with fixed ids. To update the artwork, re-export both variants with `exportAsync({ format: "SVG_STRING", svgOutlineText: true })` and replace the paths, gradient coordinates and viewBoxes together.
+
+---
+
+## AutoParts Co. logo artwork (`brand/autoparts-logo/autoparts-logo.tsx`)
+
+**Rule:** sparks.ds "AutoParts Logo" (node 73:5941: `73:5939` wordmark, `73:5940` symbol). The colors stay literal hex, the same as AutoPartsHUB's: the blue gradient `#0063F7` → `#0025A9` on "AUTO", "PARTS", "A" and "P", each run with its own gradient across its own text box, and orange `#F16521` on "Co." and the dot. The paths are the letters outlined from Google Sans Flex (Google Fonts, OFL) at Figma's settings: 29.035px, optical size 29.035 (Figma sets it to the font size), letter spacing −1% (−0.2904px), kerning on; "AUTO", "PARTS", "A" and "P" Black Italic (wght 900, slnt −10), "Co." ExtraBold (800), the symbol's dot Medium (500). They're placed as Figma's export places them: baseline at y 28, everything shifted right 1.37918px (the italic A's overhang), text boxes at Figma's x (AUTO 0, PARTS 79.18667, Co. 175.0025; A 0, P 21, dot 37). viewBoxes `0 0 222 36` and `0 0 48 36`, the export's bounds, wider than the frames (218 and 46) because "Co." and the dot run past them. Gradient ids come from `React.useId()`. In the prototypes' shop and counter headers it's 20px tall (`h-5`).
+
+**Why:**
+
+- Figma draws it as live text in Google Sans Flex, which apps don't load, so it ships as outlined paths.
+- Figma's own export (`exportAsync` with `svgOutlineText`) wasn't available when it was built (the claude.ai Figma connector wasn't connected), so the outlines came from the font itself. The same method reproduces the AutoPartsHUB logo's exported "A" within 0.01px and its "PARTS" within 0.07px, which can't be seen at 36px.
+- The same reasons as AutoPartsHUB's for the hex colors, the wider viewBox and `useId()`.
+
+**How to apply:** don't tokenize these colors, redraw the paths by hand, render the letters as text, or replace `useId()` with fixed ids. When the Figma connector is connected, re-export both variants with `exportAsync({ format: "SVG_STRING", svgOutlineText: true })` and replace the paths, gradient coordinates and viewBoxes together, as for AutoPartsHUB.
 
 ---
 
@@ -139,6 +160,179 @@ Gradient ids come from `React.useId()`.
 
 ---
 
+## Button hover colors (`buttons/button/button.tsx`)
+
+**Rule:** sparks.ds "Button" (38:124), State=Hover, per style:
+
+- `neutral` (Style=Solid, the dark fill, e.g. "New idea"): `hover:bg-[color-mix(in_srgb,var(--neutral)_80%,white)]`, Figma's 20% white layer on `colors/tone/neutral/neutral`, so it lightens (#31373f → #5a5f65). ~~`88%, black`~~.
+- `destructive` (Solid, Tone=Destructive): `hover:bg-[color-mix(in_srgb,var(--destructive)_80%,black)]`, Figma's 20% black layer. ~~`hover:bg-destructive/90`~~.
+- `outline` (Outlined, Tone=Neutral): `hover:border-input-ring hover:bg-accent`: the hover fill (`colors/states/hover`, foreground at 6%) and the darker border (`colors/input/ring`, #9aa1ac).
+- `ghost` (Ghost, Tone=Neutral): `hover:bg-accent`, the same hover fill.
+
+**Why:** a darken on #31373f barely shows (the old 12% black was invisible), and Figma lightens it instead. An opacity (`/90`) on a solid fill lets the page through, which lightens a red instead of darkening it; color-mix gives Figma's exact layered color without new tokens.
+
+**How to apply:** at rest → hover, "New idea" goes from #31373f to #5a5f65, and an outlined button's border from #e0e2e6 to #9aa1ac. `default`, `secondary` and `link` aren't in sparks.ds's set as these variants yet: sync them with the rest of Button (the "Sparks Project header" entry). A local `hover:` override on a Button hides these; there are none today.
+
+---
+
+## App card hover (`cards/app-card/app-card.tsx`)
+
+**Rule:** the hover state (Figma sparks.ds "app-card", `Property 1=Hover`, node 39:1694) applies only to a linked card (`asChild`). On hover: Lift (Motion, `y` only), border `border-border-defined`, shadow `shadow-lg`, description `text-foreground`. At rest the description is `text-muted-foreground` with `border-border` and `shadow-sm`. A static card (no `asChild`) never changes on hover.
+
+**Why:** a hover state on a card that does nothing promises an action that isn't there (MOTION.md → "Cards": no motion on non-interactive cards). Motion owns the lift and CSS owns border, shadow and text color, because MOTION.md forbids animating one property with both; moving the shadow into `whileHover`, or the lift into CSS, breaks that split.
+
+**How to apply:** the known-good code is `appCardLinkedClasses` (`group transition-[border-color,box-shadow] hover:border-border-defined hover:shadow-lg`) added only in the `asChild` branch, and the description's `asChild && "transition-colors group-hover:text-foreground"`. A Figma resync that reads the Default variant alone (`text-foreground` was the old value) must not drop the muted rest color or the hover branch.
+
+---
+
+## Prompt composer (`chat/prompt-composer/prompt-composer.tsx`)
+
+**Rule:** sparks.ds "prompt-composer" (set 39:1840: `Default` 39:1839, `HasValue` 39:1877).
+- **Tokens:** border, send button and radius use `border-sparks-accent` (`/20` at rest), `bg-[image:var(--gradient-sparks)]` and `rounded-composer` (20px). Figma doesn't bind these to variables yet (raw `#00ADF7`, `#0063F7 → #00ADF7`, 20px), so they live in `theme.css` under "Sparks accent": `--sparks-accent` is `var(--cerulean)` and `--sparks-accent-start` is `var(--sapphire)`, the logo palettes' 500s, which have exactly those hex values.
+- **Padding:** `border-2 p-3`, not `p-3.5`. Figma's 14px padding is measured from the outer edge, with the 2px stroke inside it; in CSS the border adds to the padding. 2 + 12 = 14px, and the frame is 120px tall like Figma's.
+- **Border:** full accent when the box holds text (`data-has-value`) **and** on `focus-within`. Figma has no focus state; the strong border is the keyboard focus indicator, since the textarea itself has no outline.
+- **Shadow:** `shadow-composer` (`0 16px 30px -12px`, black at 6%) while the box is empty, `shadow-none` once it holds text: Figma's `Default` has it and `HasValue` doesn't. It's a raw shadow in Figma, not an effect style, so it lives in `theme.css` as `--shadow-composer`; don't swap in `shadow-lg` or `shadow-2xl`, which are darker and tighter.
+- **Main button:** voice (`AudioLines`) while empty, Send (`ArrowUp`) once there's text. The icons overlap as they swap, with `iconSwapVariants` (`iconSwapReducedVariants` under reduced motion) inside `AnimatePresence`; press uses `pressPattern`. CSS owns the hover (`brightness-95`) and the border color; Motion owns scale and opacity.
+- Icons are 18px, Figma's instance size; the round buttons are Button `ghost`/`icon` (36px) with `rounded-full`.
+
+**Why:** the colors aren't Figma variables, so a resync that only reads bound variables would find nothing to map and could swap in the nearest existing token (`sky-500`, `brand`, `rounded-card`), which are visibly different. Copying Figma's 14px into `p-3.5` makes the box 124px and shifts the content 2px.
+
+**How to apply:** when sparks.ds binds these to variables, rename the tokens to match and keep the values. Keep the focus border and the swap; the PRD that owns the behavior is [prds/sparks.md](prds/sparks.md), "The message box".
+
+---
+
+## Assistant message (`chat/assistant-message/assistant-message.tsx`)
+
+**Rule:** Sparks's messages have no bubble: plain `text-base text-foreground` on the page, the conversation's full width, 12px between paragraphs and lists, 24px above a paragraph that's one all-bold line (it reads as a heading, so a new section starts: `mt-3` on top of the `gap-3`), 4px between list items, bold in `font-semibold text-foreground-prominent`. They take a `text` string (blank line between paragraphs, a line break for a new line 4px below, "1. " / "- " lists, `**bold**`), not JSX, so they can stream. A paragraph's lines are `span`s in a `flex flex-col gap-1` `p`, as with a bold question and the line under it ("**What problem do you want to solve?**\nDescribe it…"). With `stream`, the text streams with intercept-ucl's timing (MOTION.md → AI messages): `useStreamedText` reveals the plain text and `truncate()` cuts the parsed blocks to it, so a `**` or a list marker never shows half-written. The caret is a 6 × 16px block (`h-4 w-1.5`, the 16px text's height) pulsing with `pendingSurfaceVariants`. The workspace streams the introduction only when the concept opens with no messages (`isNew`), and stops streaming when Dana sends.
+
+**Why:** without a bubble, Sparks's long, formatted messages read as the page and Dana's short bubbles on the right stand apart. Streaming JSX children couldn't cut text mid-element; slicing the raw string would flash `**`. A reopened concept replaying its introduction would make history look new.
+
+**How to apply:** when sparks.ds draws an assistant message, sync it here and keep `text` + `stream`. Check against `parseBlocks`, `truncate` and the `stream={isNew && messages.length === 0}` in `workspace.tsx`.
+
+---
+
+## cn() knows the radius tokens (`lib/utils.ts`)
+
+**Rule:** `cn()` uses tailwind-merge extended with every `--radius-*` token in `theme.css` that isn't Tailwind's own (`avatar-square`, `button-xs` … `button-xl`, `card`, `composer`, `input`, `menu`, `menu-item`, `message`, `message-tail`, `modal`), and every such `--shadow-*` token (`composer`, `sonner`). Adding a `--radius-*` or `--shadow-*` token means adding its name to that list in the same change.
+
+**Why:** plain tailwind-merge doesn't recognize `rounded-button-lg` as a radius, so `cn("rounded-md", "rounded-button-lg")` kept both, and `rounded-md` won in the CSS. Every `Button` given a sparks.ds radius rendered at 6px instead of 12px (the clarification card's buttons, Save and Cancel, the workspace's quick replies and back button, the start page's search and "New idea"), with nothing failing.
+
+**How to apply:** check with a component that overrides a base radius: the clarification card's "Yes, that's right" must measure 12px (`getComputedStyle(button).borderRadius`). Never work around it with `!rounded-…`.
+
+---
+
+## Clarification card (`chat/clarification-card/clarification-card.tsx`)
+
+**Rule:** sparks.ds "clarification-card" (node 55:2585). Panel: ~~`bg-background-subtle`~~ `bg-(--corn-50)` in Default (palettes/corn/50, #fffbeb, light yellow, a primitive with no semantic token yet) and `bg-background-subtle` in Edit, `rounded-card` (16px), `py-4 pr-4 pl-5`, 8px between rows; question `text-base font-semibold` and answer `text-base`, both `text-foreground`, 4px apart; `badge` on its own line between the question and the answer, in a `pt-1` wrapper (Figma "badge container"), so 8px below the question and 4px above the answer; sparks.ds draws it as the "Assumption" badge, `flat` `amber` at `xxs` (20px). ~~4px from each (not in Figma yet).~~ Every "Assumption" label is that same xxs badge: the clarification card, ~~the summary cards (`SectionCard`: Problem, brief, Success criteria, between the part's name and its text) and the comparison;~~ (the summaries are text now, and say an assumption in words); 24px to the pen (lucide `Pen`, Figma's glyph, in a 32px ghost icon button, `rounded-button-md`); source line `text-xs text-muted-foreground`. The answer buttons (Figma "ctas") are part of the component, 10px under the panel and 10px apart, on the right (`justify-end`), in reverse order so the first reply (the "yes") is last, at the right edge, like Save; reversed in the DOM, not with `flex-row-reverse`, so Tab follows what's on screen. A Sparks reply without a card shows its quick replies the same way. In Edit, the field is `rounded-input`, `border-border`, `px-[11px] py-[7px]`, 10px above ~~Save and Cancel~~ Cancel and Save, on the right (`justify-end`), 8px apart, Save last; ~~the pen stays in place but `invisible`;~~ the pen is removed (not hidden) and the panel's right padding becomes 20px (`pr-5`), so the field runs the full width (542px at Figma's 582); the badge, the source line and the answer buttons hide. Measured against Figma: Default 180px tall (panel 134), 208px with the badge, Edit ~~166px~~ 170px; the width follows the container (Figma 584).
+
+The buttons are UCL `Button` with overrides, because `Button` isn't synced with sparks.ds yet (CLAUDE.md → "Figma"): answer buttons `variant='outline'` at 36px with `rounded-button-lg px-3.5 text-sm font-semibold text-foreground shadow-xs` (Figma Outlined lg: 8px + 6px label padding); ~~Save `variant='neutral' size='sm'` and Cancel `variant='outline' size='sm'` with `rounded-button-md px-3 text-sm font-semibold` (Figma 32px, 4px + 8px label padding).~~ Save `variant='neutral'` and Cancel `variant='outline'` at 36px, the same size as the answer buttons, with `rounded-button-lg px-3.5 text-sm font-semibold` (Cancel adds `text-foreground shadow-xs`). Check: Edit measures 170px tall at 582px wide, the field 542px; a `size='sm'` or an `invisible` pen brings back 166px and a 490px field.
+
+**Why:** Figma draws the field's 1px border inside its 12 × 8px padding; CSS adds it outside, so `px-3 py-2` came out 2px taller (66px for two lines, Figma 64). The `Button` overrides stand in for sparks.ds's sizes and weights until `Button` is synced.
+
+A Sparks reply without a clarification card shows its quick replies with the same look (`SparksReplyView`).
+
+**How to apply:** keep the answer buttons in the component (sparks.ds has them in State=Default). When `Button` is synced with sparks.ds, replace the overrides (here and on the workspace's quick replies) with its Outlined/Solid · Neutral sizes and re-measure against the numbers above. Keep `px-[11px] py-[7px]` on the field unless it gets an inside border (e.g. a ring instead of a border).
+
+---
+
+## Sparks conversation scroll (`sparks/workspace/workspace.tsx`, `lib/motion/scroll.ts`)
+
+**Rule:** when a reply is added, the workspace scrolls the `li` of Dana's message it answers (`sent`) to the top of the conversation with `scrollIntoViewSmoothly(item, { align: "start" })`, and gives the newest new reply `minHeight` equal to the scroller's height less its 56px top padding, her message and the ~~16px gap~~ 32px below it (`viewHeight - scrollPadding - sentHeight`). Every message, Sparks's or Dana's, has 32px below it: the list's `gap-4` plus `mb-4` on each `li`; change the two together, since `sentHeight` adds the 32.
+
+The scroller is the whole conversation area, edge to edge (`px-8`, ~~`pt-14`~~ no top padding: Figma 27:1932 starts the conversation right under the header, whose 28px bottom padding is the space above it; the 728px column centered inside it), so the scrollbar sits at the page's right edge and text scrolls up to the header; ~~`scroll-pt-14` keeps a message scrolled to the top 56px below the header~~ a message scrolled to the top sits right under the header. The message box is 24px from the bottom (`pb-6`, ~~`pb-14`~~). The 24px above the message box is padding outside the scroller (`pt-6` on the box's wrapper), so text is cut 24px above the box, not at its edge. The scrollbar is `scrollbar-subtle` (`theme.css`: `scrollbar-width: thin`, a `--border` thumb on no track). The view never follows the bottom while text streams (prds/sparks.md, "The concept workspace"). The newest new reply has `paddingBottom: viewHeight / 2` (inside its `minHeight`, border-box), so scrolling down a long reply by hand stops with its end at the middle of the scroller, never past it. In `scrollIntoViewSmoothly`, the interruption listeners (wheel, touch, pointer, key) are added on the next animation frame.
+
+**Why:** her message at the top keeps what she said next to its answer (prds/sparks.md; it was the answer's start until the user changed it). Without the `minHeight`, her message can't reach the top while the reply is short (the checking line): the container can't scroll that far. Subtracting her message's height leaves no empty space to scroll past. Adding the listeners in the same event that sends (Enter's keydown, which React handles before it reaches `window`) stopped the scroll before it began. A "stick to bottom" follower, as before, scrolls the answer's start out of view while Dana reads it.
+
+**How to apply:** check against `sent`, `lastIsNewReply`, `scrollPadding` (must equal the scroller's top padding, now 0), the `minHeight` and `paddingBottom` styles on the reply `li` and the `requestAnimationFrame` around the listeners in `scroll.ts`. Don't add back a ResizeObserver that pins the scroll to the bottom, or one that follows the reply: the only automatic scroll brings her message to the top (a follower to the middle was tried and dropped). `paddingBottom` must stay half the scroller's height: less and the end stops below the middle, more and she can scroll it past.
+
+---
+
+## Sparks thinking state (`chat/thinking-indicator/thinking-indicator.tsx`)
+
+**Rule:** Figma Sparks 27:1932 (node 64:13203): a 10px dot (`size-2.5`), 10px gap (`gap-2.5`), the line in base text (16/24) filled with the logo's colors through `bg-clip-text text-transparent`: ~~`linear-gradient(90deg, var(--tangerine), var(--sapphire) 50%, var(--tangerine))` at `background-size: 200% 100%`, animated 0% → -200%~~ `shimmerGradient`, the six colors reversed (sapphire, cerulean, citrine, clover, amethyst, tangerine, back to sapphire) at even stops, `background-size: 600% 100%` (one line per color), `bg-repeat-x`, animated `backgroundPositionX` 0% → -120% over `thinkingShimmer` (7.2s). The dot's colors are the Sparks logo's letters in order, as CSS variables (`--sapphire`, `--tangerine`, `--amethyst`, `--clover`, `--citrine`, `--cerulean`), the same values as `logo.tsx`'s literal hex. The lines are what Sparks is doing, in automotive terms; never a bare "Thinking…".
+
+**Why:** a gradient that starts and ends on the same color is what makes the loop seamless; Figma's static two-stop gradient (sapphire to tangerine) would jump on every loop. With background-size 600%, a position of -120% moves the image one full tile to the right (the offset is (line − 6 lines) × position). The colors are reversed because the image moves right: the next color comes in from the left, so it rotates in the logo's order, like the dot. One line per color keeps about two colors in view, as Figma shows. The color changes on landing because the dot remounts per hop (`key={color}`), which keeps hop and color in step without a timer that drifts.
+
+**How to apply:** keep the tile's first and last stops equal, the 600%/-120% pair together (N colors: N×100% and −100/(N−1)×N%), the reversed order and `key={color}` on the dot. When sparks.ds gets this component, re-measure the dot, gap and text against it.
+
+---
+
+## Menus and select lists share one panel (`forms/select/select.tsx`, `overlays/dropdown-menu/dropdown-menu.tsx`)
+
+**Rule:** sparks.ds "Select / Content" (77:6365), "Select / Item" (77:6335) and "Select / Section Title" (77:6352) draw both `SelectContent` and `DropdownMenuContent`: `rounded-input` (radius/input, 10px) `border border-border bg-popover shadow-xl p-1`, at least `min-w-[200px]`, children `flex flex-col gap-[2px]` (the groups too); items `h-8 rounded-md px-2 py-1.5 text-sm font-medium text-foreground`, `focus:bg-accent` (colors/states/hover; Figma's Hover is the pointer or keyboard highlight), `data-[disabled]:opacity-50`, a 16px check in `text-icon` when chosen (Active), and item icons in `text-icon` too (Figma #31373f; shadcn's muted default replaced); labels `h-7 px-2 py-1.5 text-xs text-muted-foreground` (xs regular). ~~DropdownMenu's `rounded-menu` (16px) and `rounded-menu-item` (8px)~~.
+
+**Why:** Figma has one panel for both, and a menu next to a select must not look like a different component. shadcn draws them with `rounded-md`, `shadow-md` and an 8rem minimum, and its DropdownMenu label is sm medium; a reinstall or a shadcn resync brings those back. The 2px gap has to be on the groups as well, or items inside a `SelectGroup` touch.
+
+**How to apply:** a new list-like overlay (combobox, context menu) uses the same classes. Callers don't restyle the label (the Blueprint's "Jump to a section" uses it as is).
+
+---
+
+## Prototype headers stay at the top (`sparks/prototype/fit-check-prototype.tsx`, `more-prototypes.tsx`)
+
+**Rule:** every prototype screen's header (the shop's `ShopHeader` and the fit check's, the counter and catalog headers) is `sticky top-0 z-10 bg-background`; the counter and catalog ones sit in a `p-4` column, so they add `-mx-4 -mt-4 px-4 pt-4` to cover its padding.
+
+**Why:** the prototype scrolls inside its frame (`prototype-panel.tsx`, `overflow-y-auto`); a real store keeps its header, so the prototype does too. Without the background, the page shows through it; without the negative margins, content shows above and beside the counter headers.
+
+**How to apply:** a new prototype screen's header uses the same classes.
+
+---
+
+## Icon buttons have a tooltip (`overlays/tooltip`, `autopartshub/header-icon-button.tsx`)
+
+**Rule:** every icon-only button names itself in a `Tooltip` below it (`<TooltipContent side='bottom' sideOffset={6}>`), on hover and keyboard focus, and keeps the same words as its `aria-label`. Never the `title` attribute. `HeaderIconButton` has it built in (`label`, or `tooltip` when the words differ), and it's the icon button for the headers and the prototype's toolbar ("Edit element", "Add comment", "Versions ({n})", "Start over", "Try it full screen"); the side panels' buttons ("Jump to a section", "Close"), the device switcher (`Smartphone` "Phone", `Monitor` "Desktop") wrap theirs. A toggle in the toolbar ("Edit element", "Add comment") is `aria-pressed` and fills with `bg-primary` while on (`toggleClasses` in `prototype-panel.tsx`).
+
+**Why:** an icon alone doesn't say what it does; `title` shows late, unstyled and never on keyboard focus. One tooltip everywhere keeps icon buttons reading the same.
+
+**How to apply:** a new icon-only button uses `HeaderIconButton`, or wraps its button in `Tooltip` > `TooltipTrigger asChild`. With another trigger on the same button (a menu, a popover), the tooltip goes outside: `Tooltip` > `TooltipTrigger asChild` > `DropdownMenuTrigger asChild` > `Button`.
+
+## Prototype comment pins (`sparks/prototype/prototype-comments.tsx`)
+
+**Rule:** a pin is `size-9 rounded-full rounded-bl-none p-[3px] shadow-md`, white (`bg-background`), blue (`bg-primary`) while its popover is open, with the author's `Avatar` filling it; it sits `-translate-y-full` at the point, so its square bottom-left corner marks the spot. The pins are in a layer beside the screens (`wrapperRef`), and only the screens (`contentRef`) are observed for changes.
+
+**Why:** the square corner is the pin's point: rounding it or centering the pin on the spot puts the comment somewhere else. Observing the pin layer too would re-place the pins on every re-place, a loop.
+
+**How to apply:** check that a pin's bottom-left corner is on the spot clicked (0px off in the headless check).
+
+## Side panels share one frame (`sparks/workspace/side-panel.tsx`)
+
+**Rule:** ~~the Concept panel and~~ Comments ~~are~~ is a `SidePanel` (the Blueprint panel is gone: "Plan becomes the Blueprint"): `rounded-card bg-background-subtle`, a 60px row (`px-[21px] py-3`) with the title (lg semibold) and its buttons (`sidePanelButtonClasses`: ghost, 36px, 18px icon, `opacity-60` until hovered, focused or open), the close button last (`PanelRight`), then `px-6 pb-6` around a white `rounded-avatar-square p-8` card that scrolls. Esc closes from inside. One panel at a time, in the same place: ~~docked beside the conversation in Plan, 440px beside a preview~~ 480px on the right in every step (`sidePanelColumn` in `workspace.tsx`: `w-[512px] pe-8 pb-6`, the panel 480 plus the 32px edge), the conversation centered beside it in Plan.
+
+**Why:** two panels in the same spot that look or close differently read as two different things. Changes go in `SidePanel`, not in one panel.
+
+**How to apply:** a new panel beside the conversation (history, sources) is a `SidePanel` and closes the others when it opens.
+
+---
+
+## Share popover width (`sparks/workspace/share-popover.tsx`)
+
+**Rule:** `PopoverContent` is `w-[460px]` (`p-5`), so the invite field leaves the placeholder "Name, email or department" its full width (183px of 219px) beside the longest role, "Can comment", and "Invite".
+
+**Why:** at 400px the role Select ran over the end of the placeholder. Not in Figma yet.
+
+**How to apply:** a longer role label or placeholder needs the popover measured again; don't shrink it back to `w-[400px]` or Popover's default `w-72`.
+
+---
+
+## Quick replies and the Enter key (`chat/quick-replies/quick-replies.tsx`, `lib/hooks/use-enter-shortcut.ts`)
+
+**Rule:** the first reply (the "continue") is last on screen, with `<CornerDownLeft aria-hidden />` after its label, `pe-2.5` (10px on the key's side, Figma's 8px padding plus the icon's 2px; 14px on the label's), `aria-keyshortcuts='Enter'`. Enter picks it only when focus is on the page (`body`) or in the empty message box (`data-slot='prompt-composer-input'`), with no modifier, not repeating, not while an IME composes. ClarificationCard and the workspace's own replies both render `QuickReplies`, never their own buttons.
+
+**Why:** Enter already means something on a button (press it), in a field (save, send) and in the message box with text (send); the shortcut takes only the Enter no one else uses. The message box swallows an empty Enter (`preventDefault`), so the hook recognizes the empty box by its slot instead of trusting `defaultPrevented` there. Two copies of the buttons would drift, as the card's and the workspace's did before.
+
+**How to apply:** don't widen the hook to every input (the share popover's empty field would answer Sparks), don't drop `pe-2.5` (the key sits too far in), and keep one set of replies with `enter` on at a time: Sparks shows replies only under its last message.
+
+---
+
+## User message (`chat/user-message/user-message.tsx`)
+
+**Rule:** sparks.ds "user-message" (node 41:1916). Background `bg-sparks-accent-subtle` (`--cerulean-200`, #C1E6FF), corners `rounded-message` (12px) with `rounded-br-message-tail` (2px) as the tail, padding `px-3.5 py-2` (14 × 8), text `text-base text-foreground`. In code it also wraps (`whitespace-pre-wrap break-words`) and stops at `max-w-[80%]`; Figma only shows one short, unwrapped line.
+
+**Why:** Figma binds the background to `palettes/cerulean/200` but not the 2px corner, and binds the 12px corners to `radius/avatar-square`. Messages get their own radius tokens so a change to avatars never reshapes them; a resync that follows the avatar binding would couple the two again. The background belongs to the Sparks accent family (`--sparks-accent`, `--sparks-accent-subtle`), which now points to the logo palettes (cerulean, sapphire).
+
+**How to apply:** keep `rounded-message` + `rounded-br-message-tail` and the subtle accent fill. When sparks.ds binds these to variables, rename the tokens to match and keep the values. ⚠️ The `.dark` theme is a placeholder: there, `text-foreground` turns light on this light fill, so the bubble needs a dark-mode value once sparks.ds has a Dark mode.
+
+---
+
 ## Empty states (`feedback/empty-state/empty-state.tsx`)
 
 **Rule:** every view, tab or filter with nothing to show uses `EmptyState`, and only its copy changes: optional icon, title (`lg` semibold, foreground), description (`base`, `muted-foreground`), 8px apart, and an optional `sm` primary button 16px below. It's ported from verita-ucl's `EmptyState`, with the same layout and props. sparks.ds has no empty-state design.
@@ -146,6 +340,91 @@ Gradient ids come from `React.useId()`.
 **Why:** one empty state everywhere, so an empty tab never looks like a broken blank panel and every empty view reads the same. Without a Figma source, this entry is the reference: a later edit shouldn't restyle it per screen.
 
 **How to apply:** copy follows DESIGN.md → "Brand voice" (say what's missing, offer one action when one is defined). A different look for one screen needs a prop here, not local overrides. When sparks.ds gets an empty-state design, sync it into this component.
+
+---
+
+## Badge (`data-display/badge/badge.tsx`)
+
+**Rule:** sparks.ds "badge" (node 21:640): `variant` is Figma's Style (`solid`, `flat`, `outline`, `ghost`, `link`), `tone` its Tone, `size` its Size on SIZE-SCALE.md's names (`xs` 24, `sm` 32, `default` 36 = Figma "md (default)", `lg` 40). Each style draws only some tones, so the colors live in `compoundVariants`:
+
+- Solid: `brand` (`bg-primary`), `neutral` (`bg-neutral`), `destructive` (`bg-destructive text-white`).
+- Flat: `neutral` (`bg-neutral-muted text-foreground`), `blue`, `green`, `sky`, `purple`, `red` (the `badge-*` tokens), `yellow` (`bg-(--corn-100) text-(--corn-800)`), `amber` (`bg-(--flamingo-100) text-(--flamingo-700)`).
+- Padding and gap per size are Figma's: xxs `px-1.5 py-0.5 gap-1` (20px, `text-xs font-normal`: Figma draws it in regular, the only size not in medium), xs `px-2 py-0.5 gap-1`, sm `px-2.5 py-1.5 gap-1`, default `px-3 py-2 gap-1.5`, lg `px-3.5 py-2.5 gap-1.5`. Text `sm` up to `sm` size, `base` from `default`; icons 12px, then 16px.
+
+**Why:** yellow and amber have no `badge-*` variable in sparks.ds: Figma binds the corn and flamingo primitives directly, so the component reads those primitives through `var()` instead of inventing semantic tokens. A few Figma "md" symbols use a 4px gap instead of 6px; 6px is the set's majority and is used for every `default` badge.
+
+**How to apply:** when sparks.ds adds `colors/badge/yellow` and `amber` variables, add the tokens to `theme.css` and switch those two tones to them. Sparks's statuses use `flat` at `xs` (prds/sparks.md, "The start page").
+
+---
+
+## Plan becomes the Blueprint (`sparks/workspace/workspace.tsx`, `sparks/workspace/blueprint.tsx`)
+
+**Rule:** there's no Blueprint side panel and no "Blueprint" button in the concept's header. On Plan, once a later step is reached, `SparksWorkspace` shows `Blueprint` as the preview, in the prototype's place:
+
+```tsx
+const blueprint = currentStep === "plan" && reachedIndex > 0 ? <Blueprint sections={sections} /> : undefined;
+// …
+) : (
+	(previewProp ?? blueprint)
+);
+```
+
+`Blueprint` uses the frame of `ValidatePanel` and `ReviewPanel` (`rounded-card bg-background-subtle p-4`, the title `lg semibold text-foreground-prominent` with an xs muted line under it), not `SidePanel`. It holds the spec and one line per later step (`BlueprintSteps`): the evaluation and the review aren't copied into it. Each `SparksReply` carries its `step`, and `StepDivider` marks where the conversation moved to another step; selecting a reached step scrolls the conversation there (`scrollToStep`).
+
+**Why:** Plan was the only step with nothing beside the conversation, so selecting it from Prototype or Validate only removed the panel and left the same conversation, still showing what came after Plan (prds/sparks.md, "The Blueprint", "Steps in the conversation"). sparks.ds "Sparks Project" (32:1145) and Sparks → "Sparks Project" (55:7660) still draw the "Blueprint" button and the side panel, so a resync from them would bring both back.
+
+**How to apply:** a resync of the concept's header keeps Comments, notifications and Share only. Don't add a Blueprint panel to `sidePanelColumn`; the Blueprint is reached through Plan in the steps. In the stories, set the step before adding the reply that starts it (`setStep` then `setMessages`): `WorkspacePrototype` stamps new replies with `stepRef`, and React may compute the new messages at once.
+
+---
+
+## Sparks Project header (`navigation/app-header/app-header.tsx`, `navigation/step-nav/step-nav.tsx`)
+
+**Rule:** sparks.ds "header-autopartshub" → "Sparks Project" (32:1145): on the left, only the concept's name, ~~2xl semibold (24/32, `Typography size='2xl'`)~~ ~~xl bold (20/30, `Typography size='xl' weight='bold'`, Figma "xl -bold")~~ xl semibold (20/30, `Typography size='xl' weight='semibold'`, Figma "xl -semibold") in `text-foreground` (Figma colors/foreground/foreground, not prominent), with a 22px chevron 4px after it (`ConceptName`: the `h1` holds the `DropdownMenuTrigger`; menu "Rename", "All ideas"; the rename field is `text-xl font-semibold text-foreground` too). ~~The Sparks logo (`h-[26px]`) before it, back to the start page, 16px apart.~~ No logo: "All ideas" is the way back; the steps centered; on the right, 12px apart (`gap-3`): Comments (`HeaderIconButton` `dot`: an 8px `bg-(--sky-500)` dot at the top right, Figma's #0f9efe Ellipse), notifications, ~~who has access (`AccessAvatars`, only once someone besides the owner has access: up to three 36px avatars, `border-2 border-background`, `-ms-[7px]`) and Share 8px apart (`gap-2`)~~ Share, with no avatars beside it (who has access is in Share's popover; `AccessAvatars` is gone), ~~then "Blueprint" last~~ last: no "Blueprint" button ("Plan becomes the Blueprint"). Share ~~and Blueprint are~~ is Button Outlined lg · 36 with a 16px icon (`Share`~~, `TextAlignStart`~~): `headerButtonClasses` in `workspace.tsx`, `gap-1.5 ps-2.5 pe-3.5` (10px in, 6px to the label, 14px after). No close button, no back button, no avatar. Every header in the set is 92px tall (28 + 36 + 28). "All ideas" goes back to the start page, in the same tab (prds/sparks.md, "The concept workspace"). A resync from an older Figma screen must not bring back the logo, the symbol, the ×, the back button or the avatars beside Share~~, or put "Blueprint" before Share~~, or the "Blueprint" button, which 32:1145 still draws. The start page follows "Sparks" (32:1146): the Sparks logo, 26px tall (`<Logo className='h-[26px]' />`), then on the right comments, notifications and the avatar (`HeaderActions` with `comments`; the AutoPartsHUB shell's has no comments: `HeaderIconButton`s, ghost, 36px, an 18px icon, then `<Avatar size='lg' className='size-9'>`, 36px), 12px apart: AppHeader's right side is `gap-3` (every variant's "Right" gap 12), its left side `gap-4`.
+
+~~**Rule:** Sparks → "Sparks Project" (node 27:1932; sparks.ds "header-autopartshub" → "Sparks Project", 39:1598): on the left, the Sparks symbol (`<Logo variant='symbol' className='h-[27.137px]' />`, 34×27, Figma's instance size), a button back to the start page (`aria-label='Sparks home'`), then the concept's name, 16px apart (`gap-4`); the steps centered; on the right a close button (×) and, Share from Review in every step. No back button and no avatar. Every header in the set is 92px tall (28 + 36 + 28). The symbol and the × both go back to the start page, in the same tab (prds/sparks.md, "The concept workspace"). A resync must not bring back the back button or the avatar, and must not replace the symbol with the wordmark (`Logo`'s default) or round its height to `h-7`. The start page follows "Sparks" (node 32:1146): the Sparks logo, 28px tall (`<Logo className='h-7' />`), then on the right comments, notifications and the avatar (`HeaderActions` with `comments`; the AutoPartsHUB shell's has no comments: `HeaderIconButton`s, ghost, 36px, an 18px icon, the close button's style, then `<Avatar size='lg' className='size-9'>`, 36px), 12px apart: AppHeader's right side is `gap-3` (every variant's "Right" gap 12), its left side `gap-4`. The concept's header, right side: "Concept", then who has access (`AccessAvatars`, only once someone besides the owner has access: up to three 36px avatars, `border-2 border-background`, `-ms-[7px]`) and Share 8px apart (`gap-2`), then Comments (`HeaderIconButton` `dot`: an 8px `bg-(--sky-500)` dot at the top right, Figma's #0f9efe Ellipse), notifications and ×, no back button, because Sparks opens in its own tab (prds/sparks.md, "Reaching Sparks"). A resync must not bring the back button back from an older Figma screen. The variant's optional Share button (`showShareButton`, off by default) isn't used on the start page.~~
+
+1. **Centered steps:** `AppHeader`'s `nav` sits between two sides that each take `flex-1` (`min-w-0`), so the steps stay centered on the page whatever the logo and actions measure (Figma "Left"/"Right" are `flex 1 0 0`). Without `nav`, the header keeps its plain space-between layout.
+2. **Step pills (`StepNavItem`):** `h-9 rounded-full border border-transparent px-3 text-base font-medium`, 6px apart (`gap-1.5`). Current: `bg-linear-to-b from-(--sapphire-400) to-(--sapphire-500) text-brand-foreground`, the sapphire gradient from Sparks → "Sparks Project" (27:1932; Figma draws it with raw `#4c8dff` → `#0063f7`, which are exactly those two steps). Others: `bg-neutral-muted text-foreground`. A step not reached yet is `disabled` (links: `aria-disabled`): `text-muted-foreground` (sparks.ds "Sparks Project", 39:1598: `colors/foreground/muted`; ~~`text-foreground-subtle`~~), no hover, no click. Hover (not in Figma): `color-mix(… neutral-muted 92%, black)`, only on steps that can be selected. ~~⚠️ sparks.ds's "header-autopartshub" component still draws the current pill dark (`tone/neutral`) with foreground text on every step: the screen's look was chosen over it, so a resync from that component must not bring the dark pill back.~~ sparks.ds's component now draws the sapphire pill too. It shows a new concept, so its other steps are the not-reached look; a step already reached keeps `text-foreground`, which Figma doesn't draw.
+3. **~~Back button and~~ Share** uses Button `outline` with header-only overrides: `rounded-button-lg shadow-xs` (12px, Figma radius/button/lg and shadow-xs), `h-9 px-3.5 font-semibold` (1px border + 14px). ~~Back is `h-9 w-[38px]` with an 18px `text-icon` arrow.~~
+4. **Close button:** Button `ghost` `size='icon'` (36px) with `rounded-button-lg text-icon [&_svg]:size-[18px]`: Figma "Button" (Type=Icon, Style=Ghost, lg · 36), radius/button/lg, an 18px × in colors/icon/foreground. `aria-label='Close concept'`.
+5. **Concept name:** `Typography as='h1' size='xl' weight='semibold'` (20/30, Figma "xl -semibold") in `text-foreground-prominent`. ~~`size='lg'`~~. Figma uses raw black, not a variable; foreground-prominent is the closest text token.
+6. **Avatar (AutoPartsHUB and the Sparks start page):** 36px, `<Avatar size='lg' className='size-9'>` (`UserAvatar`), between Avatar's `default` (32) and `lg` (40); `lg` keeps the larger initial. Not `lg` alone: it makes the header 96px, and Figma's set is 92 throughout.
+
+**Why:** UCL's Button `outline` has 8px corners, no shadow and medium text, and sparks.ds now has its own button. Syncing Button would change every outline button, so the overrides stay local until that sync. The pills come from Figma's "badge" instances, but they're navigation, so `StepNav` renders a `nav` > `ol` with `aria-current="step"`.
+
+**How to apply:** when Button is synced from sparks.ds (it now has a "Buttons" page, node 38:94), drop the overrides from the header and from the Sparks layouts' `OutlineIconButton` and "New idea", and use the matching variant and size. Done, Skipped and Needs a check marks on the pills aren't in Figma yet (prds/sparks.md, "Step states"); add them to `StepNavItem` when they are. Figma's "Sparks Project" has no "Concept" button yet (prds/sparks.md, "The concept workspace").
+
+---
+
+## Sparks Project background and column (`sparks/workspace/workspace.tsx`)
+
+**Rule:** Sparks → "Sparks Project" (node 27:1932).
+
+- **Background:** `bg-linear-to-b from-background from-50% to-[color-mix(in_srgb,var(--background-subtle)_50%,var(--background))]`: white to the middle, then down to a very light gray at the bottom (Sparks → "Sparks Project", 55:7660). Figma draws the end with raw `#fafafb`, which no token has; half `background-subtle` (`#f5f6f7`) and half `background` is `#fafbfb`, one step away, and follows dark mode. ~~`to-background-subtle` (Figma's earlier `#f5f7f8`)~~. The header has no background of its own, so the gradient runs behind it.
+- ~~**With the Concept panel open (no preview):** the conversation and the message box move to a 630px column 24px from the left (`w-[654px] ps-6`, content `max-w-[630px]`), Sparks's replies with no inset and Dana's messages 160px clear on the left (`ps-40`); the panel takes the rest, 40px from the column and 24px from the right and bottom (`flex-1 ps-10 pe-6 pb-6`): 1010 × 1001 at 1728 × 1117, as Figma 55:7660. Beside a preview, the panel stays `w-[440px]` on the right.~~ A panel open with no preview leaves the conversation centered in its 728px column, insets included; the panel is 480px on the right ("Side panels share one frame").
+- ~~**Concept panel (`workspace/concept-panel.tsx`):** `rounded-card bg-background-subtle`, a 60px row (`px-[21px] py-3`) with "Concept" (lg semibold, `text-foreground`), then "Jump to a section" (an 18px `Menu`, opening a `DropdownMenu` of the sections under their step) and the close button (an 18px `PanelRight`), both ghost icon buttons, 36px, 12px apart, `opacity-60`, then `px-6 pb-6` around a white card, `rounded-avatar-square` (12px) `p-8`, its sections `gap-10` with an `hr` between them, each a title (lg semibold) 8px above its content. Wide (open in Plan, `wide`), the card has `[&_.text-sm]:text-base`: every 14px line in the sections reads at 16px, Figma's base, while the 440px panel beside a preview keeps 14px. At 480px in every step the sections keep their own 14px (`wide` removed). The sections' components stay `text-sm` (they're also the conversation's compact summaries).~~ The Blueprint panel is gone: "Plan becomes the Blueprint".
+- **Column insets:** with no preview beside it (the conversation centered in its 728px column), Sparks's replies, the introduction included, keep ~~144px clear on the right (`pe-36`)~~ 64px clear on the right (`pe-16`, 664px wide, as Figma's "Sparks Project" 27:1932 draws the reply's text and its card), and Dana's messages ~~144px clear on the left (`ps-36`)~~ 64px clear on the left (`ps-16`, with `UserMessage` at `max-w-full` instead of its 80%, at most 664px), the same inset as the replies'. Beside a preview (Prototype, Validate, Review) the column is 480px and has no insets.
+
+- **Space below Dana's messages:** 32px between her message and Sparks's reply (the list's `gap-4` plus `mb-4` on her `li`), the same as below Sparks's replies. Figma's "Sparks Project" frame (27:1932) shows 16px there; 32px was chosen over it, so each exchange reads as its own block.
+
+**Why:** a resync that reads raw hex would add `#f5f7f8` as a new token or a literal; a resync that copies the frame's 16px gap would undo the 32px chosen below her messages; a resync that reads only the 80% of `UserMessage` would widen the bubbles by 2px and drop the reply inset, so Sparks's text would run the full 728px.
+
+**How to apply:** at 1728px, Sparks's text measures 584px (500 to 1084) and a long message of Dana's 584px (644 to 1228). ~~With the Concept panel open in Plan, the conversation runs 24 to 654 and the panel 694 to 1704.~~ With the Blueprint on Plan, the conversation is the 480px column on the left, as beside the prototype.
+
+## Sparks start page concept list (`src/layouts/autopartshub/sparks/start-page/start-page.tsx`)
+
+**Rule:** Figma Sparks → "Sparks" (node 1:2).
+
+- **Above the list:** the title on the left and search with "New idea" on the right, on one row; the tabs 16px under it (`gap-4`); the list 32px under the tabs (`Tabs` `gap-8`).
+- **"New idea":** a 16px `Plus` on the left of the label, `gap-1.5 ps-2.5 pe-3.5` (106 × 36, as Figma's 51:5056): Figma's 8px padding plus the icon's 2px gives 10px before the plus, the label's 6px sides give 6px between them and 14px after. Not `px-3.5` (no room for the icon, and 4px too wide on the left).
+- **Column names** (Figma "Frame 10121829"): "Idea", "Share with", "Created", "Validation", "Status", `text-sm text-muted-foreground`, `px-4 py-[11px]` (42px), `rounded-t-lg`, on `bg-[color-mix(in_srgb,var(--background-subtle)_60%,var(--background))]`. Figma's raw `#f9fafa` is exactly that mix, which follows dark mode. `aria-hidden`: each row is one link, and its cells start with their column name in `sr-only` text.
+- **Columns:** one grid for the names and every row, each on it (`col-span-full grid grid-cols-subgrid`): `grid-cols-[408px_repeat(3,minmax(0,1fr))_max-content] gap-x-6`. The idea cell has `pe-8` inside its column: its name and summary are cut 32px before the column ends, 56px clear of "Share with" with the gap, without moving the columns. The first track is 408px because in a subgrid the row's 16px padding sits inside the first column: 16 + 392 + the 24px gap puts "Share with" at 680px at 1728, where Figma's starts (its 400px idea block plus a 16px gap). Then three equal columns (sharing, created, validation), then the status as wide as the list's widest label, left-aligned.
+- **Rows:** 96px, `px-4 py-5`, a 1px `border-border` between rows and above the first. The idea cell is the preview and the name with the summary, 16px apart. The preview is `h-14 aspect-[4/3] rounded-[4.667px]` (Figma 74.3 × 56). Without a preview image, the tile is a Sparks logo color at 10% on the background, cycling tangerine, amethyst, clover, citrine: `bg-[color-mix(in_srgb,var(--tangerine)_10%,var(--background))]`. Name `lg semibold`, summary `sm` (foreground, not muted: Figma binds foreground).
+- **Status badge:** `flat` at `xs` (24px, 14px text). Tones: Plan `purple`, Prototype `sky`, Validate `yellow`, Review `blue`, waiting `amber` (the flamingo palette, Figma's orange-red), advanced `green`, stopped `neutral`.
+
+**Why:** Figma's tile and header colors are raw hex values that are exact mixes of existing tokens; `color-mix` reproduces them without new tokens and follows the theme. Figma splits the row's second half into four equal columns, about 178px each at 1728. A long status ("Waiting for a decision · Nov 18" is about 215px) runs over the column before it in equal columns, so the status column is `max-content` and the other three share what's left (about 168px each); the columns still line up from row to row. Don't go back to equal `flex-1` columns per row, and don't set the first track to Figma's 400px, which puts every column 8px off.
+
+**How to apply:** at 1728px, the column names and the cells start at 264, 680, then about 872, 1063 and 1255. A concept with a prototype shows its preview image in the same box.
 
 ---
 
@@ -163,7 +442,8 @@ Gradient ids come from `React.useId()`.
 
 **Rule:** `theme.css` mirrors sparks.ds, and only sparks.ds. Every token comes from a sparks.ds variable, text style or effect style, and its comment in `theme.css` names the source. A token with no Figma variable behind it says so in its comment.
 
-- **Primitives** (`primitives` collection) → `:root` as `--<palette>-<step>` in oklch, with the Figma hex in a comment (`--gray-700: oklch(0.334 0.016 255.63); /* #31373f */`). A palette's base alias (`palettes/sky/sky`) → `--sky: var(--sky-500)`. `colors/white`/`black` → `--white`/`--black`. Primitives aren't exposed as Tailwind utilities: components use semantic roles.
+- **Primitives** (`primitives` collection) → `:root` as `--<palette>-<step>` in oklch, with the Figma hex in a comment (`--gray-700: oklch(0.334 0.016 255.63); /* #31373f */`). A palette's base alias (`palettes/sky/sky`) → `--sky: var(--sky-500)`. `colors/white`/`black` → `--white`/`--black`. Primitives aren't exposed as Tailwind utilities: components use semantic roles. The exceptions read a primitive through `var()` where Figma itself binds or draws one with no semantic variable: Badge's yellow and amber, and StepNav's current-step gradient (see their entries).
+- **Sparks logo palettes** (`palettes/sapphire`, `tangerine`, `amethyst`, `clover`, `citrine`, `cerulean`): one per color in the Sparks logo, generated in OKLCH with the logo color as the 500 (`--sapphire: var(--sapphire-500)`). The other steps follow a Tailwind-like lightness curve, with chroma tapering at both ends and clamped to sRGB; darker citrine and tangerine steps lean slightly warmer so they don't turn olive. Keep the 500s equal to the logo's hex values. The specimen is sparks.ds → "Colors" → "Sparks logo palettes" (node 47:87).
 - **Semantic** (`semantic` collection, Light mode) → `:root, .dark`, referencing primitives, under shadcn role names where one fits (`colors/tone/brand/brand` → `--brand` → `--primary`). The path drops `colors/` and `tone/`, a group's own name (`colors/card/card` → `--card`), and `on-<x>` becomes `<x>-foreground`. Brand "accent" is `--tone-accent`, because shadcn's `--accent` is the hover surface (`colors/states/hover`). Badge names follow the Figma code syntax (`var(--badge-blue)`).
 - **Aliases with opacity** (`states/hover`, `states/highlight`, `sidebar/active`) → `color-mix(in oklab, var(--x) N%, transparent)`.
 - **Text styles** → `--text-*` with the paired `--text-*--line-height`. Font families → `--font-sans`/`--font-display` (both Figtree, `font-family/font`), `--font-mono` (`font-family/code`). Weights are Tailwind's defaults and letter spacing is 0, so neither is redefined.
@@ -177,6 +457,7 @@ Gradient ids come from `React.useId()`.
 - `--secondary`: `var(--neutral-muted)`, shadcn's light-gray secondary.
 - `--destructive-foreground`: white. Figma has no "on-destructive".
 - `--avatar-1` … `--avatar-10`: the avatar initials backgrounds, raw fills in sparks.ds (see "Avatar").
+- `--info-emphasis`: sparks.ds renamed `colors/tone/info/emphasis` to `colors/tone/info/prominent` (and added `info/defined`). `--info-prominent` and `--info-defined` mirror them; `--info-emphasis` stays as an alias of `--info-prominent` so code that uses it doesn't break. Remove it in a major version.
 
 ℹ️ `--foreground-prominent` (`colors/foreground/prominent` → gray/800) was added after the first sync, when Pulse needed it. Its `.dark` placeholder is `var(--white)`, one step past `--foreground`'s gray-50.
 

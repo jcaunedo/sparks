@@ -18,6 +18,16 @@ const motionDuration = {
 	deliberate: 0.6,
 	/** One cycle of a looping "working on it" pulse (Pending pattern). */
 	pendingLoop: 1.2,
+	/** A streamed AI message: the average time between bursts of a few words. Each step varies around it, so it reads like real generation. */
+	streamStep: 0.035,
+	/** A streamed AI message: the extra pause after a sentence, a paragraph or a list item ends. */
+	streamPause: 0.12,
+	/** The assistant thinking (ThinkingIndicator): how long each line of what it's working through shows before the next. A reply waits about this long per line. */
+	thinkingStep: 1.5,
+	/** The assistant thinking: one hop of its dot. The dot takes the next Sparks logo color each time it lands. */
+	thinkingHop: 0.6,
+	/** The assistant thinking: the gradient across its line going once through the six logo colors (about 1.2s per color). */
+	thinkingShimmer: 7.2,
 } as const;
 
 /** Pixels. */
@@ -32,6 +42,8 @@ const motionDistance = {
 	medium: 24,
 	/** Page transition: 24–48px. */
 	large: 40,
+	/** How high the assistant's thinking dot hops (ThinkingIndicator). */
+	thinkingHop: 6,
 } as const;
 
 /** Unitless scale factors. */
@@ -58,6 +70,8 @@ const motionScale = {
 	drag: 1.03,
 	/** Peak of a small trigger icon's Pending pulse (e.g. an AI mark while it generates). */
 	pendingIcon: 1.3,
+	/** The assistant's thinking dot as it lands: squashed to this height (and as much wider), then back to round. */
+	thinkingSquash: 0.8,
 } as const;
 
 /** Degrees. Keep rotation under 2 degrees and use it sparingly. */

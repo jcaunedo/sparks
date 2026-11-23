@@ -31,6 +31,8 @@
 	--color-on-foreground: var(--on-foreground);
 	--color-foreground-subtle: var(--foreground-subtle);
 	--color-foreground-prominent: var(--foreground-prominent);
+	--color-foreground-defined: var(--foreground-defined);
+	--color-foreground-strong: var(--foreground-strong);
 	--color-background-subtle: var(--background-subtle);
 	--color-background-defined: var(--background-defined);
 	--color-card-subtle: var(--card-subtle);
@@ -62,6 +64,8 @@
 	--color-brand-defined: var(--brand-defined);
 	--color-brand-prominent: var(--brand-prominent);
 	--color-brand-strong: var(--brand-strong);
+	--color-sparks-accent: var(--sparks-accent);
+	--color-sparks-accent-subtle: var(--sparks-accent-subtle);
 	--color-tone-accent: var(--tone-accent);
 	--color-tone-accent-foreground: var(--tone-accent-foreground);
 	--color-tone-accent-subtle: var(--tone-accent-subtle);
@@ -86,6 +90,8 @@
 	--color-info: var(--info);
 	--color-info-subtle: var(--info-subtle);
 	--color-info-muted: var(--info-muted);
+	--color-info-defined: var(--info-defined);
+	--color-info-prominent: var(--info-prominent);
 	--color-info-emphasis: var(--info-emphasis);
 	--color-info-strong: var(--info-strong);
 	--color-success: var(--success);
@@ -181,6 +187,9 @@
 	--radius-button-md: 0.75rem; /* radius/button/md → radius/3: 12px */
 	--radius-button-lg: 0.75rem; /* radius/button/lg → radius/3: 12px */
 	--radius-button-xl: 0.75rem; /* radius/button/xl → radius/3: 12px */
+	--radius-composer: 1.25rem; /* prompt-composer: 20px (not a Figma variable yet) */
+	--radius-message: 0.75rem; /* user-message: 12px (Figma binds radius/avatar-square) */
+	--radius-message-tail: 0.125rem; /* user-message bottom-right corner: 2px (not a Figma variable yet) */
 
 	/* Effect styles shadow-xs … shadow-2xl, colored by the shadow/* variables. */
 	--shadow-xs: 0 1px 2px 0 var(--shadow-color-sm);
@@ -191,6 +200,8 @@
 	--shadow-2xl: 0 16px 50px -12px var(--shadow-color-lg);
 	/* Effect style "Sonner" (a raw color in Figma, no variable). */
 	--shadow-sonner: 0 12px 36px -2px oklch(0 0 0 / 30%);
+	/* The prompt composer at rest, sparks.ds "prompt-composer" Default (a raw shadow in Figma, no effect style). */
+	--shadow-composer: 0 16px 30px -12px oklch(0 0 0 / 6%);
 }
 
 /* ---------- Breakpoints ----------
@@ -604,6 +615,86 @@
 	--denim-800: oklch(0.353 0.135 260.97); /* #0a3580 */
 	--denim-900: oklch(0.29 0.107 260.8); /* #07275f */
 	--denim-950: oklch(0.217 0.071 259.52); /* #04183a */
+
+	/* Sparks logo palettes: one per logo color, each logo color is its 500 (palettes/<name>/<name>) */
+
+	--sapphire: var(--sapphire-500);
+	--sapphire-50: oklch(0.975 0.0118 260.76); /* #f2f7ff */
+	--sapphire-100: oklch(0.9241 0.0364 260.76); /* #d8e7ff */
+	--sapphire-200: oklch(0.8647 0.0664 260.76); /* #bad4ff */
+	--sapphire-300: oklch(0.7714 0.1165 260.76); /* #8ab5ff */
+	--sapphire-400: oklch(0.6569 0.1828 260.76); /* #4c8dff */
+	--sapphire-500: oklch(0.5509 0.2345 260.76); /* #0063f7 */
+	--sapphire-600: oklch(0.488 0.2078 260.76); /* #0053d2 */
+	--sapphire-700: oklch(0.4365 0.1859 260.76); /* #0046b5 */
+	--sapphire-800: oklch(0.3851 0.164 260.76); /* #003a99 */
+	--sapphire-900: oklch(0.345 0.1407 260.76); /* #033280 */
+	--sapphire-950: oklch(0.265 0.1032 260.76); /* #032156 */
+
+	--tangerine: var(--tangerine-500);
+	--tangerine-50: oklch(0.975 0.0143 54.84); /* #fff5ee */
+	--tangerine-100: oklch(0.9445 0.0322 54.84); /* #ffe8d9 */
+	--tangerine-200: oklch(0.9089 0.0551 54.84); /* #ffd8bf */
+	--tangerine-300: oklch(0.853 0.0931 54.84); /* #ffbf94 */
+	--tangerine-400: oklch(0.7852 0.1448 55.25); /* #ff9e56 */
+	--tangerine-500: oklch(0.7209 0.1788 54.84); /* #f78000 */
+	--tangerine-600: oklch(0.6206 0.1558 53.84); /* #cc6700 */
+	--tangerine-700: oklch(0.5385 0.1388 51.84); /* #ab5200 */
+	--tangerine-800: oklch(0.4565 0.1209 49.84); /* #8a3e00 */
+	--tangerine-900: oklch(0.3927 0.1056 48.84); /* #713000 */
+	--tangerine-950: oklch(0.265 0.0723 47.84); /* #401700 */
+
+	--amethyst: var(--amethyst-500);
+	--amethyst-50: oklch(0.975 0.0146 304.59); /* #f9f5ff */
+	--amethyst-100: oklch(0.9238 0.0416 304.59); /* #ecdffd */
+	--amethyst-200: oklch(0.864 0.0785 304.59); /* #dec6fd */
+	--amethyst-300: oklch(0.7701 0.134 304.59); /* #c89ef9 */
+	--amethyst-400: oklch(0.6548 0.1894 304.59); /* #ab6cec */
+	--amethyst-500: oklch(0.5481 0.231 304.59); /* #9139da */
+	--amethyst-600: oklch(0.4858 0.2241 304.59); /* #7e24c2 */
+	--amethyst-700: oklch(0.4349 0.2033 304.59); /* #6c1ba8 */
+	--amethyst-800: oklch(0.3839 0.171 304.59); /* #591b8a */
+	--amethyst-900: oklch(0.3443 0.1386 304.59); /* #4a1c71 */
+	--amethyst-950: oklch(0.265 0.1016 304.59); /* #31124c */
+
+	--clover: var(--clover-500);
+	--clover-50: oklch(0.975 0.0171 144.14); /* #f0faf0 */
+	--clover-100: oklch(0.9379 0.0385 144.14); /* #dcf2db */
+	--clover-200: oklch(0.8947 0.0727 144.14); /* #c0eabe */
+	--clover-300: oklch(0.8267 0.124 144.14); /* #93db92 */
+	--clover-400: oklch(0.7433 0.1753 144.14); /* #5bc75f */
+	--clover-500: oklch(0.6661 0.2138 144.14); /* #05b328 */
+	--clover-600: oklch(0.5779 0.1865 144.14); /* #00941e */
+	--clover-700: oklch(0.5057 0.1632 144.14); /* #007b17 */
+	--clover-800: oklch(0.4335 0.1399 144.14); /* #006311 */
+	--clover-900: oklch(0.3773 0.1218 144.14); /* #00510c */
+	--clover-950: oklch(0.265 0.0855 144.14); /* #002f04 */
+
+	--citrine: var(--citrine-500);
+	--citrine-50: oklch(0.985 0.0135 96.25); /* #fdfaf0 */
+	--citrine-100: oklch(0.9651 0.0303 96.25); /* #f9f4dd */
+	--citrine-200: oklch(0.9418 0.0572 96.25); /* #f7ecc1 */
+	--citrine-300: oklch(0.9053 0.0976 96.25); /* #f3e094 */
+	--citrine-400: oklch(0.8604 0.138 96.25); /* #ecd15c */
+	--citrine-500: oklch(0.8189 0.1683 96.25); /* #e4c202 */
+	--citrine-600: oklch(0.7025 0.1436 91.25); /* #c09b00 */
+	--citrine-700: oklch(0.6073 0.1246 84.25); /* #a57b00 */
+	--citrine-800: oklch(0.5121 0.1067 78.25); /* #885e00 */
+	--citrine-900: oklch(0.4381 0.0927 74.25); /* #704900 */
+	--citrine-950: oklch(0.29 0.062 72.25); /* #3e2500 */
+
+	--cerulean: var(--cerulean-500);
+	--cerulean-50: oklch(0.975 0.0126 237.98); /* #eff8fe */
+	--cerulean-100: oklch(0.9432 0.0283 237.98); /* #dcf0fd */
+	--cerulean-200: oklch(0.906 0.0519 237.98); /* #c1e6ff */
+	--cerulean-300: oklch(0.8477 0.086 237.98); /* #97d6ff */
+	--cerulean-400: oklch(0.7761 0.129 237.98); /* #5bc1ff */
+	--cerulean-500: oklch(0.7097 0.1573 237.98); /* #00adf7 */
+	--cerulean-600: oklch(0.6119 0.1356 237.98); /* #008dcb */
+	--cerulean-700: oklch(0.5318 0.1179 237.98); /* #0074a8 */
+	--cerulean-800: oklch(0.4518 0.1001 237.98); /* #005c86 */
+	--cerulean-900: oklch(0.3895 0.0863 237.98); /* #004a6d */
+	--cerulean-950: oklch(0.265 0.0587 237.98); /* #00293e */
 }
 
 /* ---------- Semantic: Light mode ("semantic" collection) ----------
@@ -636,6 +727,8 @@
 	--on-foreground: var(--white); /* colors/foreground/on-foreground */
 	--foreground-subtle: var(--gray-400); /* colors/foreground/subtle */
 	--foreground-prominent: var(--gray-800); /* colors/foreground/prominent */
+	--foreground-defined: var(--gray-600); /* colors/foreground/defined */
+	--foreground-strong: var(--gray-900); /* colors/foreground/strong */
 	--background-subtle: var(--gray-50); /* colors/background/subtle */
 	--background-defined: var(--gray-200); /* colors/background/defined */
 	--card-subtle: var(--gray-50); /* colors/card/subtle */
@@ -691,7 +784,9 @@
 	--info: var(--info-500); /* colors/tone/info/info */
 	--info-subtle: var(--info-50); /* colors/tone/info/subtle */
 	--info-muted: var(--info-100); /* colors/tone/info/muted */
-	--info-emphasis: var(--info-700); /* colors/tone/info/emphasis */
+	--info-defined: var(--info-600); /* colors/tone/info/defined */
+	--info-prominent: var(--info-700); /* colors/tone/info/prominent */
+	--info-emphasis: var(--info-prominent); /* no Figma variable: colors/tone/info/emphasis was renamed prominent; kept so existing uses don't break */
 	--info-strong: var(--info-900); /* colors/tone/info/strong */
 	--success: var(--success-600); /* colors/tone/success/success */
 	--success-subtle: var(--success-50); /* colors/tone/success/subtle */
@@ -749,13 +844,13 @@
 	--avatar-1: oklch(0.502 0.146 262.28); /* #335fb6, avatar i1 (no Figma variable) */
 	--avatar-2: oklch(0.691 0.146 157.47); /* #33b677, avatar i2 (no Figma variable) */
 	--avatar-3: oklch(0.534 0.208 319.6); /* #9e33b6, avatar i3 (no Figma variable) */
-	--avatar-4: oklch(0.737 0.153 104.9); /* #b9ae11, avatar i4 (no Figma variable) */
+	--avatar-4: oklch(0.7369 0.1532 104.90); /* #b9ae11, avatar i4 (no Figma variable) */
 	--avatar-5: oklch(0.587 0.124 48.59); /* #b66333, avatar i5 (no Figma variable) */
-	--avatar-6: oklch(0.643 0.12 223.24); /* #029cc2, avatar i6 (no Figma variable) */
+	--avatar-6: oklch(0.6432 0.1197 223.24); /* #029cc2, avatar i6 (no Figma variable) */
 	--avatar-7: oklch(0.663 0.207 333.08); /* #d957c8, avatar i7 (no Figma variable) */
 	--avatar-8: oklch(0.563 0.178 141.06); /* #268d11, avatar i8 (no Figma variable) */
-	--avatar-9: oklch(0.533 0.191 25.81); /* #c3282b, avatar i9 (no Figma variable) */
-	--avatar-10: oklch(0.671 0.183 248.48); /* #019aff, avatar i10 (no Figma variable) */
+	--avatar-9: oklch(0.5334 0.1906 25.81); /* #c3282b, avatar i9 (no Figma variable) */
+	--avatar-10: oklch(0.6713 0.1826 248.48); /* #019aff, avatar i10 (no Figma variable) */
 
 	/* Code */
 	--code-green: oklch(0.822 0.098 178.18); /* colors/code/green */
@@ -768,6 +863,12 @@
 	/* Gradient stops */
 	--linear-1a: oklch(0.259 0.111 291.13); /* colors/linear-1A */
 	--linear-1b: oklch(0.278 0.127 261.82); /* colors/linear-1B */
+
+	/* Sparks accent: prompt-composer border and send button, from the logo palettes (no semantic Figma variables yet) */
+	--sparks-accent: var(--cerulean); /* palettes/cerulean/cerulean, #00adf7 */
+	--sparks-accent-start: var(--sapphire); /* palettes/sapphire/sapphire, #0063f7 */
+	--sparks-accent-subtle: var(--cerulean-200); /* palettes/cerulean/200, #c1e6ff, user-message background */
+	--gradient-sparks: linear-gradient(40.67deg, var(--sparks-accent-start) 14.67%, var(--sparks-accent) 85.81%);
 
 	/* Shadow colors (used by --shadow-*) */
 	--shadow-color-sm: oklch(0 0 0 / 5%); /* shadow/sm */
@@ -849,4 +950,11 @@
 	input[type="file"]:not(:disabled) {
 		cursor: pointer;
 	}
+}
+
+/* A thin, quiet scrollbar: a border-colored thumb on no track. Used where a long area scrolls inside the page (e.g. the
+   Sparks conversation), so the scrollbar doesn't compete with the content. */
+@utility scrollbar-subtle {
+	scrollbar-width: thin;
+	scrollbar-color: var(--border) transparent;
 }

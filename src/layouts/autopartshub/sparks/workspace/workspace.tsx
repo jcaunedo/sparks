@@ -1,0 +1,895 @@
+import * as React from "react";
+import { ArrowLeft, Bell, Check, ChevronDown, FlaskConical, Folder, LoaderCircle, MessageCircle, MousePointerClick, Paperclip, Pencil, Share, Users, X, Zap } from "lucide-react";
+import { AnimatePresence, motion } from "motion/react";
+
+import { AssistantMessage } from "@/components/chat/assistant-message";
+import { ClarificationCard } from "@/components/chat/clarification-card";
+import { Badge } from "@/components/data-display/badge";
+import { UserMessage } from "@/components/chat/user-message";
+import { PromptComposer } from "@/components/chat/prompt-composer";
+import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuSeparator,
+	DropdownMenuTrigger,
+} from "@/components/overlays/dropdown-menu";
+import { QuickReplies } from "@/components/chat/quick-replies";
+import { ThinkingIndicator } from "@/components/chat/thinking-indicator";
+import { AppHeader } from "@/components/navigation/app-header";
+import { StepNav, StepNavItem } from "@/components/navigation/step-nav";
+import { Button } from "@/components/buttons/button";
+import { EmptyState } from "@/components/feedback/empty-state";
+import { Typography } from "@/components/typography/typography";
+import { cn } from "@/lib/utils";
+import {
+	motionDuration,
+	overlayVariants,
+	panelVariants,
+	revealVariants,
+	scrollIntoViewSmoothly,
+	useMotionPreference,
+} from "@/lib/motion";
+
+import type { AutoPartsHubUser } from "../../autopartshub";
+import type { Reviewer } from "../review/review-panel";
+import { BriefCard, type BriefDraft } from "../plan/brief-card";
+import { ChosenCard, type ChosenDraft } from "../plan/chosen-card";
+import { ProblemCard, type ProblemDraft } from "../plan/problem-card";
+import { DirectionCard, type DirectionDraft } from "../plan/direction-card";
+import { SuccessCard, type SuccessDraft } from "../plan/success-card";
+import { sparksSteps, type SparksStep } from "../shared/steps";
+import type { PrototypeComment } from "../prototype/prototype-comments";
+import { CommentsPanel } from "./comments-panel";
+import { Blueprint, type BlueprintSection } from "./blueprint";
+import { DecisionLog, useDecisionLog, type DecisionEntry } from "./decision-log";
+import { directionActionFor, planDecisions, planSections, type DirectionPaths } from "./plan-sections";
+import { SharePopover, type SharePopoverProps } from "./share-popover";
+import { HeaderIconButton } from "../../header-icon-button";
+import { NotificationsPopover, type NotificationsPopoverProps } from "../../notifications-popover";
+
+/** One of Dana's messages, as she wrote it, line breaks included. */
+type SparksUserMessage = {
+	id: string;
+	from: "user";
+	text: string;
+};
+
+/** One thing Sparks drafted and asks Dana to confirm, shown as a ClarificationCard. */
+type SparksSuggestion = {
+	/** Which part of the concept it fills, e.g. "who". */
+	part: string;
+	/** What Sparks asks, e.g. "Who does it affect most?". */
+	question: string;
+	text: string;
+	/** The company knowledge source it draws on, e.g. "Customer intelligence". */
+	basis?: string;
+	/** Relies on something no evidence supports yet: labeled "Assumption". */
+	assumption?: boolean;
+	/** Dana changed the text. */
+	edited?: boolean;
+	/** Dana answered it: it's in her concept, without replies or Edit from here. */
+	confirmed?: boolean;
+	/** She answered "I'm not sure": it stays Sparks's guess, as an assumption, not confirmed by her. */
+	unsure?: boolean;
+	/** "Not quite": the card folds to its question, and she answers it in the message box. */
+	answering?: boolean;
+};
+
+/** Where a suggestion came from. */
+function suggestionSource(suggestion: SparksSuggestion) {
+	if (suggestion.edited) return "Edited by you";
+	return suggestion.basis ? `Suggested by Sparks · from ${suggestion.basis.toLowerCase()}` : "Suggested by Sparks";
+}
+
+/** Quick replies that don't answer a question card: the card stays until she answers it. */
+const notAnswers = new Set(["Not quite"]);
+
+/**
+ * What Dana's message shows. Answering a question card with a quick reply ("Yes, that's right", or another answer Sparks
+ * offered, such as "Repeat purchases instead"), her bubble shows the answer itself, as it ended on the card (with her
+ * edit, if she made one), and the card folds to its question (prds/sparks.md, "Talking with Sparks"). "Not quite" and
+ * "I'm not sure" show as she said them.
+ */
+function userMessageText(messages: SparksMessage[], index: number) {
+	const message = messages[index];
+	const asked = messages[index - 1];
+	if (message?.from !== "user") return "";
+	if (asked?.from !== "sparks" || !asked.quickReplies?.includes(message.text) || notAnswers.has(message.text))
+		return message.text;
+	const part = asked.parts.find((p) => p.kind === "suggestion");
+	return part?.kind === "suggestion" && part.suggestion.confirmed && !part.suggestion.unsure
+		? part.suggestion.text
+		: message.text;
+}
+
+/** The "Assumption" label (sparks.ds badge, flat amber, xxs), between a question and its answer, while nothing confirms it. */
+function assumptionBadge() {
+	return (
+		<Badge variant='flat' tone='amber' size='xxs'>
+			Assumption
+		</Badge>
+	);
+}
+
+/**
+ * A piece of a reply from Sparks, in order: text (AssistantMessage's format), one suggestion to confirm (last, with the
+ * reply's quick replies on its card), or a summary card: the problem once it's agreed, what we know, what success looks
+ * like, a direction (all of them in one reply), or what we'll build.
+ */
+type SparksReplyPart =
+	| { kind: "text"; text: string }
+	| { kind: "suggestion"; suggestion: SparksSuggestion }
+	| { kind: "problem"; problem: ProblemDraft }
+	| { kind: "brief"; brief: BriefDraft }
+	| { kind: "success"; success: SuccessDraft }
+	| { kind: "direction"; direction: DirectionDraft }
+	| { kind: "chosen"; chosen: ChosenDraft }
+	/** A line of progress that updates in place (not typed out again), e.g. "Building the cart, 4 of 5 screens." */
+	| { kind: "progress"; text: string; done?: boolean };
+
+/** A reply from Sparks. */
+type SparksReply = {
+	id: string;
+	from: "sparks";
+	/**
+	 * The step the conversation was on when it came (prds/sparks.md, "Steps in the conversation"). A reply on another step
+	 * than the one before it starts a stretch of that step, marked by a divider above it. Without it, the same step as the
+	 * reply before (Plan for the first).
+	 */
+	step?: SparksStep;
+	/** What Sparks works through before it replies, a line at a time ("Popping the hood on support cases…"), shown while it works on a new reply. */
+	thinking?: string[];
+	parts: SparksReplyPart[];
+	/** Likely answers under the reply while it's the last message; selecting one sends it as Dana's message. */
+	quickReplies?: string[];
+};
+
+/** One message in the conversation. Sparks's introduction comes first in every concept, outside this list. */
+type SparksMessage = SparksUserMessage | SparksReply;
+
+/**
+ * A reply from Sparks. New, it shows Sparks thinking (ThinkingIndicator), then its parts one after the other: text
+ * streams, a card Reveals. Already in the conversation when the concept opened, it shows whole.
+ */
+function SparksReplyView({
+	reply,
+	animate,
+	showQuickReplies,
+	onQuickReply,
+	onSuggestionEdit,
+	directionAction,
+}: {
+	reply: SparksReply;
+	animate: boolean;
+	showQuickReplies: boolean;
+	onQuickReply?: (text: string) => void;
+	onSuggestionEdit?: (part: string, text: string) => void;
+	/** A direction card's call to action ("Generate prototype"), the same as in the Blueprint. */
+	directionAction?: ReturnType<typeof directionActionFor>;
+}) {
+	const { prefersReducedMotion } = useMotionPreference();
+	const [thinking, setThinking] = React.useState(animate && Boolean(reply.thinking?.length));
+	// Parts before `step` are whole; part `step` is coming in.
+	const [step, setStep] = React.useState(animate ? 0 : reply.parts.length);
+	const done = step >= reply.parts.length;
+
+	// About `thinkingStep` per line, a little more or less, so the last line gets its time too and it reads like real work.
+	React.useEffect(() => {
+		if (!thinking) return;
+		const lines = reply.thinking?.length ?? 1;
+		const timer = window.setTimeout(
+			() => setThinking(false),
+			motionDuration.thinkingStep * lines * (0.9 + Math.random() * 0.3) * 1000,
+		);
+		return () => window.clearTimeout(timer);
+	}, [thinking, reply.thinking]);
+
+	// A card under reduced motion appears at once, so what follows it comes in right away.
+	const current = reply.parts[step];
+	React.useEffect(() => {
+		if (!thinking && current && current.kind !== "text" && prefersReducedMotion) setStep((s) => s + 1);
+	}, [thinking, current, prefersReducedMotion]);
+
+	if (thinking) return <ThinkingIndicator steps={reply.thinking ?? []} />;
+
+	return (
+		<div className='flex flex-col gap-4'>
+			{reply.parts.slice(0, step + 1).map((part, index) => {
+				const active = animate && index === step;
+				if (part.kind === "text")
+					return (
+						<AssistantMessage
+							key={index}
+							text={part.text}
+							stream={active}
+							onStreamEnd={active ? () => setStep(index + 1) : undefined}
+						/>
+					);
+				return (
+					<motion.div
+						key={index}
+						variants={revealVariants}
+						initial={active && !prefersReducedMotion ? "initial" : false}
+						animate='animate'
+						onAnimationComplete={active ? () => setStep(index + 1) : undefined}
+					>
+						{part.kind === "problem" ? (
+							<ProblemCard problem={part.problem} />
+						) : part.kind === "brief" ? (
+							<BriefCard brief={part.brief} />
+						) : part.kind === "success" ? (
+							<SuccessCard success={part.success} />
+						) : part.kind === "direction" ? (
+							<DirectionCard
+								direction={part.direction}
+								number={reply.parts.slice(0, index + 1).filter((p) => p.kind === "direction").length}
+								action={directionAction?.(part.direction)}
+							/>
+						) : part.kind === "chosen" ? (
+							<ChosenCard chosen={part.chosen} />
+						) : part.kind === "progress" ? (
+							// Sparks building: a spinner while it works, a check when it's done. Read once it changes.
+							<p aria-live='polite' className='flex items-center gap-2 text-sm text-muted-foreground'>
+								{part.done ? (
+									<Check aria-hidden className='size-4 text-success' />
+								) : (
+									<LoaderCircle aria-hidden className='size-4 animate-spin motion-reduce:animate-none' />
+								)}
+								{part.text}
+							</p>
+						) : part.suggestion.confirmed || part.suggestion.answering ? (
+							// Answered, or "Not quite": the card folds to its question; her answer is (or goes) in her bubble.
+							<AssistantMessage text={`**${part.suggestion.question}**`} />
+						) : (
+							<ClarificationCard
+								question={part.suggestion.question}
+								answer={part.suggestion.text}
+								badge={part.suggestion.assumption && !part.suggestion.edited ? assumptionBadge() : undefined}
+								source={suggestionSource(part.suggestion)}
+								replies={done && showQuickReplies && !part.suggestion.confirmed ? reply.quickReplies : []}
+								onReply={onQuickReply}
+								onEdit={
+									onSuggestionEdit && !part.suggestion.confirmed
+										? (text) => onSuggestionEdit(part.suggestion.part, text)
+										: undefined
+								}
+							/>
+						)}
+					</motion.div>
+				);
+			})}
+			{/* Quick replies of a reply without a clarification card show under it; a card carries its own. */}
+			{done &&
+			showQuickReplies &&
+			reply.quickReplies?.length &&
+			!reply.parts.some((part) => part.kind === "suggestion") ? (
+				<motion.div
+					variants={revealVariants}
+					initial={animate && !prefersReducedMotion ? "initial" : false}
+					animate='animate'
+				>
+					{/* The same replies as ClarificationCard's (`QuickReplies`, sparks.ds "ctas"): the first one, the "continue",
+					    last with the ↵ key, and Enter picks it. */}
+					<QuickReplies replies={reply.quickReplies} onReply={onQuickReply} />
+				</motion.div>
+			) : null}
+		</div>
+	);
+}
+
+/**
+ * Where the conversation moved to another step: the step's name between two lines, 24px above the reply that starts it.
+ * Read as a separator named for the step.
+ */
+function StepDivider({ step }: { step: SparksStep }) {
+	const label = sparksSteps.find((s) => s.id === step)?.label ?? step;
+	return (
+		<div role='separator' aria-label={label} className='mb-6 flex items-center gap-3 text-xs font-medium text-muted-foreground'>
+			<span aria-hidden className='h-px flex-1 bg-border' />
+			{label}
+			<span aria-hidden className='h-px flex-1 bg-border' />
+		</div>
+	);
+}
+
+type SparksWorkspaceProps = {
+	user: AutoPartsHubUser;
+	/** The concept's name, in the header. */
+	conceptName: string;
+	/** The step Dana is on. */
+	currentStep: SparksStep;
+	/** The furthest step reached: the steps after it can't be selected yet. Defaults to the current step. */
+	reachedStep?: SparksStep;
+	messages: SparksMessage[];
+	/** Sends what Dana wrote in the message box, or the quick reply she selected. */
+	onSend?: (text: string) => void;
+	/** Dana edited a suggestion on its card: the reply it's in and which part it fills. */
+	onSuggestionEdit?: (replyId: string, part: string, text: string) => void;
+	/**
+	 * Esc in the message box after "Not quite": she won't answer in her own words after all. Clear `answering` on the last
+	 * reply's suggestion, so its card opens again with its replies (prds/sparks.md, "Talking with Sparks").
+	 */
+	onAnswerCancel?: () => void;
+	/**
+	 * The message box's "Initial prompt" (its "+" menu, sparks.ds "select-prompt-add"): the text it puts in the box, ready to
+	 * send or edit. Without it, the menu has no "Initial prompt".
+	 */
+	initialPrompt?: string;
+	/** The "+" menu's "Add from library": opens the AutoPartsHUB home on "My library". */
+	onAddFromLibrary?: () => void;
+	/**
+	 * "Comments" in the header: it opens the Comments panel with the reviewers' feedback (`reviewers`, empty before Review).
+	 * `unread`: the reviewers whose feedback she hasn't opened; the button and each of them show the dot. `onRead`: she
+	 * opened one's comment.
+	 */
+	comments?: {
+		reviewers?: Reviewer[];
+		unread?: string[];
+		onRead?: (id: string) => void;
+		/** Dana's comments on the prototype ("Add comment"), listed under "On the prototype". */
+		prototype?: PrototypeComment[];
+		/** Selecting one opens it on the prototype; without it (no prototype on screen), they're only listed. */
+		onOpenPrototypeComment?: (id: string) => void;
+	};
+	/** The bell's notifications popover (the same as every AutoPartsHUB header's). */
+	notifications?: NotificationsPopoverProps;
+	/**
+	 * Selecting a step she has reached. The conversation scrolls to where that step last began (to the end for the step
+	 * it's on now).
+	 */
+	onStepSelect?: (step: SparksStep) => void;
+	/**
+	 * What shows beside the conversation, e.g. the prototype in the Prototype step (prds/sparks-prototype.md, "Trying
+	 * it"). With it, the conversation narrows to a column on the left and this takes the rest of the width. On Plan once
+	 * Plan is done (a later step reached), the Blueprint shows there unless this is given.
+	 */
+	preview?: React.ReactNode;
+	/**
+	 * What her next message is about, shown above the message box with a way to clear it: the element she pointed at in
+	 * the prototype ("Pointing at the "Save vehicle" button"). The box takes focus, with `placeholder` as its hint.
+	 */
+	composerContext?: { label: string; placeholder?: string; onClear: () => void };
+	/**
+	 * "Share" in the header, in every step (shown when given): it opens the share popover, with who has access, a field to
+	 * add a person or a department, and "Copy link" (prds/sparks.md, "Sharing a concept").
+	 */
+	share?: Omit<SharePopoverProps, "children">;
+	/**
+	 * The Blueprint's sections after Plan's (prds/sparks.md, "The Blueprint"): what we built and where each later step
+	 * stands. Plan's come from what she approved in `messages`. The Blueprint is Plan's panel once Plan is done.
+	 */
+	concept?: BlueprintSection[];
+	/**
+	 * The decisions after Plan's (prds/sparks.md, "The decision log"): Plan's come from `messages`. The workspace keeps
+	 * every entry it has seen, with when it first appeared, and shows them as "Decisions", last in the Blueprint.
+	 */
+	decisions?: DecisionEntry[];
+	/**
+	 * The directions as paths in the prototype (prds/sparks-plan-compare.md, "Directions in the blueprint"): the ones
+	 * built, the one shown, and what the Blueprint's "Choose this one", "Try this one too" and "Open its prototype" do.
+	 */
+	paths?: DirectionPaths;
+	/**
+	 * "All ideas" in the menu on the concept's name: closes the concept, back to the Sparks start page in the same tab
+	 * (prds/sparks.md, "The concept workspace").
+	 */
+	onClose?: () => void;
+	/** "Rename" in the menu on the concept's name: she saved a new name (the header shows it right away). */
+	onRename?: (name: string) => void;
+};
+
+/** The icon on a step's empty state, before Dana gets there. Product artwork. */
+const upcomingIcons = { prototype: MousePointerClick, validate: FlaskConical, review: Users } as const;
+
+/** The side panel's column (Comments): 480px wide in every step, 32px from the right edge, 24px from the bottom. */
+const sidePanelColumn = "flex w-[512px] min-h-0 shrink-0 flex-col pe-8 pb-6";
+
+/**
+ * The header's outlined button, Share: Figma's Button Outlined lg · 36 with a 16px icon on the left (10px in, 6px to the
+ * label, 14px after it).
+ */
+const headerButtonClasses = "gap-1.5 rounded-button-lg ps-2.5 pe-3.5 text-sm font-semibold text-foreground shadow-xs";
+
+/**
+ * The concept's name in its header (sparks.ds "Sparks Project", 79:7175): xl semibold (20/30), `foreground`, with a 22px chevron, 4px after it, opening a menu:
+ * "Rename" turns the name into a field (Enter or leaving it saves, Esc cancels), "All ideas" goes back to the start
+ * page.
+ */
+function ConceptName({ name, onRename, onClose }: { name: string; onRename?: (name: string) => void; onClose?: () => void }) {
+	const [shown, setShown] = React.useState(name);
+	const [editing, setEditing] = React.useState(false);
+	const triggerRef = React.useRef<HTMLButtonElement>(null);
+	React.useEffect(() => setShown(name), [name]);
+
+	const finish = (value?: string) => {
+		const next = value?.trim();
+		if (next && next !== shown) {
+			setShown(next);
+			onRename?.(next);
+		}
+		setEditing(false);
+		requestAnimationFrame(() => triggerRef.current?.focus());
+	};
+
+	if (editing) {
+		return (
+			<input
+				aria-label='Idea name'
+				defaultValue={shown}
+				autoFocus
+				onFocus={(event) => event.currentTarget.select()}
+				onBlur={(event) => finish(event.currentTarget.value)}
+				onKeyDown={(event) => {
+					if (event.key === "Enter") finish(event.currentTarget.value);
+					if (event.key === "Escape") finish();
+				}}
+				className='h-10 min-w-0 flex-1 rounded-input border border-input-ring bg-background px-2 font-display text-xl font-semibold text-foreground outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50'
+			/>
+		);
+	}
+	return (
+		<Typography as='h1' size='xl' weight='semibold' className='min-w-0 text-foreground'>
+			<DropdownMenu>
+				<DropdownMenuTrigger asChild>
+					<button
+						ref={triggerRef}
+						type='button'
+						className='flex max-w-full items-center gap-1 rounded-md outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50'
+					>
+						<span className='truncate'>{shown}</span>
+						<ChevronDown aria-hidden className='size-[22px] shrink-0 text-icon' />
+					</button>
+				</DropdownMenuTrigger>
+				<DropdownMenuContent align='start' sideOffset={8} onCloseAutoFocus={(event) => editing && event.preventDefault()}>
+					<DropdownMenuItem onSelect={() => setEditing(true)}>
+						<Pencil aria-hidden />
+						Rename
+					</DropdownMenuItem>
+					<DropdownMenuItem onSelect={onClose}>
+						<ArrowLeft aria-hidden />
+						All ideas
+					</DropdownMenuItem>
+				</DropdownMenuContent>
+			</DropdownMenu>
+		</Typography>
+	);
+}
+
+/**
+ * Sparks's first message in every concept (prds/sparks.md, "Sparks's introduction"): who it is and what she'll end up
+ * with, where she starts (Plan, and what she'll define in it) and what follows, that she decides, and the question
+ * that starts Plan. Product copy, not sample data.
+ */
+function sparksIntroduction(firstName: string) {
+	return `Hi ${firstName}, I'm Sparks. Together we'll turn your idea into a prototype you can test before anything gets built.
+
+We start with Plan: we'll define the problem, agree on what success looks like, and choose the direction to prototype. Then I'll build it, test it, and help you take it to the teams who decide.
+
+I draft, you decide. Everything is saved as you go.
+
+**What problem do you want to solve?**
+Describe it in your own words, the way you'd tell a colleague. Rough is fine.`;
+}
+
+/**
+ * Where Dana works on a concept: the header with the concept's name and the four steps, the conversation with Sparks
+ * centered (Sparks's introduction first), and the message box at the bottom. Figma: Sparks → "Sparks Project" (node 27:1932).
+ */
+function SparksWorkspace({
+	user,
+	conceptName,
+	currentStep,
+	reachedStep = currentStep,
+	messages,
+	onSend,
+	onSuggestionEdit,
+	onAnswerCancel,
+	initialPrompt,
+	onAddFromLibrary,
+	comments,
+	notifications,
+	onStepSelect,
+	preview: previewProp,
+	composerContext,
+	share,
+	concept,
+	decisions,
+	paths,
+	onClose,
+	onRename,
+}: SparksWorkspaceProps) {
+	const reachedIndex = sparksSteps.findIndex((step) => step.id === reachedStep);
+	// A concept that opens with no messages is new: its introduction streams in. Reopened, it's history and shows whole.
+	// Sending while it streams shows the rest at once.
+	const [isNew] = React.useState(messages.length === 0);
+	// Sparks's replies already there when the concept opened show whole; new ones come in.
+	const [initialIds] = React.useState(() => new Set(messages.map((message) => message.id)));
+
+	// When Dana sends, the conversation scrolls so her message sits at the top of the view, with Sparks's answer coming
+	// in right below it (the view doesn't chase the bottom). The newest reply is tall enough to fill the view under her
+	// message, so the message can reach the top while the answer is still short, and has half the view below its end, so
+	// scrolling down a long answer stops with its end in the middle of the view. Her message with no reply is just
+	// brought into view.
+	const { prefersReducedMotion } = useMotionPreference();
+	const scrollRef = React.useRef<HTMLDivElement>(null);
+	const itemRefs = React.useRef(new Map<string, HTMLLIElement>());
+	const [viewHeight, setViewHeight] = React.useState(0);
+	const [sentHeight, setSentHeight] = React.useState(0);
+	// The scroller's padding above the conversation (none: Figma starts it right under the header). Not room the newest
+	// reply can fill.
+	const scrollPadding = 0;
+	React.useEffect(() => {
+		const scroller = scrollRef.current;
+		if (!scroller) return;
+		const observer = new ResizeObserver(() => setViewHeight(scroller.clientHeight));
+		observer.observe(scroller);
+		return () => observer.disconnect();
+	}, []);
+	const last = messages[messages.length - 1];
+	const beforeLast = messages[messages.length - 2];
+	const lastIsNewReply = last?.from === "sparks" && !initialIds.has(last.id);
+	// Her message that the new reply answers: the one the view scrolls to.
+	const sent = lastIsNewReply && beforeLast?.from === "user" ? beforeLast : undefined;
+	const scrolledFor = React.useRef<string | undefined>(undefined);
+	React.useEffect(() => {
+		if (!last || initialIds.has(last.id) || scrolledFor.current === last.id) return;
+		scrolledFor.current = last.id;
+		const target = itemRefs.current.get(sent?.id ?? last.id);
+		if (!target) return;
+		// The reply fills the view below her message: the view's height, less her message and the 32px below it.
+		setSentHeight(sent ? target.offsetHeight + 32 : 0);
+		return scrollIntoViewSmoothly(target, {
+			reducedMotion: Boolean(prefersReducedMotion),
+			align: lastIsNewReply ? "start" : "nearest",
+		});
+	}, [last, sent, lastIsNewReply, initialIds, prefersReducedMotion]);
+	const itemRef = (id: string) => (element: HTMLLIElement | null) => {
+		if (element) itemRefs.current.set(id, element);
+		else itemRefs.current.delete(id);
+	};
+
+	// Steps in the conversation (prds/sparks.md, "Steps in the conversation"): one conversation for the whole concept, with a
+	// divider where it moved to another step. A reply without a step stays on the one before it.
+	const stepStarts = new Map<string, SparksStep>();
+	let conversationStep: SparksStep = "plan";
+	for (const message of messages) {
+		if (message.from !== "sparks") continue;
+		const step: SparksStep = message.step ?? conversationStep;
+		if (step !== conversationStep) stepStarts.set(message.id, step);
+		conversationStep = step;
+	}
+	/**
+	 * Selecting a step she has reached scrolls the conversation to where that step last began (Plan's first stretch starts
+	 * at the introduction). The step the conversation is on now scrolls to its last message instead.
+	 */
+	const introRef = React.useRef<HTMLLIElement>(null);
+	const scrollToStep = (step: SparksStep) => {
+		const latest = step === conversationStep;
+		const startId = [...stepStarts].reverse().find(([, s]) => s === step)?.[0];
+		const element = latest
+			? itemRefs.current.get(messages[messages.length - 1]?.id ?? "")
+			: startId
+				? itemRefs.current.get(startId)
+				: step === "plan"
+					? introRef.current
+					: undefined;
+		if (element) scrollIntoViewSmoothly(element, { reducedMotion: Boolean(prefersReducedMotion), align: latest ? "nearest" : "start" });
+	};
+
+	const send = (text: string) => onSend?.(text);
+	// What's in the message box. "Initial prompt" fills it; the menu closing puts focus there, caret at the end.
+	const [draft, setDraft] = React.useState("");
+	const fillDraft = (text: string) => setDraft(text);
+
+	// "Not quite" on a question card: the question stays open, and the message box is ready for her answer.
+	const composerRef = React.useRef<HTMLTextAreaElement>(null);
+	const answeringPart =
+		last?.from === "sparks"
+			? last.parts.find((part) => part.kind === "suggestion" && part.suggestion.answering)
+			: undefined;
+	const answering = Boolean(answeringPart);
+	// Sparks's answer, on offer in the message box: Tab puts it there to edit instead of typing it again.
+	const offeredAnswer = answeringPart?.kind === "suggestion" ? answeringPart.suggestion.text : undefined;
+	React.useEffect(() => {
+		if (answering) composerRef.current?.focus();
+	}, [answering]);
+	// Esc after "Not quite": the card opens again, and focus goes back to its "Not quite", where she was.
+	const refocusNotQuite = React.useRef(false);
+	const cancelAnswer = () => {
+		refocusNotQuite.current = true;
+		onAnswerCancel?.();
+	};
+	React.useEffect(() => {
+		if (answering || !refocusNotQuite.current || !last) return;
+		refocusNotQuite.current = false;
+		const buttons = itemRefs.current.get(last.id)?.querySelectorAll("button") ?? [];
+		[...buttons].find((button) => notAnswers.has(button.textContent?.trim() ?? ""))?.focus();
+	}, [answering, last]);
+	// The Blueprint and its sections (prds/sparks.md, "The Blueprint"): Plan's panel once Plan is done.
+	const logged = useDecisionLog([...planDecisions(messages, user.firstName), ...(decisions ?? [])]);
+	const sections: BlueprintSection[] = [
+		...planSections(messages, paths),
+		...(concept ?? []),
+		...(logged.length ? [{ id: "decisions", title: "Decisions", content: <DecisionLog decisions={logged} /> }] : []),
+	];
+	// A direction's call to action, on its card and in the Blueprint alike.
+	const directionAction = directionActionFor(messages, paths);
+	// Comments: the reviewers' feedback and her comments on the prototype, 480px on the right in every step (DESIGN.md →
+	// "Side panels share one frame"); with no preview, the conversation stays centered in the rest. It opens only from
+	// "Comments", and takes focus.
+	const [commentsOpen, setCommentsOpen] = React.useState(false);
+	const commentsButtonRef = React.useRef<HTMLButtonElement>(null);
+	const closeComments = () => {
+		setCommentsOpen(false);
+		commentsButtonRef.current?.focus();
+	};
+	// A step not reached yet, selected to see what it is: its empty state takes the preview's place until she goes back
+	// (prds/sparks.md, "Steps"). The step she's on doesn't change.
+	const [peekStep, setPeekStep] = React.useState<SparksStep>();
+	React.useEffect(() => setPeekStep(undefined), [currentStep]);
+	const peeked = sparksSteps.find((step) => step.id === peekStep);
+	const currentLabel = sparksSteps.find((step) => step.id === currentStep)?.label ?? "";
+	// Plan is done once a later step is reached: from then on, Plan's panel is the Blueprint.
+	const blueprint = currentStep === "plan" && reachedIndex > 0 ? <Blueprint sections={sections} /> : undefined;
+	const preview = peeked?.upcoming ? (
+		<section aria-label={peeked.label} className='flex min-h-0 flex-1 flex-col rounded-card bg-background-subtle p-4'>
+			<EmptyState
+				className='flex-1'
+				icon={React.createElement(upcomingIcons[peeked.id as keyof typeof upcomingIcons], {
+					"aria-hidden": true,
+					className: "size-8 text-icon-muted",
+				})}
+				title={peeked.upcoming.title}
+				description={peeked.upcoming.description}
+				buttonLabel={`Back to ${currentLabel}`}
+				buttonProps={{ onClick: () => setPeekStep(undefined) }}
+			/>
+		</section>
+	) : (
+		(previewProp ?? blueprint)
+	);
+	const centered = !preview;
+
+	// Pointing at something: the box is ready for what to change.
+	React.useEffect(() => {
+		if (composerContext) composerRef.current?.focus();
+	}, [composerContext?.label]);
+
+	return (
+		// The screen's height: the conversation scrolls between the header and the message box.
+		// sparks.ds/Sparks "Sparks Project": white down to the middle, then a soft gray at the bottom (DESIGN.md → "Sparks
+		// Project background").
+		<div className='flex h-screen flex-col bg-background bg-linear-to-b from-background from-50% to-[color-mix(in_srgb,var(--background-subtle)_50%,var(--background))] text-foreground'>
+			{/* sparks.ds "header-autopartshub" → "Sparks Project" (32:1145): the concept's name alone on the left (xl semibold,
+			    its menu on the chevron), the steps centered, the actions on the right. No logo, no back button, no avatar
+			    (DESIGN.md → "Sparks Project header"). */}
+			<AppHeader
+				logo={
+					// Figma "Left": the concept's name with its menu; "All ideas" there goes back to the start page.
+					<ConceptName name={conceptName} onRename={onRename} onClose={onClose} />
+				}
+				nav={
+					<StepNav aria-label='Steps'>
+						{sparksSteps.map((step, index) => (
+							<StepNavItem
+								key={step.id}
+								current={step.id === (peekStep ?? currentStep)}
+								// Not reached yet: still selectable, to see what the step is (its empty state).
+								upcoming={index > reachedIndex}
+								onClick={() => {
+									if (index > reachedIndex) return setPeekStep(step.id);
+									setPeekStep(undefined);
+									if (step.id !== currentStep) onStepSelect?.(step.id);
+									// After the layout changes (the Blueprint or the prototype beside the conversation).
+									requestAnimationFrame(() => scrollToStep(step.id));
+								}}
+							>
+								{step.label}
+							</StepNavItem>
+						))}
+					</StepNav>
+				}
+			>
+				{/* Figma "Right" (sparks.ds "Sparks Project", 32:1145): Comments, notifications, then Share. No "Blueprint": the
+				    Blueprint is Plan's panel once Plan is done (prds/sparks.md, "The Blueprint"). No close button: "All ideas"
+				    goes back to the start page. */}
+				<HeaderIconButton
+					ref={commentsButtonRef}
+					label='Comments'
+					dot={Boolean(comments?.unread?.length)}
+					aria-expanded={commentsOpen}
+					onClick={() => (commentsOpen ? closeComments() : setCommentsOpen(true))}
+				>
+					<MessageCircle aria-hidden />
+				</HeaderIconButton>
+				{notifications ? (
+					<NotificationsPopover {...notifications} />
+				) : (
+					<HeaderIconButton label='Notifications'>
+						<Bell aria-hidden />
+					</HeaderIconButton>
+				)}
+				{/* "Share", in every step (prds/sparks.md, "Sharing a concept"): Figma's Share, Button Outlined lg · 36, its icon
+				    on the left. No avatars beside it (32:1145): who has access is in Share's popover. */}
+				{share ? (
+					<SharePopover {...share}>
+						<Button variant='outline' className={headerButtonClasses}>
+							<Share aria-hidden />
+							Share
+						</Button>
+					</SharePopover>
+				) : null}
+			</AppHeader>
+
+			{/* Figma "Canvas": a 728px column centered (500px sides at 1728), starting right under the header (its 28px bottom
+			    padding is the space above the first message), the message box 24px from the bottom. The whole area scrolls, so
+			    the scrollbar sits at the page's edge and the text scrolls up to the header. */}
+			{/* With a preview (the prototype), the conversation is a 480px column on the left and the preview takes the rest. */}
+			<main className='flex min-h-0 flex-1'>
+			<div className={cn("flex min-h-0 flex-col", preview ? "w-[480px] shrink-0" : "min-w-0 flex-1")}>
+				<div ref={scrollRef} className='scrollbar-subtle min-h-0 flex-1 overflow-y-auto px-8'>
+					<div className='mx-auto w-full max-w-[728px]'>
+						<ol aria-label='Conversation' aria-live='polite' className='flex flex-col gap-4'>
+							{/* The introduction: first in every concept, 32px above what follows it. */}
+							<li ref={introRef} className={cn("mb-4", centered && "pe-16")}>
+								<AssistantMessage text={sparksIntroduction(user.firstName)} stream={isNew && messages.length === 0} />
+							</li>
+							{messages.map((message, index) =>
+								message.from === "user" ? (
+									// Dana's messages sit on the right (UserMessage caps itself at 80% of the column).
+									// 32px below it, as below Sparks's replies (the list's 16px gap plus mb-4).
+									<li
+										key={message.id}
+										ref={itemRef(message.id)}
+										className={cn("mb-4 flex justify-end last:mb-0", centered && "ps-16")}
+									>
+										{/* Centered, her messages keep 64px clear on the left (664px at most), as Sparks's replies do on the right. Not UserMessage's 80%. */}
+										<UserMessage className={preview ? undefined : "max-w-full"}>{userMessageText(messages, index)}</UserMessage>
+									</li>
+								) : (
+									// Sparks's replies keep 32px from what follows them, like the introduction.
+									<li
+										key={message.id}
+										ref={itemRef(message.id)}
+										// Centered, Sparks's replies keep 64px clear on the right, as in Figma 27:1932 (664px of the 728px column).
+										className={cn("mb-4 last:mb-0", centered && "pe-16")}
+										style={
+											lastIsNewReply && message === last
+												? {
+														minHeight: Math.max(0, viewHeight - scrollPadding - sentHeight),
+														// Room below its end: scrolling down a long reply, she can bring its end up to the middle of
+														// the view, and no further.
+														paddingBottom: Math.round(viewHeight / 2),
+													}
+												: undefined
+										}
+									>
+										{stepStarts.has(message.id) ? <StepDivider step={stepStarts.get(message.id)!} /> : null}
+										<SparksReplyView
+											reply={message}
+											animate={!initialIds.has(message.id)}
+											showQuickReplies={index === messages.length - 1}
+											onQuickReply={send}
+											onSuggestionEdit={
+												onSuggestionEdit ? (part, text) => onSuggestionEdit(message.id, part, text) : undefined
+											}
+											directionAction={directionAction}
+										/>
+									</li>
+								),
+							)}
+						</ol>
+					</div>
+				</div>
+				{/* 24px between the conversation and the message box, outside the scroll area, so text never runs up to the box. */}
+				<div className='shrink-0 px-8 pt-6 pb-6'>
+					{composerContext ? (
+						<div className={cn("mb-2 flex items-center gap-2 text-sm text-foreground", "mx-auto max-w-[728px]")}>
+							<span className='flex min-w-0 items-center gap-1.5 rounded-full bg-background-subtle py-1 ps-3 pe-1'>
+								<span className='truncate'>{composerContext.label}</span>
+								<Button
+									variant='ghost'
+									size='icon'
+									aria-label='Stop pointing'
+									className='size-6 rounded-full [&_svg]:size-3.5'
+									onClick={composerContext.onClear}
+								>
+									<X aria-hidden />
+								</Button>
+							</span>
+						</div>
+					) : null}
+					<PromptComposer
+						ref={composerRef}
+						aria-label='Message Sparks'
+						placeholder={composerContext?.placeholder ?? (answering ? "Type your answer…" : "Message Sparks…")}
+						// Controlled, so "Initial prompt" can fill it; it clears on send and on Esc.
+						value={draft}
+						onChange={(event) => setDraft(event.target.value)}
+						suggestion={offeredAnswer}
+						onSuggestionAccept={setDraft}
+						onCancel={
+							answering && onAnswerCancel
+								? () => {
+										setDraft("");
+										cancelAnswer();
+									}
+								: undefined
+						}
+						// sparks.ds "select-prompt-add" (77:6726): attach, add from the library, connect, and the demo's initial prompt.
+						addMenu={
+							<>
+								<DropdownMenuItem>
+									<Paperclip aria-hidden />
+									Attach
+								</DropdownMenuItem>
+								{/* Opens "My library" on the AutoPartsHUB home (prds/sparks.md, "The message box"). */}
+								<DropdownMenuItem onSelect={onAddFromLibrary}>
+									<Folder aria-hidden />
+									Add from library
+								</DropdownMenuItem>
+								<DropdownMenuItem>
+									<Zap aria-hidden />
+									Connect
+								</DropdownMenuItem>
+								{initialPrompt ? (
+									<>
+										<DropdownMenuSeparator />
+										<DropdownMenuItem onSelect={() => fillDraft(initialPrompt)}>
+											<MessageCircle aria-hidden />
+											Initial prompt
+										</DropdownMenuItem>
+									</>
+								) : null}
+							</>
+						}
+						className='mx-auto max-w-[728px]'
+						// A new concept: the box is ready for her answer to the introduction's question.
+						autoFocus={messages.length === 0}
+						onSubmit={(text) => {
+							send(text);
+							setDraft("");
+						}}
+					/>
+				</div>
+			</div>
+			{preview ? <div className='flex min-h-0 min-w-0 flex-1 flex-col pr-8 pb-6'>{preview}</div> : null}
+			{/* The Comments panel, on the right of whatever's open; it slides in (fades, with reduced motion). */}
+			<AnimatePresence initial={false}>
+				{commentsOpen ? (
+					<motion.aside
+						key='comments'
+						aria-label='Comments'
+						variants={prefersReducedMotion ? overlayVariants : panelVariants}
+						initial='initial'
+						animate='animate'
+						exit='exit'
+						className={sidePanelColumn}
+					>
+						<CommentsPanel
+							reviewers={comments?.reviewers ?? []}
+							unread={comments?.unread}
+							onRead={comments?.onRead}
+							prototypeComments={comments?.prototype}
+							onOpenPrototypeComment={comments?.onOpenPrototypeComment}
+							onClose={closeComments}
+							autoFocus
+						/>
+					</motion.aside>
+				) : null}
+			</AnimatePresence>
+			</main>
+		</div>
+	);
+}
+
+export {
+	SparksWorkspace,
+	type SparksWorkspaceProps,
+	type SparksMessage,
+	type SparksUserMessage,
+	type SparksReply,
+	type SparksReplyPart,
+	type SparksSuggestion,
+};

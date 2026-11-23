@@ -30,9 +30,9 @@ export const Default: Story = {};
 /** With a button. The label names the action, never "OK" or "Continue". (Example copy.) */
 export const WithAction: Story = {
 	args: {
-		title: "Nothing in Knowledge yet",
-		description: "When knowledge is added, it'll show up here.",
-		buttonLabel: "Add knowledge",
+		title: "Nothing in your library yet",
+		description: "Files, notes and research you add will show up here.",
+		buttonLabel: "Add a file",
 		buttonProps: { onClick: () => {} },
 	},
 };

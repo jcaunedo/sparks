@@ -30,12 +30,16 @@ function scrollContainerTo(container: HTMLElement, top: number) {
 	else container.scrollTo({ top, behavior: "instant" });
 }
 
+/** "nearest": the least movement that brings the element fully into view. "start": its top at the top of the view. */
+type ScrollAlign = "nearest" | "start";
+
 /**
- * Where `container` has to scroll so `element` is fully in view ("nearest": the least movement),
- * honoring the container's `scroll-padding` and the element's `scroll-margin` the way native
- * `scrollIntoView` does. Element taller than the space: its top is aligned.
+ * Where `container` has to scroll so `element` is in view, honoring the container's `scroll-padding`
+ * and the element's `scroll-margin` the way native `scrollIntoView` does. "nearest": fully in view
+ * with the least movement (element taller than the space: its top is aligned). "start": its top at
+ * the top of the view, as far as the container can scroll.
  */
-function scrollTargetFor(element: HTMLElement, container: HTMLElement) {
+function scrollTargetFor(element: HTMLElement, container: HTMLElement, align: ScrollAlign = "nearest") {
 	const containerStyle = getComputedStyle(container);
 	const style = getComputedStyle(element);
 	const px = (value: string) => parseFloat(value) || 0;
@@ -48,7 +52,8 @@ function scrollTargetFor(element: HTMLElement, container: HTMLElement) {
 	const viewBottom = view.bottom - px(containerStyle.scrollPaddingBottom);
 
 	let delta = 0;
-	if (bottom > viewBottom) delta = Math.min(bottom - viewBottom, top - viewTop);
+	if (align === "start") delta = top - viewTop;
+	else if (bottom > viewBottom) delta = Math.min(bottom - viewBottom, top - viewTop);
 	else if (top < viewTop) delta = top - viewTop;
 
 	return Math.min(Math.max(view.scrollTop + delta, 0), view.maxScroll);
@@ -61,13 +66,17 @@ function scrollTargetFor(element: HTMLElement, container: HTMLElement) {
  * a row revealing, a sibling collapsing) and still land exactly where it settles — one continuous
  * movement instead of waiting for the layout first. Interruptible: any wheel, touch, pointer or key
  * input from the user stops it, and so does `element` leaving the page.
+ * `align: "start"` puts its top at the top of the view instead (e.g. a new chat reply).
  * Reduced motion: jumps straight to the target.
  * Returns a function that stops the scroll.
  */
-function scrollIntoViewSmoothly(element: HTMLElement, { reducedMotion = false } = {}) {
+function scrollIntoViewSmoothly(
+	element: HTMLElement,
+	{ reducedMotion = false, align = "nearest" }: { reducedMotion?: boolean; align?: ScrollAlign } = {},
+) {
 	const container = scrollContainerOf(element);
 	if (reducedMotion) {
-		scrollContainerTo(container, scrollTargetFor(element, container));
+		scrollContainerTo(container, scrollTargetFor(element, container, align));
 		return () => {};
 	}
 
@@ -76,16 +85,21 @@ function scrollIntoViewSmoothly(element: HTMLElement, { reducedMotion = false } 
 		...scrollTransition,
 		onUpdate: (progress) => {
 			if (!element.isConnected) return stop();
-			scrollContainerTo(container, start + (scrollTargetFor(element, container) - start) * progress);
+			scrollContainerTo(container, start + (scrollTargetFor(element, container, align) - start) * progress);
 		},
 	});
 
 	const interruptions = ["wheel", "touchstart", "pointerdown", "keydown"] as const;
 	function stop() {
 		controls.stop();
+		cancelAnimationFrame(listenFrame);
 		for (const event of interruptions) window.removeEventListener(event, stop);
 	}
-	for (const event of interruptions) window.addEventListener(event, stop, { passive: true });
+	// Listen from the next frame: a scroll started by a key or click (Enter sending a message) mustn't be stopped by
+	// that same event as it bubbles on to the window.
+	const listenFrame = requestAnimationFrame(() => {
+		for (const event of interruptions) window.addEventListener(event, stop, { passive: true });
+	});
 	controls.then(stop);
 	return stop;
 }

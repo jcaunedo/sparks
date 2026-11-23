@@ -7,3 +7,5 @@ storybook-static/
 .DS_Store
 # Local Claude Code files: synced between machines by claude-sync (~/.claude/README.md), not shared
 .claude/
+# Temporary screenshots (headless checks, references) belong outside the repo; a stray one in the root is never committed.
+/*.png

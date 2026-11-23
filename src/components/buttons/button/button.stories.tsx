@@ -15,6 +15,7 @@ const meta = {
 			options: [
 				"default",
 				"destructive",
+				"neutral",
 				"outline",
 				"secondary",
 				"ghost",
@@ -41,6 +42,7 @@ export const AllVariants: Story = {
 	render: () => (
 		<div className='flex flex-wrap items-center gap-3'>
 			<Button>Default</Button>
+			<Button variant='neutral'>Neutral</Button>
 			<Button variant='secondary'>Secondary</Button>
 			<Button variant='outline'>Outline</Button>
 			<Button variant='ghost'>Ghost</Button>

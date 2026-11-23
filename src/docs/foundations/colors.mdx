@@ -4,7 +4,7 @@ import { Meta, ColorPalette, ColorItem } from "@storybook/addon-docs/blocks";
 
 # Colors
 
-Colors are semantic tokens defined in `src/styles/theme.css`. Each token is a CSS variable, such as `--primary`, and a Tailwind utility, such as `bg-primary` or `text-primary-foreground`.
+Colors come from sparks.ds's variables, mirrored in `src/styles/theme.css`: primitive palettes, and semantic tokens that point to them. Each token is a CSS variable, such as `--primary`, and a Tailwind utility, such as `bg-primary` or `text-primary-foreground`.
 
 Pair each surface token with its `-foreground` token, so text always has enough contrast. The swatches below read the live variables, so they always match the theme.
 
@@ -78,28 +78,761 @@ Pair each surface token with its `-foreground` token, so text always has enough 
 	/>
 </ColorPalette>
 
-## Radius
+## Text, icons, surfaces and borders
 
-shadcn's `rounded-sm`, `rounded-md` and `rounded-lg` derive from one `--radius` token (`0.5rem`, Figma's `radius/default`). Components with their own radius in Figma use named tokens instead, such as `rounded-card` (16px) and `rounded-input` (10px).
+The semantic tokens components use for text and structure. Each is a Tailwind utility too (`text-foreground-strong`, `bg-card-subtle`, `border-border-defined`). These swatches read the live variables.
 
-<div style={{ display: "flex", gap: "1.5rem", flexWrap: "wrap", margin: "1.5rem 0" }}>
-	{[
-		["rounded-sm", "calc(var(--radius) - 4px)"],
-		["rounded-md", "calc(var(--radius) - 2px)"],
-		["rounded-lg", "var(--radius)"],
-	].map(([name, value]) => (
-		<div key={name} style={{ textAlign: "center", fontSize: "0.8125rem" }}>
-			<div
-				style={{
-					width: 96,
-					height: 64,
-					borderRadius: value,
-					background: "var(--secondary)",
-					border: "1px solid var(--border)",
-					marginBottom: 8,
-				}}
-			/>
-			<code>{name}</code>
-		</div>
-	))}
-</div>
+<ColorPalette>
+	<ColorItem
+		title='Text'
+		subtitle='lightest to darkest; on-foreground goes on dark fills'
+		colors={{
+			"foreground-subtle": "var(--foreground-subtle)",
+			"muted-foreground": "var(--muted-foreground)",
+			"foreground": "var(--foreground)",
+			"foreground-defined": "var(--foreground-defined)",
+			"foreground-prominent": "var(--foreground-prominent)",
+			"foreground-strong": "var(--foreground-strong)",
+			"on-foreground": "var(--on-foreground)",
+		}}
+	/>
+	<ColorItem
+		title='Icons'
+		subtitle='icon colors'
+		colors={{
+			"icon-subtle": "var(--icon-subtle)",
+			"icon-muted": "var(--icon-muted)",
+			"icon": "var(--icon)",
+			"icon-brand": "var(--icon-brand)",
+			"icon-on-brand": "var(--icon-on-brand)",
+		}}
+	/>
+	<ColorItem
+		title='Surfaces'
+		subtitle='backgrounds and cards'
+		colors={{
+			"background": "var(--background)",
+			"background-subtle": "var(--background-subtle)",
+			"muted": "var(--muted)",
+			"background-defined": "var(--background-defined)",
+			"card": "var(--card)",
+			"card-subtle": "var(--card-subtle)",
+			"card-muted": "var(--card-muted)",
+			"card-defined": "var(--card-defined)",
+		}}
+	/>
+	<ColorItem
+		title='Borders'
+		subtitle='lightest to strongest'
+		colors={{
+			"border-subtle": "var(--border-subtle)",
+			"border-muted": "var(--border-muted)",
+			"border": "var(--border)",
+			"border-defined": "var(--border-defined)",
+		}}
+	/>
+</ColorPalette>
+
+## Tones
+
+Each tone runs from a subtle fill to a strong text color, with the foreground to put on its main fill (`bg-info-subtle`, `text-info-prominent`). Labels drop the tone's name: under Info, "subtle" is `--info-subtle`.
+
+<ColorPalette>
+	<ColorItem
+		title='Brand'
+		subtitle='primary actions'
+		colors={{
+			"subtle": "var(--brand-subtle)",
+			"muted": "var(--brand-muted)",
+			"defined": "var(--brand-defined)",
+			"brand": "var(--brand)",
+			"prominent": "var(--brand-prominent)",
+			"strong": "var(--brand-strong)",
+			"foreground": "var(--brand-foreground)",
+		}}
+	/>
+	<ColorItem
+		title='Accent tone'
+		subtitle='teal accents'
+		colors={{
+			"subtle": "var(--tone-accent-subtle)",
+			"muted": "var(--tone-accent-muted)",
+			"defined": "var(--tone-accent-defined)",
+			"tone-accent": "var(--tone-accent)",
+			"prominent": "var(--tone-accent-prominent)",
+			"strong": "var(--tone-accent-strong)",
+			"foreground": "var(--tone-accent-foreground)",
+		}}
+	/>
+	<ColorItem
+		title='Emphasis'
+		subtitle='highlights'
+		colors={{
+			"subtle": "var(--emphasis-subtle)",
+			"muted": "var(--emphasis-muted)",
+			"defined": "var(--emphasis-defined)",
+			"emphasis": "var(--emphasis)",
+			"prominent": "var(--emphasis-prominent)",
+			"strong": "var(--emphasis-strong)",
+			"foreground": "var(--emphasis-foreground)",
+		}}
+	/>
+	<ColorItem
+		title='Neutral'
+		subtitle='dark chips and selected steps'
+		colors={{
+			"subtle": "var(--neutral-subtle)",
+			"muted": "var(--neutral-muted)",
+			"defined": "var(--neutral-defined)",
+			"neutral": "var(--neutral)",
+			"prominent": "var(--neutral-prominent)",
+			"strong": "var(--neutral-strong)",
+			"foreground": "var(--neutral-foreground)",
+		}}
+	/>
+	<ColorItem
+		title='Info'
+		subtitle='informational messages'
+		colors={{
+			"subtle": "var(--info-subtle)",
+			"muted": "var(--info-muted)",
+			"info": "var(--info)",
+			"defined": "var(--info-defined)",
+			"prominent": "var(--info-prominent)",
+			"strong": "var(--info-strong)",
+		}}
+	/>
+	<ColorItem
+		title='Success'
+		subtitle='confirmations'
+		colors={{
+			"subtle": "var(--success-subtle)",
+			"muted": "var(--success-muted)",
+			"success": "var(--success)",
+			"emphasis": "var(--success-emphasis)",
+			"strong": "var(--success-strong)",
+		}}
+	/>
+	<ColorItem
+		title='Warning'
+		subtitle='cautions'
+		colors={{
+			"subtle": "var(--warning-subtle)",
+			"muted": "var(--warning-muted)",
+			"defined": "var(--warning-defined)",
+			"warning": "var(--warning)",
+			"emphasis": "var(--warning-emphasis)",
+			"strong": "var(--warning-strong)",
+		}}
+	/>
+	<ColorItem
+		title='Destructive'
+		subtitle='errors and irreversible actions'
+		colors={{
+			"subtle": "var(--destructive-subtle)",
+			"muted": "var(--destructive-muted)",
+			"destructive": "var(--destructive)",
+			"emphasis": "var(--destructive-emphasis)",
+			"strong": "var(--destructive-strong)",
+			"foreground": "var(--destructive-foreground)",
+		}}
+	/>
+</ColorPalette>
+
+## Sparks logo palettes
+
+One palette per color in the Sparks logo (sparks.ds → Colors). Each logo color is its palette's 500, and `--sapphire` and the others point to it. These are primitives: use them through semantic tokens, such as `--sparks-accent` (cerulean), `--sparks-accent-start` (sapphire) and `--sparks-accent-subtle` (cerulean-200).
+
+<ColorPalette>
+	<ColorItem
+		title='sapphire'
+		subtitle='--sapphire-*, logo color at 500'
+		colors={{
+			"50": "#F2F7FF",
+			"100": "#D8E7FF",
+			"200": "#BAD4FF",
+			"300": "#8AB5FF",
+			"400": "#4C8DFF",
+			"500": "#0063F7",
+			"600": "#0053D2",
+			"700": "#0046B5",
+			"800": "#003A99",
+			"900": "#033280",
+			"950": "#032156",
+		}}
+	/>
+	<ColorItem
+		title='tangerine'
+		subtitle='--tangerine-*, logo color at 500'
+		colors={{
+			"50": "#FFF5EE",
+			"100": "#FFE8D9",
+			"200": "#FFD8BF",
+			"300": "#FFBF94",
+			"400": "#FF9E56",
+			"500": "#F78000",
+			"600": "#CC6700",
+			"700": "#AB5200",
+			"800": "#8A3E00",
+			"900": "#713000",
+			"950": "#401700",
+		}}
+	/>
+	<ColorItem
+		title='amethyst'
+		subtitle='--amethyst-*, logo color at 500'
+		colors={{
+			"50": "#F9F5FF",
+			"100": "#ECDFFD",
+			"200": "#DEC6FD",
+			"300": "#C89EF9",
+			"400": "#AB6CEC",
+			"500": "#9139DA",
+			"600": "#7E24C2",
+			"700": "#6C1BA8",
+			"800": "#591B8A",
+			"900": "#4A1C71",
+			"950": "#31124C",
+		}}
+	/>
+	<ColorItem
+		title='clover'
+		subtitle='--clover-*, logo color at 500'
+		colors={{
+			"50": "#F0FAF0",
+			"100": "#DCF2DB",
+			"200": "#C0EABE",
+			"300": "#93DB92",
+			"400": "#5BC75F",
+			"500": "#05B328",
+			"600": "#00941E",
+			"700": "#007B17",
+			"800": "#006311",
+			"900": "#00510C",
+			"950": "#002F04",
+		}}
+	/>
+	<ColorItem
+		title='citrine'
+		subtitle='--citrine-*, logo color at 500'
+		colors={{
+			"50": "#FDFAF0",
+			"100": "#F9F4DD",
+			"200": "#F7ECC1",
+			"300": "#F3E094",
+			"400": "#ECD15C",
+			"500": "#E4C202",
+			"600": "#C09B00",
+			"700": "#A57B00",
+			"800": "#885E00",
+			"900": "#704900",
+			"950": "#3E2500",
+		}}
+	/>
+	<ColorItem
+		title='cerulean'
+		subtitle='--cerulean-*, logo color at 500'
+		colors={{
+			"50": "#EFF8FE",
+			"100": "#DCF0FD",
+			"200": "#C1E6FF",
+			"300": "#97D6FF",
+			"400": "#5BC1FF",
+			"500": "#00ADF7",
+			"600": "#008DCB",
+			"700": "#0074A8",
+			"800": "#005C86",
+			"900": "#004A6D",
+			"950": "#00293E",
+		}}
+	/>
+</ColorPalette>
+
+## Primitive palettes
+
+Every other palette in sparks.ds, 50 to 950, with Figma's hex values. Semantic tokens point to these; components shouldn't use them directly.
+
+<ColorPalette>
+	<ColorItem
+		title='gray'
+		subtitle='--gray-*'
+		colors={{
+			"50": "#F5F6F7",
+			"100": "#EDEFF2",
+			"200": "#E0E2E6",
+			"300": "#C6CBD2",
+			"400": "#9AA1AC",
+			"500": "#686F7D",
+			"600": "#4A525E",
+			"700": "#31373F",
+			"800": "#222A34",
+			"900": "#1B212D",
+			"950": "#0B1222",
+		}}
+	/>
+	<ColorItem
+		title='slate'
+		subtitle='--slate-*'
+		colors={{
+			"50": "#ECF2F7",
+			"100": "#D8E1E9",
+			"200": "#BFCED9",
+			"300": "#8EA5B5",
+			"400": "#6A869A",
+			"500": "#547189",
+			"600": "#3A5973",
+			"700": "#113C5A",
+			"800": "#07314F",
+			"900": "#002742",
+			"950": "#001F38",
+		}}
+	/>
+	<ColorItem
+		title='terracotta'
+		subtitle='--terracotta-*'
+		colors={{
+			"50": "#F9F0EC",
+			"100": "#F4E5DF",
+			"200": "#EBD0C5",
+			"300": "#E2BBAC",
+			"400": "#DAA792",
+			"500": "#D19279",
+			"600": "#C87D5F",
+			"700": "#A86950",
+			"800": "#885541",
+			"900": "#684131",
+			"950": "#482D22",
+		}}
+	/>
+	<ColorItem
+		title='valencia'
+		subtitle='--valencia-*'
+		colors={{
+			"50": "#F9E3E1",
+			"100": "#F4CBC7",
+			"200": "#EEB2AD",
+			"300": "#E99A93",
+			"400": "#E48278",
+			"500": "#DE695E",
+			"600": "#D95144",
+			"700": "#BB463A",
+			"800": "#9C3A31",
+			"900": "#7E2F27",
+			"950": "#5F241E",
+		}}
+	/>
+	<ColorItem
+		title='sage'
+		subtitle='--sage-*'
+		colors={{
+			"50": "#E8EDEA",
+			"100": "#D2DBD5",
+			"200": "#B8C6BE",
+			"300": "#96AA9E",
+			"400": "#668372",
+			"500": "#496B57",
+			"600": "#1B462D",
+			"700": "#194029",
+			"800": "#133220",
+			"900": "#0F2719",
+			"950": "#0B1D13",
+		}}
+	/>
+	<ColorItem
+		title='beige'
+		subtitle='--beige-*'
+		colors={{
+			"50": "#FFFBF4",
+			"100": "#F9F3EC",
+			"200": "#F5ECE2",
+			"300": "#F2E5D8",
+			"400": "#ECDECF",
+			"500": "#E5D6C7",
+			"600": "#D3C7BC",
+			"700": "#B3A9A0",
+			"800": "#948C84",
+			"900": "#746E68",
+			"950": "#55504C",
+		}}
+	/>
+	<ColorItem
+		title='info'
+		subtitle='--info-*'
+		colors={{
+			"50": "#F5FAFF",
+			"100": "#DDEBF8",
+			"200": "#9FC6EA",
+			"300": "#66A5DF",
+			"400": "#3387D4",
+			"500": "#0D77CE",
+			"600": "#0068CA",
+			"700": "#0054A3",
+			"800": "#003F7A",
+			"900": "#002B52",
+			"950": "#001A33",
+		}}
+	/>
+	<ColorItem
+		title='success'
+		subtitle='--success-*'
+		colors={{
+			"50": "#E6F6EC",
+			"100": "#CCEDD8",
+			"200": "#99DBB1",
+			"300": "#66C98A",
+			"400": "#33B763",
+			"500": "#0DAE52",
+			"600": "#01A746",
+			"700": "#018638",
+			"800": "#01642A",
+			"900": "#00431C",
+			"950": "#002911",
+		}}
+	/>
+	<ColorItem
+		title='warning'
+		subtitle='--warning-*'
+		colors={{
+			"50": "#FDF0E6",
+			"100": "#F9DCC1",
+			"200": "#F6C69E",
+			"300": "#F0AD6C",
+			"400": "#EA9036",
+			"500": "#F37A00",
+			"600": "#E07400",
+			"700": "#B45C00",
+			"800": "#874500",
+			"900": "#5A2E00",
+			"950": "#3A1E00",
+		}}
+	/>
+	<ColorItem
+		title='destructive'
+		subtitle='--destructive-*'
+		colors={{
+			"50": "#FBE6E6",
+			"100": "#F5CCCC",
+			"200": "#E69999",
+			"300": "#D66666",
+			"400": "#C63333",
+			"500": "#CC0D0D",
+			"600": "#CC0000",
+			"700": "#A30000",
+			"800": "#7A0000",
+			"900": "#520000",
+			"950": "#330000",
+		}}
+	/>
+	<ColorItem
+		title='sky'
+		subtitle='--sky-*'
+		colors={{
+			"50": "#E7F5FF",
+			"100": "#C4E7FE",
+			"200": "#8DD1FE",
+			"300": "#57BAFE",
+			"400": "#2CA9FE",
+			"500": "#0F9EFE",
+			"600": "#0A7ECB",
+			"700": "#0862A0",
+			"800": "#064875",
+			"900": "#04304F",
+			"950": "#021E33",
+		}}
+	/>
+	<ColorItem
+		title='vermilion'
+		subtitle='--vermilion-*'
+		colors={{
+			"50": "#FCEBE9",
+			"100": "#F8CDC8",
+			"200": "#F1A199",
+			"300": "#E9756A",
+			"400": "#E1584B",
+			"500": "#D8402F",
+			"600": "#B33324",
+			"700": "#8C271B",
+			"800": "#661C13",
+			"900": "#40110B",
+			"950": "#290A06",
+		}}
+	/>
+	<ColorItem
+		title='indigo'
+		subtitle='--indigo-*'
+		colors={{
+			"50": "#EEEAFB",
+			"100": "#D9CFF6",
+			"200": "#B4A1EE",
+			"300": "#8E73E5",
+			"400": "#6947D9",
+			"500": "#5735CF",
+			"600": "#4D2AC9",
+			"700": "#3D21A0",
+			"800": "#2E1978",
+			"900": "#1F1050",
+			"950": "#140A33",
+		}}
+	/>
+	<ColorItem
+		title='emerald'
+		subtitle='--emerald-*'
+		colors={{
+			"50": "#E6F5EC",
+			"100": "#C2E7D1",
+			"200": "#99D6B3",
+			"300": "#66C596",
+			"400": "#33B270",
+			"500": "#0DA455",
+			"600": "#019A49",
+			"700": "#017A3A",
+			"800": "#015C2C",
+			"900": "#013D1E",
+			"950": "#002612",
+		}}
+	/>
+	<ColorItem
+		title='charcoal'
+		subtitle='--charcoal-*'
+		colors={{
+			"50": "#F1F2F2",
+			"100": "#DEE1E1",
+			"200": "#C6CACB",
+			"300": "#9BA1A2",
+			"400": "#71797B",
+			"500": "#525B5D",
+			"600": "#3E4749",
+			"700": "#2C3436",
+			"800": "#252C2E",
+			"900": "#202729",
+			"950": "#121718",
+		}}
+	/>
+	<ColorItem
+		title='prussian-blue'
+		subtitle='--prussian-blue-*'
+		colors={{
+			"50": "#EEF4F9",
+			"100": "#DAE7F0",
+			"200": "#B0CCE1",
+			"300": "#83AFD1",
+			"400": "#5591C0",
+			"500": "#2E77AD",
+			"600": "#246293",
+			"700": "#1B4E78",
+			"800": "#123A5E",
+			"900": "#0A2846",
+			"950": "#061829",
+		}}
+	/>
+	<ColorItem
+		title='teal'
+		subtitle='--teal-*'
+		colors={{
+			"50": "#E8F7F7",
+			"100": "#C6ECEB",
+			"200": "#A9E3E2",
+			"300": "#8CD9D8",
+			"400": "#52C3C2",
+			"500": "#3BAEAD",
+			"600": "#2E9C9B",
+			"700": "#256A69",
+			"800": "#1C504F",
+			"900": "#123534",
+			"950": "#0B2221",
+		}}
+	/>
+	<ColorItem
+		title='amber'
+		subtitle='--amber-*'
+		colors={{
+			"50": "#FEF3E7",
+			"100": "#FDE1C4",
+			"200": "#FBC98D",
+			"300": "#F9B057",
+			"400": "#F79E3B",
+			"500": "#F69021",
+			"600": "#DB7A10",
+			"700": "#B25F0A",
+			"800": "#8A4908",
+			"900": "#613305",
+			"950": "#3D2003",
+		}}
+	/>
+	<ColorItem
+		title='gold'
+		subtitle='--gold-*'
+		colors={{
+			"50": "#FEF5E6",
+			"100": "#FDE7BE",
+			"200": "#FCD892",
+			"300": "#FCC975",
+			"400": "#FBB035",
+			"500": "#F3A11C",
+			"600": "#E29716",
+			"700": "#B87811",
+			"800": "#8A5B0E",
+			"900": "#5C3D09",
+			"950": "#3A2706",
+		}}
+	/>
+	<ColorItem
+		title='cobalt'
+		subtitle='--cobalt-*'
+		colors={{
+			"50": "#EAF0F8",
+			"100": "#CDDBEC",
+			"200": "#A9C3DE",
+			"300": "#83A6D3",
+			"400": "#5D8AC5",
+			"500": "#3D74B8",
+			"600": "#2F63AA",
+			"700": "#264F88",
+			"800": "#1C4173",
+			"900": "#183258",
+			"950": "#132846",
+		}}
+	/>
+	<ColorItem
+		title='sand'
+		subtitle='--sand-*'
+		colors={{
+			"50": "#F9F6F1",
+			"100": "#F0EBE0",
+			"200": "#E3DACA",
+			"300": "#D6C7AB",
+			"400": "#C4B393",
+			"500": "#AE9B76",
+			"600": "#94815C",
+			"700": "#6E5F44",
+			"800": "#4E4330",
+			"900": "#332C1F",
+			"950": "#1F1A13",
+		}}
+	/>
+	<ColorItem
+		title='catalina'
+		subtitle='--catalina-*'
+		colors={{
+			"50": "#EDF2FF",
+			"100": "#DFE7FF",
+			"200": "#BFCFFF",
+			"300": "#94AFFF",
+			"400": "#6687F4",
+			"500": "#3F60DE",
+			"600": "#2447C5",
+			"700": "#1435A4",
+			"800": "#082383",
+			"900": "#081C5E",
+			"950": "#050F35",
+		}}
+	/>
+	<ColorItem
+		title='elf'
+		subtitle='--elf-*'
+		colors={{
+			"50": "#EDFCFC",
+			"100": "#D2F5F6",
+			"200": "#A8E9EC",
+			"300": "#70D8DE",
+			"400": "#32BFC8",
+			"500": "#0A9BA3",
+			"600": "#087C84",
+			"700": "#0A636B",
+			"800": "#0C4D54",
+			"900": "#0C3C42",
+			"950": "#052429",
+		}}
+	/>
+	<ColorItem
+		title='corn'
+		subtitle='--corn-*'
+		colors={{
+			"50": "#FFFBEB",
+			"100": "#FFF3C2",
+			"200": "#FFE789",
+			"300": "#FFD54A",
+			"400": "#F1BF04",
+			"500": "#D6A300",
+			"600": "#B28100",
+			"700": "#8B6005",
+			"800": "#724C0B",
+			"900": "#603F0E",
+			"950": "#372105",
+		}}
+	/>
+	<ColorItem
+		title='flamingo'
+		subtitle='--flamingo-*'
+		colors={{
+			"50": "#FFF5ED",
+			"100": "#FFE7D5",
+			"200": "#FFCDAB",
+			"300": "#FFAB78",
+			"400": "#FA874A",
+			"500": "#F16521",
+			"600": "#D64C12",
+			"700": "#B13711",
+			"800": "#8D2E15",
+			"900": "#722815",
+			"950": "#3E1108",
+		}}
+	/>
+	<ColorItem
+		title='blue'
+		subtitle='--blue-*'
+		colors={{
+			"50": "#EFF6FF",
+			"300": "#93C5FD",
+			"700": "#1D4ED8",
+			"950": "#172554",
+		}}
+	/>
+	<ColorItem
+		title='green'
+		subtitle='--green-*'
+		colors={{
+			"50": "#F0FDF4",
+			"300": "#86EFAC",
+			"700": "#15803D",
+			"950": "#052E16",
+		}}
+	/>
+	<ColorItem
+		title='purple'
+		subtitle='--purple-*'
+		colors={{
+			"50": "#F5EBFF",
+			"300": "#D8B4FE",
+			"700": "#7E22CE",
+			"950": "#3B0764",
+		}}
+	/>
+	<ColorItem
+		title='red'
+		subtitle='--red-*'
+		colors={{
+			"50": "#FEE7E7",
+			"300": "#FCA5A5",
+			"700": "#B91C1C",
+			"950": "#450A0A",
+		}}
+	/>
+	<ColorItem
+		title='denim'
+		subtitle='--denim-*'
+		colors={{
+			"50": "#F1F6FE",
+			"100": "#E3ECFD",
+			"200": "#C1D6FA",
+			"300": "#92B7F7",
+			"400": "#548EF2",
+			"500": "#1160E8",
+			"600": "#0F52C6",
+			"700": "#0C43A3",
+			"800": "#0A3580",
+			"900": "#07275F",
+			"950": "#04183A",
+		}}
+	/>
+</ColorPalette>

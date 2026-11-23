@@ -12,7 +12,7 @@ Everything specific to this project is in this section, "Stack", "Figma", DESIGN
 | Package      | `@jcaunedo/ucl`                                              |
 | Registry     | GitHub Packages, `@jcaunedo` scope (`https://npm.pkg.github.com`) |
 | Repository   | `https://github.com/jcaunedo/sparks`                         |
-| Apps         | AutoPartsHUB (`src/layouts/autopartshub/`, Figma: Sparks `ShkgoGYA4VmXg8xqfXBZLJ`). Add each new app here and in ARCHITECTURE.md |
+| Apps         | AutoPartsHUB (`src/layouts/autopartshub/`, Figma: Sparks `ShkgoGYA4VmXg8xqfXBZLJ`), with the Sparks app as a flow inside it (`src/layouts/autopartshub/sparks/`). Add each new app here and in ARCHITECTURE.md |
 | Brand        | DESIGN.md → "Brand names", "Brand voice"                     |
 
 ## How the rules work
@@ -68,7 +68,7 @@ The stack is set per project so UCL matches what the project's dev team ships. I
 
 Skills compare every Figma URL's `fileKey` against this table.
 
-ℹ️ sparks.ds holds the logo (the "Branding" page) and a `primitives` variable collection (402 variables, one "Default" mode: color palettes, spacing, radius, font size, line height, paragraph gap). It also has a `semantic` collection (162 variables, one "Light" mode) aliased to those primitives: colors, radius, shadow colors, font family and weight, breakpoints. Both are one-time copies from archielabs.ds (`primitives`, and `semantic`'s "intercept" mode), not linked to it. `theme.css` is synced from both collections, the text styles and the effect styles (DESIGN.md → "Figma → theme.css token map"). ⚠️ No "Dark" mode yet (`.dark` is a derived placeholder), and no button or input, so the control sizes in SIZE-SCALE.md haven't been checked against Figma.
+ℹ️ sparks.ds holds the logo (the "Branding" page) and a `primitives` variable collection (474 variables, one "Default" mode: color palettes, spacing, radius, font size, line height, paragraph gap), including the six Sparks logo palettes (sapphire, tangerine, amethyst, clover, citrine, cerulean) shown on the "Colors" page. It also has a `semantic` collection (166 variables, one "Light" mode) aliased to those primitives: colors, radius, shadow colors, font family and weight, breakpoints. Both are one-time copies from archielabs.ds (`primitives`, and `semantic`'s "intercept" mode), not linked to it. `theme.css` is synced from both collections, the text styles and the effect styles (DESIGN.md → "Figma → theme.css token map"). ⚠️ No "Dark" mode yet (`.dark` is a derived placeholder). sparks.ds now has a "Button" set ("Buttons" page, node 38:94: Text, Icon and Circle; Solid, Flat, Outlined, Ghost, Link; sizes xs 24, sm 28, md 32, lg 36, xl 40) that UCL's `Button` isn't synced with yet, and no input (SIZE-SCALE.md). It has the Select list ("Select / Content", "Select / Item", "Select / Section Title", nodes 77:6335–77:6365), synced to `Select` and `DropdownMenu`, but no select trigger.
 
 ## Architecture
 
@@ -83,7 +83,7 @@ Skills compare every Figma URL's `fileKey` against this table.
   - `index.ts` barrel
   - optional `<name>.mdx` docs page
 
-  Categories: `brand`, `buttons`, `forms`, `cards`, `data-display`, `feedback`, `overlays`, `navigation`, `typography`. `brand` holds brand marks (the logo), not UI controls. Create a category folder when its first component arrives. Don't invent a category that isn't listed here without asking.
+  Categories: `brand`, `buttons`, `forms`, `cards`, `chat`, `data-display`, `feedback`, `overlays`, `navigation`, `typography`. `brand` holds brand marks (the logo), not UI controls. `chat` holds the conversation with an AI assistant: messages, the message box and the cards the assistant shows in the conversation. Create a category folder when its first component arrives. Don't invent a category that isn't listed here without asking.
 - **Layouts:** full-page reference compositions under `src/layouts/<app>/<name>/`, previewed in Storybook and **not** exported from `src/index.ts`. Layouts used by more than one app go in `src/layouts/shared/`. Apps are listed in "Project". Screens in a multi-screen flow nest under `src/layouts/<app>/<flow>/`. Mock data goes in `sample-*` files, never in the screen (see "Sample Data"). Each app's wiring (which file does what, how the pieces connect, which files are sample data) is in [ARCHITECTURE.md](ARCHITECTURE.md), one section per app. Read the app's section before working on its layouts, and update it in the same change when the wiring changes (a page, flow, step or sample file added, moved or removed); a new app gets its own section.
 - **Lib:** `src/lib/`
   - `utils.ts`: `cn()`
@@ -165,36 +165,74 @@ export { Button, buttonVariants } from "@/components/buttons/button";
 
 Mirror these names when a new component has the same concept. Keep this list current when components are added.
 
-- **Logo** (`brand/logo`): the Sparks wordmark, an inline SVG.
-  - `tone`: `auto` (default; follows `.dark`) | `on-light` | `on-dark`. Colors only the sparkle; the letters never change
+- **Logo** (`brand/logo`): the Sparks logo, an inline SVG.
+  - `variant`: `wordmark` (default; Figma "Default") | `symbol` (Figma "Symbol", the "S" and its sparkle, gradient artwork)
+  - `tone`: `auto` (default; follows `.dark`) | `on-light` | `on-dark`. Colors only the wordmark's sparkle; the letters and the symbol never change
   - Resize by height through `className` (`h-6`); the width follows. `aria-label` defaults to "Sparks"
+- **AutoPartsLogo** (`brand/autoparts-logo`): the AutoParts Co. logo, the retailer's own brand (the shop in Sparks's prototypes), an inline SVG. Light backgrounds only
+  - `variant`: `wordmark` (default; Figma "AutoParts Logo", AUTOPARTS Co.) | `symbol` (Figma "AutoPartsHUB Symbol", the AP. mark)
+  - 36px tall by default (`h-9`); the prototypes' headers use `h-5`. Resize by height through `className`; the width follows. `aria-label` defaults to "AutoParts Co."
 - **AutoPartsHubLogo** (`brand/autoparts-hub-logo`): the AutoPartsHUB logo, an inline SVG. Light backgrounds only (Figma has no dark version yet)
   - `variant`: `wordmark` (default; Figma "Logo") | `symbol` (Figma "Symbol", the AH. mark)
   - 36px tall by default (`h-9`). Resize by height through `className`; the width follows. `aria-label` defaults to "AutoPartsHUB"
+- **Badge** (`data-display/badge`): a short status or category label, a `span` (sparks.ds "badge")
+  - `variant`: `solid` (default) | `flat` | `outline` | `ghost` | `link`. `tone`: `brand` (default), `neutral`, `destructive` (solid); `neutral`, `blue`, `green`, `sky`, `purple`, `red`, `yellow`, `amber` (flat); outline, ghost and link have one tone each
+  - `size`: `xxs` (20px, 12px regular text) | `xs` (24px) | `sm` (32px) | `default` (36px) | `lg` (40px). An svg child is its icon. `asChild` renders it on a link
 - **Button** (`buttons/button`):
-  - `variant`: `default` | `secondary` | `outline` | `ghost` | `link` | `destructive`
+  - `variant`: `default` | `neutral` (dark, `tone/neutral`) | `secondary` | `outline` | `ghost` | `link` | `destructive`
   - `size`: `default` | `sm` | `lg` | `icon`
   - `asChild` renders the button styles on its child (use for links)
 - **PulseLogo**, **FlowLogo**, **SalesLogo**, **CareLogo** (`brand/pulse-logo`, `brand/flow-logo`, `brand/sales-logo`, `brand/care-logo`): the product logos, inline SVGs with no props of their own
   - Render at Figma's size; resize by height through `className`, the width follows. `aria-label` defaults to the product name ("Pulse", "Flow", "Sales", "Care")
   - `PulseLogo` follows the theme (`text-foreground-prominent`); the other three keep fixed artwork colors
-- **AppHeader** (`navigation/app-header`): the app's top bar, full width, 96px tall (padding 28 top/bottom, 32 left/right)
-  - `logo`: the app's logo, on the left. Figma's two versions: `<AutoPartsHubLogo />` (36px) and `<Logo className='h-8' />` (Sparks, 32px). `children`: what sits on the right (e.g. `<Avatar size='lg'>`)
+- **Select** (`forms/select`): shadcn's composition on Radix (`Select` > `SelectTrigger` (`SelectValue`) + `SelectContent` > `SelectGroup` > `SelectLabel` + `SelectItem`, plus `SelectSeparator`, scroll buttons)
+  - shadcn's API as is (`SelectContent` `position`: `item-aligned` (default) | `popper`). The list is sparks.ds "Select / Content" (77:6365): `rounded-input`, border, `shadow-xl`, at least 200px, items 2px apart; `SelectItem` "Select / Item" (77:6335): 32px, 6px corners, sm medium, the hover fill when highlighted, a check (`text-icon`) when chosen, 50% when disabled; `SelectLabel` "Select / Section Title" (77:6352): 28px, xs muted. The trigger isn't in sparks.ds yet: shadcn's on the input tokens, 36px
+- **DropdownMenu** (`overlays/dropdown-menu`): shadcn's composition on Radix (`DropdownMenu` > `DropdownMenuTrigger` + `DropdownMenuContent` > `DropdownMenuItem`, plus `Label`, `Separator`, `Group`, `CheckboxItem`, `RadioGroup`/`RadioItem`, `Shortcut`, `Sub`/`SubTrigger`/`SubContent`, `Portal`)
+  - shadcn's API as is, drawn as sparks.ds's Select panel (the same as `Select`'s list): `rounded-input` (10px), border, `shadow-xl`, `p-1`, items 32px with 6px corners, sm medium, 2px apart; `DropdownMenuLabel` is the section title (28px, xs muted). `DropdownMenuItem` `variant`: `default` | `destructive`. E.g. the Concept panel's "Jump to a section"
+- **Popover** (`overlays/popover`): shadcn's composition on Radix (`Popover` > `PopoverTrigger` + `PopoverContent`, plus `PopoverAnchor`, `PopoverHeader`, `PopoverTitle`, `PopoverDescription`)
+  - shadcn's API as is (`PopoverContent` `align`, `side`, `sideOffset`, 288px wide by default); corners `rounded-menu` (16px, sparks.ds radius/menu/container). E.g. the concept's "Share"
+- **Tooltip** (`overlays/tooltip`): shadcn's composition on Radix (`Tooltip` > `TooltipTrigger` + `TooltipContent`, plus `TooltipProvider`)
+  - shadcn's API as is (`TooltipContent` `side`, `sideOffset`; dark `bg-foreground`, xs, with an arrow). `Tooltip` brings its own provider (no app-level `TooltipProvider` needed), opening at once. Not in sparks.ds yet. Every icon-only button names itself in one, below it (`side='bottom' sideOffset={6}`), and keeps its `aria-label`; never `title`
+- **AppHeader** (`navigation/app-header`): the app's top bar, full width, 92px tall (padding 28 top/bottom, 32 left/right, a 36px row)
+  - `logo`: what sits on the left: the app's logo (`<AutoPartsHubLogo />`, 36px; `<Logo className='h-[26px]' />`, Sparks, 26px) or the page's name: "Sparks Project" has only the concept's name (xl semibold, with a chevron menu: Rename, All ideas; no logo, no back button). The Sparks start page shows the logo alone (Sparks opens in its own tab). `children`: what sits on the right (AutoPartsHUB and the Sparks start page: notifications, a ghost icon button with an 18px bell, then the 36px avatar (`HeaderActions`; the Sparks start page adds Comments first); in "Sparks Project", Comments, notifications, Share (no avatars beside it), then Blueprint (Share and Blueprint with a 16px icon), no close button, no avatar), 12px apart (16px between items on the left)
+  - `nav` (optional): navigation centered in the header, such as `<StepNav>`. With it, both sides share the remaining width so the nav stays centered
+- **StepNav** (`navigation/step-nav`): a flow's steps as pills (`StepNav` > `StepNavItem`), e.g. Sparks's Plan, Prototype, Validate, Review. Give `StepNav` an `aria-label`
+  - `StepNavItem` `current`: the sapphire gradient pill with white text, `aria-current="step"`; the others are `neutral-muted`. `upcoming`: a step not reached yet that can still be selected, muted gray text with hover (Sparks: to see what the step is). `disabled`: muted gray text, can't be selected. `asChild` renders it on a link
 - **Tabs** (`navigation/tabs`): shadcn's composition (`Tabs` > `TabsList` > `TabsTrigger`, plus `TabsContent`)
   - `TabsList` `variant`: `default` (muted track, white pill) | `line` (underline). `size`: `default` (36px) | `lg` (40px). `baseline` (line only): a 1px line under every tab
   - Triggers take their look from the list; an svg child is a 16px icon. The active indicator slides between tabs (MOTION.md → Tabs)
 - **AppCard** (`cards/app-card`): a card introducing an app, `min-h-[220px]`, fills its container's width
   - `logo` (top) and `description` (bottom)
-  - `asChild` renders it as its child, a link (`<AppCard asChild …><a href='…' /></AppCard>`); then it lifts on hover (Lift) and shows the focus ring. Without `asChild` it's static
+  - `asChild` renders it as its child, a link (`<AppCard asChild …><a href='…' /></AppCard>`); then on hover it lifts (Lift), its border turns `border-defined`, its shadow grows to `shadow-lg` and the description turns from `muted-foreground` to `foreground` (Figma "Hover"); it shows the focus ring on keyboard focus. Without `asChild` it's static: no hover
 - **Avatar** (`data-display/avatar`): shadcn's Avatar composition (`Avatar` > `AvatarImage` + `AvatarFallback` + optional `AvatarBadge`), plus `AvatarAdd`
   - `size` (on `Avatar` and `AvatarAdd`): `default` (32px) | `lg` (40px). shadcn's names, not SIZE-SCALE.md's (see there)
   - `AvatarFallback` `color`: `1`–`10` (Figma i1–i10, `bg-avatar-N`). Without it, `avatarColorFor()` picks one from the initials, so the same initials always get the same color
   - `AvatarBadge`: the online dot (success). Put `sr-only` text inside it
   - `AvatarAdd`: a round button with a plus icon; `aria-label` defaults to "Add person"
+- **AssistantMessage** (`chat/assistant-message`): a message from the AI assistant (Sparks): plain text on the page, no bubble, full width. Not in sparks.ds yet
+  - `text`: the message. A blank line between paragraphs (12px apart); a line break starts a new line in the paragraph (4px below); lines starting "1. " or "- " make a list; `**bold**` inside a line. A paragraph that's one all-bold line reads as a heading and gets 24px above it (a new section)
+  - `stream`: streams the text in with a blinking caret (MOTION.md → AI messages); turning it off shows the rest at once. Reduced motion shows it whole. `onStreamEnd`: called once it's all shown
+- **ClarificationCard** (`chat/clarification-card`): a question from the AI assistant with its proposed answer, to confirm with a reply, edit or correct (sparks.ds "clarification-card": State=Default, State=Edit)
+  - `question` (semibold), `answer` (strings; line breaks show, a blank line starts a new paragraph); `badge` (on its own line between the question and the answer, e.g. a `Badge` "Assumption"; hidden while editing); `source` (where the answer came from; hidden while editing)
+  - `replies` (the answer buttons under the panel, `QuickReplies`: on the right, the first one last with ↵, and Enter picks it, e.g. "Yes, that's right", "Not quite") + `onReply(reply)`; pass none once it's answered. Hidden while editing
+  - `onEdit(answer)`: shows the pen; Edit turns the answer into a field with Cancel and Save on the right (Enter saves, Esc cancels). `defaultEditing` opens it in Edit
+- **QuickReplies** (`chat/quick-replies`): the answers under an assistant's question (sparks.ds "ctas"), Button Outlined 36px, on the right, the first reply last
+  - `replies` (the main, "continue" one first) + `onReply(reply)`. `enter` (default `true`): the first reply shows the ↵ key (`CornerDownLeft`) and Enter picks it (`useEnterShortcut`, `lib/hooks`), while focus is on the page or in the empty message box. Only one set on the screen should have it
+- **ThinkingIndicator** (`chat/thinking-indicator`): the AI assistant thinking before it replies (Figma: Sparks 27:1932, not in sparks.ds yet). A `div`'s props, `role='status'`
+  - `steps`: what it's working through, one line at a time (`motionDuration.thinkingStep` each, sliding up; the last stays). Never a bare "Thinking…"
+  - A 10px dot hopping through the Sparks logo colors (the next on each landing) and the line in a gradient of the same colors, rotating through them left to right. Reduced motion: still dot, still gradient (MOTION.md → AI thinking)
+- **UserMessage** (`chat/user-message`): a message the user sent to the assistant, as a chat bubble. Children are the text; a `div`'s props
+  - Fits its text, wraps long messages and keeps typed line breaks; at most 80% of its container's width. The conversation layout aligns it to the end
 - **EmptyState** (`feedback/empty-state`): the centered message for any view, tab or filter with nothing to show. Same API as verita-ucl's
   - `title` (required), `description`, `icon` (optional slot above the title)
   - `buttonLabel` + `buttonProps` (forwarded to a `sm` primary `Button`); omit `buttonLabel` for no button
-  - Centers itself in its parent: give it `flex-1` or a height through `className`
+  - Centers itself in its parent: give it `flex-1` or a height through `className`. Its text is at most 480px wide, so a long description stays readable in a wide panel
+- **PromptComposer** (`chat/prompt-composer`): the message box for talking to an AI assistant (Sparks), fills its container's width
+  - Textarea props go to the textarea (`value`/`defaultValue`/`onChange`, `placeholder`, `aria-label`, `disabled`); `className` styles the frame. Grows with its text up to 240px, then scrolls
+  - `onSubmit(value)`: Send button or Enter (Shift+Enter adds a line). Uncontrolled, it clears itself after sending
+  - `onAttach` ("+"), `onDictate` (mic), `onVoice` (the main button while empty). `addMenu`: `DropdownMenuItem`s for a menu on "+" instead of `onAttach` (sparks.ds "select-prompt-add"), opening above it; closing it focuses the box, caret at the end The main button swaps voice ↔ Send with `iconSwapVariants` as soon as there's text
+  - `suggestion`: a suggested answer, shown as the placeholder while the box is empty, with "Press Tab to edit this suggestion"; Tab puts it in the box, caret at the end (uncontrolled; controlled, handle `onSuggestionAccept(text)`). Shift+Tab still moves focus
+  - `onCancel`: Esc in the box goes back to the state before it was opened (e.g. answering after "Not quite"); uncontrolled, the box clears itself. With a suggestion on offer, the hint adds ", Esc to cancel"
 - **Typography** (`typography/typography`):
   - `size`: `xs` | `sm` | `base` | `lg` | `xl` | `2xl` | `3xl` | `4xl` | `5xl` | `6xl` | `7xl` (`xl` and up use `font-display`)
   - `weight`: `regular` | `medium` | `semibold` | `bold` | `black`

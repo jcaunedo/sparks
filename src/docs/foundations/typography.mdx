@@ -1,0 +1,62 @@
+import { Meta, Unstyled } from "@storybook/addon-docs/blocks";
+import { Typography } from "@/components/typography/typography";
+
+<Meta title='Foundations/Typography' />
+
+# Typography
+
+The type scale comes from sparks.ds's text styles: 11 sizes, each with its own line height, in five weights. Every style uses **Figtree** with no letter spacing. Code uses **Roboto Mono**.
+
+- **Tokens:** `--text-xs` … `--text-7xl`, each with its `--text-*--line-height`, so `text-lg` sets both the size and the line height. Fonts are `--font-sans` and `--font-display` (both Figtree) and `--font-mono`.
+- **Component:** use `Typography` (`size`, `weight`, `as`). `xl` and larger use the display font. `h1`–`h4` get a default size and weight.
+- **Apps load the fonts:** UCL declares the font tokens but doesn't load the webfonts. Load Figtree at 400, 500, 600, 700 and 900, and Roboto Mono.
+
+## Sizes
+
+<Unstyled>
+<div style={{ display: "grid", gridTemplateColumns: "auto auto 1fr", gap: "0.75rem 1.5rem", alignItems: "baseline", margin: "1.5rem 0" }}>
+	{[
+		["xs", "12px", "18px"],
+		["sm", "14px", "20px"],
+		["base", "16px", "24px"],
+		["lg", "18px", "28px"],
+		["xl", "20px", "30px"],
+		["2xl", "24px", "32px"],
+		["3xl", "30px", "36px"],
+		["4xl", "36px", "54px"],
+		["5xl", "48px", "64px"],
+		["6xl", "64px", "96px"],
+		["7xl", "80px", "120px"],
+	].map(([size, px, lh]) => (
+		<div key={size} style={{ display: "contents" }}>
+			<code>text-{size}</code>
+			<span style={{ fontSize: "0.8125rem", color: "var(--muted-foreground)" }}>
+				{px} / {lh}
+			</span>
+			<Typography size={size} weight='regular'>
+				Wrong-part returns
+			</Typography>
+		</div>
+	))}
+</div>
+</Unstyled>
+
+## Weights
+
+<Unstyled>
+<div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", margin: "1.5rem 0" }}>
+	{[
+		["regular", "400"],
+		["medium", "500"],
+		["semibold", "600"],
+		["bold", "700"],
+		["black", "900"],
+	].map(([weight, value]) => (
+		<Typography key={weight} size='xl' weight={weight}>
+			{weight} ({value}): Fit check before you buy
+		</Typography>
+	))}
+</div>
+</Unstyled>
+
+Figma names each style `size/size -weight`, for example `lg/lg -semibold`. That's `<Typography size='lg' weight='semibold'>` or `text-lg font-semibold`.

@@ -10,12 +10,21 @@ const buttonVariants = cva(
 		variants: {
 			variant: {
 				default: "bg-primary text-primary-foreground hover:bg-primary/90",
+				// sparks.ds "Button" (38:124) Style=Solid, Tone=Destructive. Hover: a 20% black layer on the fill (Figma), as
+				// color-mix; an opacity would lighten it instead.
 				destructive:
-					"bg-destructive text-destructive-foreground hover:bg-destructive/90",
+					"bg-destructive text-destructive-foreground hover:bg-[color-mix(in_srgb,var(--destructive)_80%,black)]",
+				// sparks.ds Style=Outlined, Tone=Neutral. Hover: the hover fill (colors/states/hover, `accent`) and the darker
+				// border (colors/input/ring, `input-ring`).
 				outline:
-					"border border-input bg-background hover:bg-accent hover:text-accent-foreground",
+					"border border-input bg-background hover:border-input-ring hover:bg-accent hover:text-accent-foreground",
+				// The dark neutral tone (Figma colors/tone/neutral/neutral), e.g. Sparks's "New idea"; sparks.ds Style=Solid.
+				// Hover: a 20% white layer on the fill (Figma), so it lightens, as color-mix.
+				neutral:
+					"bg-neutral text-neutral-foreground hover:bg-[color-mix(in_srgb,var(--neutral)_80%,white)]",
 				secondary:
 					"bg-secondary text-secondary-foreground hover:bg-secondary/80",
+				// sparks.ds Style=Ghost, Tone=Neutral. Hover: the hover fill (colors/states/hover, `accent`).
 				ghost: "hover:bg-accent hover:text-accent-foreground",
 				link: "text-primary underline-offset-4 hover:underline",
 			},

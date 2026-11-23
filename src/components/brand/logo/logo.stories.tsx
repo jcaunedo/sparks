@@ -73,9 +73,20 @@ export const Sizes: Story = {
 	),
 };
 
+/** Figma "Symbol": the "S" and its sparkle, e.g. as a small brand mark. The concept's header now uses the wordmark (26px). */
+export const Symbol: Story = {
+	args: { variant: "symbol" },
+};
+
 export const AllVariants: Story = {
 	render: () => (
 		<div className='grid grid-cols-2 gap-4'>
+			<div className='rounded-lg bg-background p-8'>
+				<Logo variant='symbol' />
+			</div>
+			<div className='dark rounded-lg bg-background p-8'>
+				<Logo variant='symbol' />
+			</div>
 			<div className='rounded-lg bg-background p-8'>
 				<Logo tone='auto' />
 			</div>

@@ -1,0 +1,114 @@
+import * as React from "react";
+import { cva, type VariantProps } from "class-variance-authority";
+
+import { cn } from "@/lib/utils";
+
+/*
+ * Artwork from Figma sparks.ds → "AutoParts Logo" component set (node 73:5941). Figma draws it as live text in Google
+ * Sans Flex, which apps don't load, so it ships as outlined paths (DESIGN.md → "AutoParts Co. logo artwork"): the
+ * letters outlined from Google Sans Flex at Figma's settings (29.035px, optical size 29.035, −1% letter spacing; "AUTO",
+ * "PARTS", "A" and "P" Black Italic, "Co." ExtraBold, the symbol's dot Medium), placed as Figma's SVG export places them.
+ * Literal hex is intentional here: logo artwork is exempt from tokens.
+ */
+
+const autoPartsLogoVariants = cva("block h-9 w-auto shrink-0", {
+	variants: {
+		variant: {
+			// Figma "Property 1=AutoParts Logo": the full AUTOPARTS Co. wordmark.
+			wordmark: "",
+			// Figma "Property 1=AutoPartsHUB Symbol": the AP. mark, for tight spaces.
+			symbol: "",
+		},
+	},
+	defaultVariants: {
+		variant: "wordmark",
+	},
+});
+
+type AutoPartsLogoProps = Omit<React.ComponentProps<"svg">, "children"> & VariantProps<typeof autoPartsLogoVariants>;
+
+/* Blue → dark blue gradient on "AUTOPARTS", "A" and "P" (Figma fill, start and end stops); the same as AutoPartsHUB's. */
+const BLUE_START = "#0063F7";
+const BLUE_END = "#0025A9";
+/* Orange on "Co." and the dot. */
+const ORANGE = "#F16521";
+
+/**
+ * The AutoParts Co. logo, the retailer's own brand (the shop in Sparks's prototypes): the full wordmark or the AP.
+ * symbol. Resize it by height (`className='h-5'`); the width follows.
+ */
+function AutoPartsLogo({
+	className,
+	variant = "wordmark",
+	"aria-label": ariaLabel = "AutoParts Co.",
+	...props
+}: AutoPartsLogoProps) {
+	// Unique gradient ids, so several logos on one page don't share (or break) each other's fills.
+	const id = React.useId();
+	const gradientA = `${id}-blue-a`;
+	const gradientB = `${id}-blue-b`;
+
+	const isSymbol = variant === "symbol";
+	// The export's bounds: a little wider than Figma's frames (218 and 46), because "Co." and the dot run past them.
+	const width = isSymbol ? 48 : 222;
+
+	return (
+		<svg
+			data-slot='autoparts-logo'
+			data-variant={variant}
+			role='img'
+			aria-label={ariaLabel}
+			width={width}
+			height='36'
+			viewBox={`0 0 ${width} 36`}
+			fill='none'
+			xmlns='http://www.w3.org/2000/svg'
+			className={cn(autoPartsLogoVariants({ variant, className }))}
+			{...props}
+		>
+			{isSymbol ? (
+				<>
+					{/* . */}
+					<path d='M42.0223 28.1923Q41.106 28.1923 40.4783 27.569Q39.8506 26.9458 39.8506 26.0314Q39.8506 25.1391 40.4783 24.5164Q41.106 23.8937 42.0223 23.8937Q42.9386 23.8937 43.5663 24.5164Q44.194 25.1391 44.194 26.0314Q44.194 26.9458 43.5663 27.569Q42.9386 28.1923 42.0223 28.1923Z' fill={ORANGE} />
+					{/* A */}
+					<path d='M0.0088 28 11.7093 7.2109H16.7285L21.2078 28H14.9251L13.3591 17.5848L13.0262 14.852H12.9211L11.7422 17.5617L6.6124 28ZM4.6469 25.1017 6.875 21.0686H16.2579L17.1402 25.1017Z' fill={`url(#${gradientA})`} />
+					{/* P */}
+					<path d='M22.9745 28 26.6351 7.2109H35.1249Q38.7832 7.2109 40.7886 9.503Q42.7941 11.7951 42.162 15.3356Q41.5894 18.6504 39.2206 20.5237Q36.8518 22.397 33.2975 22.397H27.3773L28.2657 17.3761H33.1964Q34.3401 17.3761 35.1335 16.7471Q35.9269 16.118 36.1261 15.024Q36.3187 13.9262 35.7586 13.2114Q35.1984 12.4967 34.0447 12.4967H31.8552L29.1299 28Z' fill={`url(#${gradientB})`} />
+					<defs>
+						{/* Figma fills "A" and "P" as two text runs, each with its own gradient. */}
+						<linearGradient id={gradientA} x1='1.3792' y1='18' x2='23.3792' y2='18' gradientUnits='userSpaceOnUse'>
+							<stop stopColor={BLUE_START} />
+							<stop offset='1' stopColor={BLUE_END} />
+						</linearGradient>
+						<linearGradient id={gradientB} x1='22.3792' y1='18' x2='42.3792' y2='18' gradientUnits='userSpaceOnUse'>
+							<stop stopColor={BLUE_START} />
+							<stop offset='1' stopColor={BLUE_END} />
+						</linearGradient>
+					</defs>
+				</>
+			) : (
+				<>
+					{/* AUTO */}
+					<path d='M0.0088 28 11.7093 7.2109H16.7285L21.2078 28H14.9251L13.3591 17.5848L13.0262 14.852H12.9211L11.7422 17.5617L6.6124 28ZM4.6469 25.1017 6.875 21.0686H16.2579L17.1402 25.1017ZM30.865 28.5191Q26.7022 28.5191 24.5422 26.0204Q22.3822 23.5217 23.0982 19.4833L25.2769 7.2109H31.4407L29.2233 19.7355Q28.9498 21.2721 29.5435 22.1519Q30.1373 23.0316 31.4688 23.0316Q32.7558 23.0316 33.5876 22.18Q34.4193 21.3284 34.6952 19.7391L36.9046 7.2109H43.0239L40.7711 19.9911Q40.0571 24.0276 37.4313 26.2734Q34.8055 28.5191 30.865 28.5191ZM46.425 28 49.5567 10.2422H55.712L52.5804 28ZM43.6468 12.8422 44.6413 7.2109H61.6578L60.6634 12.8422ZM69.4636 28.5193Q64.5065 28.5193 61.6519 25.0036Q58.7973 21.4878 59.6649 16.5448Q60.4519 12.1529 63.7422 9.4221Q67.0325 6.6914 71.4087 6.6914Q76.3017 6.6914 79.2215 10.1972Q82.1413 13.703 81.2762 18.6443Q80.4983 23.0703 77.1689 25.7948Q73.8395 28.5193 69.4636 28.5193ZM69.921 22.5659Q71.8571 22.5659 73.3157 21.2867Q74.7744 20.0075 75.1331 17.9503Q75.5088 15.7164 74.3237 14.1806Q73.1386 12.6448 71.0547 12.6448Q69.089 12.6448 67.6274 13.9261Q66.1658 15.2075 65.8016 17.2412Q65.4138 19.4853 66.5931 21.0256Q67.7723 22.5659 69.921 22.5659Z' fill={`url(#${gradientA})`} />
+					{/* PARTS */}
+					<path d='M81.1612 28 84.8218 7.2109H93.3116Q96.9698 7.2109 98.9753 9.503Q100.9808 11.7951 100.3487 15.3356Q99.776 18.6504 97.4072 20.5237Q95.0384 22.397 91.4842 22.397H85.5639L86.4523 17.3761H91.3831Q92.5268 17.3761 93.3202 16.7471Q94.1136 16.118 94.3128 15.024Q94.5054 13.9262 93.9452 13.2114Q93.3851 12.4967 92.2313 12.4967H90.0419L87.3165 28ZM96.602 28 108.3025 7.2109H113.3216L117.801 28H111.5183L109.9522 17.5848L109.6194 14.852H109.5143L108.3354 17.5617L103.2056 28ZM101.24 25.1017 103.4682 21.0686H112.8511L113.7334 25.1017ZM119.371 28 123.0318 7.2109H131.6388Q135.1782 7.2109 137.1974 9.3322Q139.2166 11.4534 138.6596 14.6403Q138.1354 17.5498 135.7797 19.2874Q133.424 21.025 130.1643 21.025H122.9558L123.6666 17.0067H129.7022Q130.7927 17.0067 131.5709 16.3987Q132.3492 15.7906 132.5272 14.8025Q132.6965 13.8183 132.1123 13.122Q131.5281 12.4257 130.5076 12.4257H128.2649L125.5264 28ZM131.1827 28 126.7649 18.8161 132.791 18.6686 137.851 28ZM142.3358 28 145.4675 10.2422H151.6229L148.4912 28ZM139.5577 12.8422 140.5521 7.2109H157.5687L156.5742 12.8422ZM163.2417 28.5193Q160.14 28.5193 157.9541 27.0941Q155.7682 25.6689 154.8421 22.918L160.2341 20.8605Q160.748 22.3229 161.5357 22.9651Q162.3233 23.6072 163.5232 23.6072Q164.53 23.6072 165.2316 23.1604Q165.9333 22.7135 166.0741 21.9586Q166.1837 21.3511 165.723 20.843Q165.2624 20.335 162.9661 19.5691Q159.5678 18.4458 158.2519 16.727Q156.936 15.0081 157.3701 12.5747Q157.8399 9.8856 160.0988 8.3051Q162.3578 6.7247 165.7777 6.7247Q168.7082 6.7247 170.6317 7.8961Q172.5552 9.0674 173.4707 11.4498L168.3501 13.4009Q167.9108 12.4356 167.1432 11.9663Q166.3757 11.4971 165.3187 11.4971Q164.4771 11.4971 163.92 11.845Q163.3628 12.1928 163.2603 12.7616Q163.1579 13.3233 163.5881 13.7618Q164.0183 14.2002 166.2086 14.8557Q170.0453 15.9857 171.2618 17.8685Q172.4784 19.7512 172.0433 22.2318Q171.5188 25.1003 169.1487 26.8098Q166.7786 28.5193 163.2417 28.5193Z' fill={`url(#${gradientB})`} />
+					{/* Co. */}
+					<path d='M188.1744 28.5044Q183.4181 28.5044 180.3319 25.423Q177.2457 22.3417 177.2457 17.5867Q177.2457 12.817 180.3368 9.7615Q183.4278 6.7061 188.1663 6.7061Q189.5763 6.7061 190.9399 7.0547Q192.3036 7.4033 193.4711 8.0676Q194.6386 8.7319 196.0408 10.084L192.4953 13.8947Q191.6661 13.023 191.0341 12.6399Q190.402 12.2568 189.7194 12.0846Q189.0368 11.9123 188.2172 11.9123Q185.8223 11.9123 184.2351 13.4784Q182.6479 15.0445 182.6479 17.5806Q182.6479 20.1042 184.2238 21.6986Q185.7998 23.2929 188.2001 23.2929Q189.0429 23.2929 189.8448 23.0596Q190.6468 22.8263 191.3142 22.3941Q191.9816 21.9619 192.8221 21.0683L196.4397 24.783Q194.9904 26.3237 193.7637 27.0528Q192.537 27.7819 191.1086 28.1432Q189.6803 28.5044 188.1744 28.5044ZM205.1701 28.5048Q201.5 28.5048 199.152 26.2477Q196.804 23.9905 196.804 20.5154Q196.804 16.9965 199.1542 14.748Q201.5044 12.4994 205.1701 12.4994Q208.8305 12.4994 211.1835 14.7548Q213.5366 17.0102 213.5366 20.5154Q213.5366 23.9905 211.1902 26.2477Q208.8437 28.5048 205.1701 28.5048ZM205.1747 24.1235Q206.5808 24.1235 207.5206 23.1029Q208.4604 22.0824 208.4604 20.5085Q208.4604 18.9085 207.5162 17.8945Q206.572 16.8804 205.1748 16.8804Q203.7589 16.8804 202.8179 17.8967Q201.877 18.913 201.877 20.5062Q201.877 22.0824 202.8135 23.1029Q203.75 24.1235 205.1747 24.1235ZM218.0865 28.2617Q216.7693 28.2617 215.8623 27.3669Q214.9552 26.4721 214.9552 25.1586Q214.9552 23.8503 215.8623 22.9575Q216.7693 22.0648 218.0865 22.0648Q219.4037 22.0648 220.3107 22.9575Q221.2178 23.8503 221.2178 25.1586Q221.2178 26.4721 220.3107 27.3669Q219.4037 28.2617 218.0865 28.2617Z' fill={ORANGE} />
+					<defs>
+						{/* Figma fills "AUTO" and "PARTS" as two text runs, each with its own gradient. */}
+						<linearGradient id={gradientA} x1='1.3792' y1='18' x2='82.3792' y2='18' gradientUnits='userSpaceOnUse'>
+							<stop stopColor={BLUE_START} />
+							<stop offset='1' stopColor={BLUE_END} />
+						</linearGradient>
+						<linearGradient id={gradientB} x1='80.5659' y1='18' x2='173.5659' y2='18' gradientUnits='userSpaceOnUse'>
+							<stop stopColor={BLUE_START} />
+							<stop offset='1' stopColor={BLUE_END} />
+						</linearGradient>
+					</defs>
+				</>
+			)}
+		</svg>
+	);
+}
+
+export { AutoPartsLogo, autoPartsLogoVariants, type AutoPartsLogoProps };

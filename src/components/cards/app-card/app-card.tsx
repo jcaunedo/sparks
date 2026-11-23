@@ -15,6 +15,11 @@ const appCardClasses = cn(
 	"outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
 );
 
+// Figma "Property 1=Hover" (node 39:1694), linked cards only: defined border, shadow-lg.
+// Motion's Lift animates only `y`, so CSS owns border and shadow (MOTION.md: never both on one property).
+const appCardLinkedClasses =
+	"group transition-[border-color,box-shadow] hover:border-border-defined hover:shadow-lg";
+
 type AppCardProps = Omit<React.ComponentProps<"div">, "children"> & {
 	/** The app's logo, at the top (e.g. `<Logo tone='on-light' />`). */
 	logo: React.ReactNode;
@@ -29,7 +34,7 @@ type AppCardProps = Omit<React.ComponentProps<"div">, "children"> & {
 	children?: React.ReactElement;
 };
 
-/** A card that introduces an app: its logo and a short description. Figma sparks.ds → "app-card" (node 21:348). */
+/** A card that introduces an app: its logo and a short description. Figma sparks.ds → "app-card" (set 39:1693: Default 21:348, Hover 39:1694). */
 function AppCard({
 	className,
 	logo,
@@ -46,7 +51,14 @@ function AppCard({
 			<div data-slot='app-card-logo' className='flex h-10 shrink-0 flex-col items-start justify-center'>
 				{logo}
 			</div>
-			<p data-slot='app-card-description' className='text-base text-foreground'>
+			{/* Figma: muted at rest; foreground on hover (linked cards only). */}
+			<p
+				data-slot='app-card-description'
+				className={cn(
+					"text-base text-muted-foreground",
+					asChild && "transition-colors group-hover:text-foreground",
+				)}
+			>
 				{description}
 			</p>
 		</>
@@ -63,7 +75,7 @@ function AppCard({
 	return (
 		<MotionSlot
 			data-slot='app-card'
-			className={cn(appCardClasses, className)}
+			className={cn(appCardClasses, appCardLinkedClasses, className)}
 			whileHover={liftPattern.whileHover}
 			transition={resolve(liftPattern.transition ?? {})}
 			{...(props as React.ComponentProps<typeof MotionSlot>)}

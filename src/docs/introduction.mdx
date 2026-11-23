@@ -45,7 +45,7 @@ Adjust the `@source` path so it's relative to the stylesheet. **Without it, comp
 
 ### 4. Load the fonts
 
-UCL declares the font tokens (`--font-sans`, `--font-mono` in `theme.css`) but doesn't load the webfonts. Each app loads the fonts those tokens name, for example with `next/font/google` or a Google Fonts `<link>`. Without them, text falls back to the system font.
+UCL declares the font tokens (`--font-sans`, `--font-display`, `--font-mono` in `theme.css`) but doesn't load the webfonts. Each app loads **Figtree** at 400, 500, 600, 700 and 900, and **Roboto Mono**, for example with `next/font/google` or a Google Fonts `<link>`. Without them, text falls back to the system font.
 
 ### 5. Use a component
 
@@ -60,7 +60,7 @@ export function Example() {
 
 ### Dark mode
 
-Add the `dark` class to a parent element, usually `<html>`, to switch every token to its dark value.
+Add the `dark` class to a parent element, usually `<html>`, to switch every token to its dark value. ⚠️ sparks.ds has no Dark mode yet, so today's dark values are a placeholder derived from the light ones.
 
 ### Merging classes
 
@@ -75,5 +75,8 @@ Every component accepts `className`. Use the exported `cn()` helper to merge cla
 
 ## What's here
 
-- **Foundations** — the color and radius tokens every component uses.
-- **Components** — grouped by category (Buttons, Forms, Cards…). Each page has live examples, props, and usage guidance.
+- **Foundations:** the tokens every component uses, all mirrored from the sparks.ds design system in Figma:
+  - **Colors:** semantic tokens, tones, the Sparks logo palettes and every primitive palette.
+  - **Typography:** the type scale and weights.
+  - **Radius and shadows.**
+- **Components:** grouped by category (Brand, Buttons, Forms, Cards, Chat, Data display, Feedback, Navigation, Typography). Each page has live examples, props and usage guidance.

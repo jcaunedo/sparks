@@ -41,6 +41,8 @@ export { scrollContainerOf, scrollIntoViewSmoothly, scrollMetrics } from "./scro
 
 export { useExpandClip } from "./expand-clip";
 
+export { useStreamedText } from "./stream";
+
 export {
   reducedMotionTransition,
   resolveTransition,
