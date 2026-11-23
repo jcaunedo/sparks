@@ -246,6 +246,16 @@ A Sparks reply without a clarification card shows its quick replies with the sam
 
 ---
 
+## Direction card header opens and closes it (`chat/direction-card/direction-card.tsx`)
+
+**Rule:** sparks.ds "direction-card" (89:151) puts a 20px chevrons icon after the badges, 8px apart (Figma "Labels", `items-center`, `pt-0.5`): lucide `ChevronsUpDown` closed, `ChevronsDownUp` open. It's `text-foreground-subtle` (colors/foreground/subtle), and `text-icon` (colors/icon/foreground) while the header is hovered (`group/header` on the header, `group-hover/header:text-icon` on the button) or the button has keyboard focus. Figma binds colors/icon/foreground on the instance: that's the hover color, not the default. The whole header (title, badges, description, where) toggles the details, with the pointer cursor, only when the card has details. The chevrons are a real `button` (`aria-expanded`, `aria-controls`, `aria-label` "Show more: {title}" / "Show less: {title}", the Tooltip below it) with its own `onClick`; the header's `onClick` returns early when the click came from inside `a, button, [role='button']`. "Show more" / "Show less" stays under the lines.
+
+**Why:** without that early return, a click on the chevrons toggles twice (the button, then the header it bubbles to) and nothing seems to happen; a badge with a popover would also open the card. The header alone isn't focusable, so the button is what keyboard and screen reader users get.
+
+**How to apply:** check: hover the description, the chevrons turn dark; click the chevrons once, the card opens (`data-state="open"`) and the icon becomes down-up. Keep `ChevronsUpDown` / `ChevronsDownUp` (not a rotated chevron) and `text-foreground-subtle` as the resting color on a resync.
+
+---
+
 ## Sparks conversation scroll (`sparks/workspace/workspace.tsx`, `lib/motion/scroll.ts`)
 
 **Rule:** when a reply is added, the workspace scrolls the `li` of Dana's message it answers (`sent`) to the top of the conversation with `scrollIntoViewSmoothly(item, { align: "start" })`, and gives the newest new reply `minHeight` equal to the scroller's height less its 56px top padding, her message and the ~~16px gap~~ 32px below it (`viewHeight - scrollPadding - sentHeight`). Every message, Sparks's or Dana's, has 32px below it: the list's `gap-4` plus `mb-4` on each `li`; change the two together, since `sentHeight` adds the 32.
@@ -274,7 +284,7 @@ The scroller is the whole conversation area, edge to edge (`px-8`, ~~`pt-14`~~ n
 
 **Why:** Figma has one panel for both, and a menu next to a select must not look like a different component. shadcn draws them with `rounded-md`, `shadow-md` and an 8rem minimum, and its DropdownMenu label is sm medium; a reinstall or a shadcn resync brings those back. The 2px gap has to be on the groups as well, or items inside a `SelectGroup` touch.
 
-**How to apply:** a new list-like overlay (combobox, context menu) uses the same classes. Callers don't restyle the label (the plan's "Jump to a section" uses it as is).
+**How to apply:** a new list-like overlay (combobox, context menu) uses the same classes. Callers don't restyle the label.
 
 ---
 
@@ -292,6 +302,8 @@ The scroller is the whole conversation area, edge to edge (`px-8`, ~~`pt-14`~~ n
 
 **Rule:** every icon-only button names itself in a `Tooltip` below it (`<TooltipContent side='bottom' sideOffset={6}>`), on hover and keyboard focus, and keeps the same words as its `aria-label`. Never the `title` attribute. `HeaderIconButton` has it built in (`label`, or `tooltip` when the words differ), and it's the icon button for the headers and the prototype's toolbar ("Edit element", "Add comment", "Versions ({n})", "Start over", "Try it full screen"); the side panels' buttons ("Jump to a section", "Close"), the device switcher (`Smartphone` "Phone", `Monitor` "Desktop") wrap theirs. A toggle in the toolbar ("Edit element", "Add comment") is `aria-pressed` and fills with `bg-primary` while on (`toggleClasses` in `prototype-panel.tsx`).
 
+Exception: the pencil on Dana's answers in Sparks opens its tooltip above ("Changing an answer").
+
 **Why:** an icon alone doesn't say what it does; `title` shows late, unstyled and never on keyboard focus. One tooltip everywhere keeps icon buttons reading the same.
 
 **How to apply:** a new icon-only button uses `HeaderIconButton`, or wraps its button in `Tooltip` > `TooltipTrigger asChild`. With another trigger on the same button (a menu, a popover), the tooltip goes outside: `Tooltip` > `TooltipTrigger asChild` > `DropdownMenuTrigger asChild` > `Button`.
@@ -306,11 +318,11 @@ The scroller is the whole conversation area, edge to edge (`px-8`, ~~`pt-14`~~ n
 
 ## Side panels share one frame (`sparks/workspace/side-panel.tsx`)
 
-**Rule:** ~~the Concept panel and~~ Comments ~~are~~ is a `SidePanel` (the finished plan panel is gone: "Plan becomes a document"): `rounded-card bg-background-subtle`, a 60px row (`px-[21px] py-3`) with the title (lg semibold) and its buttons (`sidePanelButtonClasses`: ghost, 36px, 18px icon, `opacity-60` until hovered, focused or open), the close button last (`PanelRight`), then `px-6 pb-6` around a white `rounded-avatar-square p-8` card that scrolls. Esc closes from inside. One panel at a time, in the same place: ~~docked beside the conversation in Plan, 440px beside a preview~~ 480px on the right in every step (`sidePanelColumn` in `workspace.tsx`: `w-[512px] pe-8 pb-6`, the panel 480 plus the 32px edge), the conversation centered beside it in Plan.
+**Rule:** Comments is a `SidePanel`, drawn as Sparks "Sparks Project" → "Plan summary" (63:12460): a column on the right edge, the screen's full height, beside the header (`SparksWorkspace`'s root is a row: the column with the header and `main`, then the panel's `motion.aside`, `h-full`, its width from `useSidePanelWidth`: ~~`w-[480px]`~~ 380px to start, 300px at least, half the window at most, changed by dragging `SidePanelResizer` on its left edge: an 8px `separator` over the border (`-start-1 w-2`, `cursor-col-resize`, pointer capture), a 2px `bg-primary` line on hover, focus or drag; ←/→ 16px, Shift 64px, Home/End). The panel: `border-s border-border`, `bg-[color-mix(in_srgb,var(--background-subtle)_50%,var(--background))]` (Figma's unbound #f9fafa, the same mix as the bottom of the workspace), `pt-7`, the title row `px-8` (lg semibold `text-foreground`; buttons 8px apart, `sidePanelButtonClasses`: ghost 36px, 18px icon, `text-icon` at full opacity; the close button last, an `X`), `gap-6`, then the content `px-8 pb-7`, which scrolls. No card inside. Comments' sections: titles `text-lg font-semibold`, `gap-6`, each after the first with `border-t border-border pt-6`. Esc closes from inside. Opening it from "Comments" focuses the panel itself (`tabIndex={-1}`, `outline-none`), not its close button: a `Tooltip` opens on focus, so "Close" showed as soon as it opened. ~~`rounded-card bg-background-subtle`, a 60px row (`px-[21px] py-3`) …, the close button last (`PanelRight`), then `px-6 pb-6` around a white `rounded-avatar-square p-8` card that scrolls … 480px on the right in every step (`sidePanelColumn` in `workspace.tsx`: `w-[512px] pe-8 pb-6`).~~
 
-**Why:** two panels in the same spot that look or close differently read as two different things. Changes go in `SidePanel`, not in one panel.
+**Why:** Figma's side panel is a full-height column of the screen, not a card inside the content area; and two panels that look or close differently read as two different things. Changes go in `SidePanel`, not in one panel. There's no token for #f9fafa, so the color is the mix the workspace's background already uses.
 
-**How to apply:** a new panel beside the conversation (history, sources) is a `SidePanel` and closes the others when it opens.
+**How to apply:** a new panel beside the conversation (history, sources) is a `SidePanel` in the same `aside` and closes the others when it opens. Don't put the panel back inside `main` (the header would stay full width over it). Check: open Comments at 1600px: the panel is 380 wide and the full height, the header ends where it starts; dragging the edge stops at 300 and at 800; narrowing the window to 1200 brings an 800px panel down to 600.
 
 ---
 
@@ -368,36 +380,48 @@ The scroller is the whole conversation area, edge to edge (`px-8`, ~~`pt-14`~~ n
 
 ---
 
-## Plan becomes a document (`sparks/workspace/workspace.tsx`, `sparks/workspace/plan-document.tsx`)
+## Plan stays the conversation (`sparks/workspace/workspace.tsx`)
 
-**Rule:** there's no side panel for the plan and no "Blueprint" button in the concept's header, and no "Blueprint" on screen: it's all Plan. On Plan, once a later step is reached, `SparksWorkspace` shows `PlanDocument` as the preview, on its own: the conversation column stays mounted but hidden (`conversationHidden`) until edit mode is on.
+**Rule:** there's no side panel for the plan, no "Blueprint" button in the concept's header and no plan document: on Plan, before and after it's done, `SparksWorkspace` shows Plan's conversation, centered, with the message box (prds/sparks.md, "The finished plan"). Plan gets no `preview`; the conversation column hides only for a step not reached yet:
 
 ```tsx
-const planView = currentStep === "plan" && planDone ? <PlanDocument … editing={editingPlan} onEditingChange={…} /> : undefined;
-const conversationHidden = Boolean(peeked?.upcoming) || (Boolean(planView) && !previewProp && !editingPlan);
-// a step not reached yet (its empty state) hides it too
-// a new reply from Sparks on a finished Plan turns edit mode on; selecting a step turns it off
+const conversationHidden = Boolean(peeked?.upcoming);
+const preview = peeked?.upcoming ? <EmptyState … /> : previewProp;
 ```
 
-`PlanDocument` uses the frame of `ValidatePanel` and `ReviewPanel` (`rounded-card bg-background-subtle p-4`) with no title, only its buttons ("Edit plan"/"Done", "Versions ({n})", "Jump to a section"), not `SidePanel`. It holds the spec and one line per later step (`PlanSteps`): the evaluation and the review aren't copied into it. Plan's summaries are editable only in edit mode (`PlanEditing` `editable`). Each `SparksReply` carries its `step`, and `StepDivider` marks where the conversation moved to another step; selecting a reached step scrolls the conversation there (`scrollToStep`).
+**Why:** a view that changed format after "Generate prototype" (the former `PlanDocument`, with "Edit plan", versions and "Where it stands") was more to learn and more moving parts for the demo; Dana changes the plan by changing her answers instead ("Changing an answer" below). sparks.ds "Sparks Project" (32:1145) and Sparks → "Sparks Project" (55:7660) still draw the "Blueprint" button and the side panel, so a resync from them would bring them back.
 
-**Why:** Plan was the only step with nothing beside the conversation, so selecting it from Prototype or Evaluate only removed the panel and left the same conversation (prds/sparks.md, "The finished plan", "Steps in the conversation"). Once done, the plan is for reading, so the conversation is hidden until she edits; a second name ("Blueprint") made the same thing look like something else. sparks.ds "Sparks Project" (32:1145) and Sparks → "Sparks Project" (55:7660) still draw the "Blueprint" button and the side panel, so a resync from them would bring both back.
-
-**How to apply:** a resync of the concept's header keeps Comments, notifications and Share only. Don't add a plan panel to `sidePanelColumn`, a title to `PlanDocument`, or remove the conversation column instead of hiding it (Sparks's replies to an edit arrive while it's hidden). In the stories, set the step before adding the reply that starts it (`setStep` then `setMessages`): `WorkspacePrototype` stamps new replies with `stepRef`, and React may compute the new messages at once.
+**How to apply:** a resync of the concept's header keeps Comments, notifications, Share and Publish only. Don't add a plan panel to `sidePanelColumn` or pass Plan a `preview`. In the stories, set the step before adding the reply that starts it (`setStep` then `setMessages`): `WorkspacePrototype` stamps new replies with `stepRef`, and React may compute the new messages at once.
 
 ---
 
-## The finished plan's editable text (`sparks/workspace/plan-document.tsx`, `PlanText`)
+## Prototype title is the versions menu (`sparks/shared/versions-menu.tsx`)
 
-**Rule:** Plan's parts in the finished plan are a `contentEditable` whose content is set as HTML from the text (`dangerouslySetInnerHTML={{ __html: planHtml(shown) }}`), never React children. `shown` changes only for a change from outside (restoring a version), and then the element gets a new `key`, so it's drawn again; her own typing stays in the DOM, and leaving it reads it back with `planTextFrom`. An edit counts only if the text differs from what it read as on focus (`atFocus`). Pasting inserts plain text. The look copies AssistantMessage's compact text (`planTextClasses`).
+**Rule:** the direction's name on the left of the prototype's toolbar is a `DropdownMenu` trigger (inside the `h2`): base semibold `text-foreground-prominent`, a 16px `ChevronDown` (`text-icon`) 4px after it, and "Version {n}" under it, outside the trigger (`text-xs text-foreground-subtle`). The menu opens with `sideOffset={26}`: 8px under "Version {n}" (its 18px line). No history icon among the toolbar's actions. With more than one path, the paths are radio items at the top of the same menu ("Paths"); there's no separate path `Select`.
 
-```tsx
-<div key={revision} contentEditable role='textbox' aria-multiline='true' onFocus={…atFocus} onBlur={commit} dangerouslySetInnerHTML={html} />
-```
+**Why:** the trigger is only the name, so the heading stays a heading and "Version {n}" isn't in the button; with the default 8px offset, the menu covered "Version {n}".
 
-**Why:** React children inside a `contentEditable` break as soon as she types: React patches or removes nodes the browser has already changed ("The node to be removed is not a child"), and the caret jumps on every render. Comparing with the text at focus keeps a click in and out from counting as an edit, since the browser's HTML never reads back exactly as the original text.
+**How to apply:** if "Version {n}" changes size or the gap under the name changes, change `sideOffset` with it. A resync of the toolbar shouldn't bring back the History icon button.
 
-**How to apply:** don't render `AssistantMessage` or other React children inside it, and don't make `shown` follow `text` on every change. A new format (a heading, a link) goes in both `planHtml` and `planTextFrom`.
+---
+
+## One list for picking people (`sparks/shared/people-list.tsx`)
+
+**Rule:** Share's field and "@" in a comment on the prototype use the same `PeopleList`, `matchPeople` and `handlePeopleKeys`: the menu panel (`rounded-input border bg-popover p-1 shadow-xl`), 36px rows 2px apart, a 24px `PeopleAvatar` (a `Building2` for a department), the name sm medium, the team or size xs muted on the right. The field keeps focus (`combobox`, `aria-activedescendant`); rows pick on `mousedown` with `preventDefault`; Esc closes only the list (`stopPropagation`, so the popover around it stays). In the comment box, after a pick, the caret is placed in a layout effect on the new text (`pendingCaret`), not in `requestAnimationFrame`.
+
+**Why:** two lists for the same people would drift ("one element, one behavior"). A pick on `click` would blur the field first and close the list; and with `requestAnimationFrame`, typing right after a pick went in before the caret moved ("Can @Lee Carter the fit wording?check").
+
+**How to apply:** a new place to pick people uses `PeopleList`. Check: in the comment box, "@", "ca", Enter, then type at once: the text reads "@Lee Carter " followed by what was typed.
+
+---
+
+## Changing an answer (`sparks/workspace/workspace.tsx`: `ChangingAnswer`, `onAnswerChange`)
+
+**Rule:** with `onAnswerChange`, each of Dana's messages in Plan's conversation that answers a confirmed question card (the reply before it has a `suggestion` with `confirmed`, and the message isn't "Not quite") gets a pencil inside its bubble: `UserMessage` `flex items-end gap-2`, the text in a `min-w-0` span, then a `size-5` button (`-me-1 mb-0.5`, a 16px `Pencil`, `text-icon-muted`, `hover:text-icon`, `data-change-answer`, `aria-label` "Change answer: {question}") in a Tooltip above it (`side='top'`), "Change answer". Selecting it hides that bubble (`message.id === changing?.answerId` returns null) and gives that reply `changing`: `ChangingAnswer` shows "Changing your answer" (sm muted) and "Keep my answer" (Button `link`, brand color, `h-auto p-0 text-sm font-normal`) on one row, then the `ClarificationCard` with Sparks's first answer (`suggestion.suggested ?? text`), its `quickReplies`, and `selectedReply` (the reply she picked, a check via `QuickReplies` `selected`). While changing, `showQuickReplies` is false on the latest reply, so one set of replies (and Enter) is active.
+
+**Why:** the tooltip goes above, an exception to "Icon buttons have a tooltip" (below), because the user asked for it, as in archie-ucl. With two sets of replies on screen, both `QuickReplies` would take Enter (`useEnterShortcut`), and Enter would answer the wrong question. The bubble hides so the question reads as reopened in place, as in archie-ucl's "Change answer". `suggested` is stamped by the story on each new reply (`setMessages`), because answering replaces `text` on the card; without it, the card shown again would show her old answer as Sparks's.
+
+**How to apply:** check on `--steps-reached`: 10 pencils; the pencil on "Which result matters most?" opens the card with "Yes, that's right" pressed; "Repeat purchases instead" updates the bubble and "What success looks like" and adds Sparks's "Want me to update the prototype to match?"; Esc (or "Keep my answer") puts focus back on the pencil.
 
 ---
 

@@ -18,6 +18,10 @@ type ClarificationCardProps = Omit<React.ComponentProps<"div">, "children"> & {
 	replies?: string[];
 	/** Picking one of `replies`. */
 	onReply?: (reply: string) => void;
+	/** The reply the user picked before, while they change their answer: it shows a check (`QuickReplies` `selected`). */
+	selectedReply?: string;
+	/** Enter picks the first reply (`QuickReplies` `enter`, on by default). Off when another set of replies on the screen has it. */
+	enter?: boolean;
 	/** Saving an edit of `answer`. Without it, there's no edit button. */
 	onEdit?: (answer: string) => void;
 	/** Opens in the Edit state (Figma "State=Edit"), e.g. for a story. */
@@ -35,6 +39,8 @@ function ClarificationCard({
 	source,
 	replies = [],
 	onReply,
+	selectedReply,
+	enter = true,
 	onEdit,
 	defaultEditing = false,
 	className,
@@ -157,7 +163,7 @@ function ClarificationCard({
 			{/* Figma "ctas", 16px under the panel (`QuickReplies`): the first reply (the "yes") last, at the right edge, as
 			    Save is, with the ↵ key; Enter picks it. Not in State=Edit: they come back once the edit is saved or
 			    cancelled. */}
-			{replies.length && !editing ? <QuickReplies replies={replies} onReply={onReply} /> : null}
+			{replies.length && !editing ? <QuickReplies replies={replies} onReply={onReply} selected={selectedReply} enter={enter} /> : null}
 		</div>
 	);
 }

@@ -84,13 +84,14 @@ function AutoPartsHubHome({ user, apps, defaultTab = "apps", notifications }: Au
 								const product = appProducts[app.id];
 								return (
 									<li key={app.id} className='flex'>
-										{/* Each app opens in its own tab, so home stays open in this one (prds/autopartshub-home.md). */}
+										{/* Each app opens in its own tab, so home stays open in this one; the tab is named for the app, so
+										    selecting it again goes back to that tab instead of opening another (prds/autopartshub-home.md). */}
 										<AppCard asChild logo={product.logo} description={app.description}>
 											<a
 												href={app.href}
-												target='_blank'
+												target={`autopartshub-${app.id}`}
 												rel='noopener noreferrer'
-												aria-label={`Open ${product.name} in a new tab`}
+												aria-label={`Open ${product.name} in its own tab`}
 											/>
 										</AppCard>
 									</li>

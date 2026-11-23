@@ -7,7 +7,7 @@ import { Button } from "@/components/buttons/button";
 import { formatRelativeDate } from "@/lib/relative-date";
 import { cn } from "@/lib/utils";
 
-import type { PrototypeComment } from "../prototype/prototype-comments";
+import { MentionText, type PrototypeComment } from "../prototype/prototype-comments";
 import { ReviewerList, viewTone, type IdeaComment, type Reviewer } from "../review/review-panel";
 import { SidePanel } from "./side-panel";
 
@@ -69,7 +69,9 @@ function PrototypeCommentRow({ comment, onOpen }: { comment: PrototypeComment; o
 					</time>
 				</span>
 				<span className='truncate text-xs text-muted-foreground'>{where}</span>
-				<span className={cn("text-sm whitespace-pre-line", comment.resolved ? "text-muted-foreground" : "text-foreground")}>{comment.text}</span>
+				<span className={cn("text-sm whitespace-pre-line", comment.resolved ? "text-muted-foreground" : "text-foreground")}>
+					<MentionText text={comment.text} mentions={comment.mentions} />
+				</span>
 				{/* The thread: how many replies, and whether it's resolved. */}
 				{replies || comment.resolved ? (
 					<span className='flex items-center gap-3 pt-0.5 text-xs text-muted-foreground'>
@@ -140,8 +142,8 @@ function IdeaCommentRow({ comment, onOpen }: { comment: IdeaComment; onOpen?: (i
 }
 
 /**
- * "Comments" (prds/sparks.md, "The concept workspace"): the reviewers' feedback beside the conversation, in the same
- * frame as any side panel (`SidePanel`). The list is Review's (`ReviewerList`); a reviewer who has commented or given
+ * "Comments" (prds/sparks.md, "The concept workspace"): the reviewers' feedback, in a column on the right edge
+ * (`SidePanel`, as Figma's "Plan summary", 63:12460): each section's title lg semibold, a line and 24px between sections. The list is Review's (`ReviewerList`); a reviewer who has commented or given
  * their view opens their comment, with the unread dot while it's new.Under "On the prototype", the comments pinned on
  * the prototype (hers and the reviewers'), open first, then resolved, each opening its thread on the prototype. Not in Figma yet.
  */
@@ -182,7 +184,7 @@ function CommentsPanel({
 	}, [open]);
 
 	return (
-		<SidePanel title='Comments' closeLabel='Close comments' onClose={onClose} autoFocus={autoFocus} className={className} bodyClassName='gap-4'>
+		<SidePanel title='Comments' closeLabel='Close comments' onClose={onClose} autoFocus={autoFocus} className={className} bodyClassName='gap-6'>
 			{open ? (
 				<article aria-label={`${open.department}'s comment`} className='flex flex-col gap-4'>
 					<Button ref={backRef} variant='link' className='h-auto w-fit gap-1 p-0 font-semibold text-link' onClick={backToList}>
@@ -242,8 +244,8 @@ function CommentsPanel({
 			) : reviewers.length || prototypeComments.length || ideaComments.length ? (
 				<>
 					{reviewers.length ? (
-						<section aria-labelledby='comments-reviewers' className='flex flex-col gap-3'>
-							<h3 id='comments-reviewers' className='text-sm font-semibold text-foreground'>
+						<section aria-labelledby='comments-reviewers' className='flex flex-col gap-2'>
+							<h3 id='comments-reviewers' className='text-lg font-semibold text-foreground'>
 								Reviewers
 							</h3>
 							<p className='text-sm text-muted-foreground'>
@@ -280,8 +282,8 @@ function CommentsPanel({
 						</section>
 					) : null}
 					{newestIdea.length ? (
-						<section aria-labelledby='comments-idea' className={cn("flex flex-col gap-1", reviewers.length && "border-t border-border pt-4")}>
-							<h3 id='comments-idea' className='pb-2 text-sm font-semibold text-foreground'>
+						<section aria-labelledby='comments-idea' className={cn("flex flex-col gap-1", reviewers.length && "border-t border-border pt-6")}>
+							<h3 id='comments-idea' className='pb-2 text-lg font-semibold text-foreground'>
 								On the idea
 							</h3>
 							<ul className='flex flex-col gap-0.5'>
@@ -294,8 +296,8 @@ function CommentsPanel({
 						</section>
 					) : null}
 					{prototypeComments.length ? (
-						<section aria-labelledby='comments-prototype' className={cn("flex flex-col gap-1", (reviewers.length || newestIdea.length) && "border-t border-border pt-4")}>
-							<h3 id='comments-prototype' className='pb-2 text-sm font-semibold text-foreground'>
+						<section aria-labelledby='comments-prototype' className={cn("flex flex-col gap-1", (reviewers.length || newestIdea.length) && "border-t border-border pt-6")}>
+							<h3 id='comments-prototype' className='pb-2 text-lg font-semibold text-foreground'>
 								On the prototype
 							</h3>
 								<ul className='flex flex-col gap-0.5'>

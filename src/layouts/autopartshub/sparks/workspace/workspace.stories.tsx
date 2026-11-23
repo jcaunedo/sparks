@@ -80,26 +80,18 @@ import { PrototypePanel } from "../prototype/prototype-panel";
 import type { PrototypeComment } from "../prototype/prototype-comments";
 import { demoConceptHref, loadDemoConcept, saveDemoConcept } from "../shared/demo-session";
 import { sampleFitCheck } from "../prototype/sample-fit-check";
-import { directionPrototypes, prototypeSummaryFor } from "../prototype/direction-prototypes";
-import { PrototypeSection } from "../prototype/prototype-section";
+import { directionPrototypes } from "../prototype/direction-prototypes";
 import type { ReviewDecision } from "../review/sample-review-directions";
 import type { SparksStep } from "../shared/steps";
-import { PlanSteps, type PlanEdits, type PlanPartId, type PlanSection, type PlanStepLine } from "./plan-document";
-import { planPartText } from "./plan-sections";
+import type { PlanPartId } from "./plan-parts";
 import {
 	samplePlanEditChangedReply,
-	samplePlanEditEditKind,
-	samplePlanEditFirstVersion,
 	samplePlanEditNotNowReply,
 	samplePlanEditOutOfDate,
 	samplePlanEditPrototypeVersion,
-	samplePlanEditRestoredName,
-	samplePlanEditRestoredReply,
 	samplePlanEditUpdatedReply,
 	samplePlanEditUpdateReplies,
-	samplePlanEditVersionName,
 } from "../plan/sample-plan-edits";
-import type { DecisionEntry } from "./decision-log";
 import {
 	sampleBackFromPrototype,
 	sampleBeyondAnswerReply,
@@ -190,7 +182,7 @@ sampleReviewBuildProgress,
 	sampleSharedReply,
 	sampleSubmittedReply,
 } from "../review/sample-review";
-import { sampleShareDepartment, sampleShareLink, sampleShareMemberFor, sampleShareOwner } from "../shared/sample-share";
+import { sampleDirectory, sampleMentionable, sampleShareDepartment, sampleShareLink, sampleShareMemberFor, sampleShareOwner } from "../shared/sample-share";
 import type { ShareMember } from "./share-popover";
 import { sampleConceptName, sampleInitialPrompt, sampleMessages } from "./sample-concept";
 import {
@@ -446,11 +438,27 @@ function WorkspacePrototype(props: SparksWorkspaceProps) {
 		stepRef.current = next;
 		setRawStep(next);
 	};
+	// Each question card's suggestion as Sparks first made it, by its reply's id: what changing an answer goes back to
+	// (prds/sparks.md, "Changing an answer"). New replies also carry it as `suggested`, for the card shown again.
+	const originalSuggestions = React.useRef(new Map<string, SparksSuggestion>());
 	const setMessages = (update: React.SetStateAction<SparksMessage[]>) =>
 		setRawMessages((current) => {
 			const next = typeof update === "function" ? update(current) : update;
 			const known = new Set(current.map((m) => m.id));
-			return next.map((m) => (m.from === "sparks" && !m.step && !known.has(m.id) ? { ...m, step: stepRef.current } : m));
+			return next.map((m) => {
+				if (m.from !== "sparks" || known.has(m.id)) return m;
+				const suggestion = askedSuggestion(m);
+				if (suggestion && !originalSuggestions.current.has(m.id)) originalSuggestions.current.set(m.id, suggestion);
+				return {
+					...m,
+					step: m.step ?? stepRef.current,
+					parts: m.parts.map((p) =>
+						p.kind === "suggestion" && p.suggestion.suggested === undefined
+							? { ...p, suggestion: { ...p.suggestion, suggested: p.suggestion.text } }
+							: p,
+					),
+				};
+			});
 		});
 	const [reached, setReached] = React.useState(props.reachedStep ?? props.currentStep);
 	const chosenParts = messages.flatMap((m) => (m.from === "sparks" ? m.parts : [])).flatMap((p) => (p.kind === "chosen" ? [p.chosen] : []));
@@ -499,8 +507,6 @@ function WorkspacePrototype(props: SparksWorkspaceProps) {
 	const setRuns = (update: (current: Run[]) => Run[]) => updatePath(chosenId, (d) => ({ ...d, runs: update(d.runs) }));
 	// The path being built (the one shown, unless another was started).
 	const [buildingPath, setBuildingPath] = React.useState<string>();
-	// The paths added from the PlanDocument, for Decisions.
-	const [pathDecisions, setPathDecisions] = React.useState<{ id: string; name: string; believe: string }[]>([]);
 	/** A direction becomes a path: added (once), built from version 1, and shown. */
 	const startPath = (id: string) => {
 		setPaths((current) => (current.includes(id) ? current : [...current, id]));
@@ -761,51 +767,9 @@ function WorkspacePrototype(props: SparksWorkspaceProps) {
 	const [shareMembers, setShareMembers] = React.useState<ShareMember[]>(() => [sampleShareOwner(props.user.firstName, props.user.avatarSrc)]);
 	const addMembers = (added: ShareMember[]) =>
 		setShareMembers((current) => [...current, ...added.filter((member) => !current.some((m) => m.id === member.id))]);
-	// The PlanDocument as a document (prds/sparks.md, "The finished plan"): every version, oldest first, each with her edits to
-	// Plan's parts; an edit keeps the summary it replaced (`base`), and stops applying once Sparks's summary for that part
-	// changes (a new pick after going back to the choice). `outdated`: the parts changed in meaning since the prototype
-	// last matched the plan; while there are any, the prototype shows a note.
-	type PlanVersion = { id: string; name: string; kind?: "wording" | "meaning"; edits: Partial<Record<PlanPartId, { text: string; base: string }>> };
-	const [planVersions, setPlanVersions] = React.useState<PlanVersion[]>([{ id: "b1", name: samplePlanEditFirstVersion, edits: {} }]);
+	// The parts of the plan she's changed (by changing an answer) since the prototype last matched it: while there are
+	// any, the prototype shows a note (prds/sparks-prototype.md, "When the plan changes").
 	const [outdated, setOutdated] = React.useState<PlanPartId[]>([]);
-	const planParts: PlanPartId[] = ["problem", "brief", "success", "chosen"];
-	const editsOf = (version: PlanVersion): PlanEdits =>
-		Object.fromEntries(
-			planParts.flatMap((part) => {
-				const edit = version.edits[part];
-				return edit && edit.base === planPartText(messages, part) ? [[part, edit.text]] : [];
-			}),
-		);
-	const currentPlan = planVersions[planVersions.length - 1];
-	const planEdits = editsOf(currentPlan);
-	/** An edit saved in the plan: a new version; a change in meaning also makes the prototype out of date, and Sparks offers to update it. */
-	const editPlan = (part: PlanPartId, text: string, before: string) => {
-		const kind = samplePlanEditEditKind(before, text);
-		const edits = { ...currentPlan.edits, [part]: { text, base: planPartText(messages, part) } };
-		setPlanVersions((current) => [...current, { id: `b${++nextId}`, name: samplePlanEditVersionName(part, kind), kind, edits }]);
-		if (kind === "wording") return;
-		setOutdated((current) => (current.includes(part) ? current : [...current, part]));
-		setMessages((current) => [...current, withNewId(samplePlanEditChangedReply(part, runs.length > 0))]);
-	};
-	/** Restoring a version saves it again as the newest; Sparks offers to update the prototype if what it says differs. */
-	const restorePlan = (id: string) => {
-		const index = planVersions.findIndex((version) => version.id === id);
-		const version = planVersions[index];
-		if (!version) return;
-		const restoredEdits = editsOf(version);
-		const changed = planParts.filter(
-			(part) => samplePlanEditEditKind(planPartText(messages, part, planEdits), planPartText(messages, part, restoredEdits)) === "meaning",
-		);
-		setPlanVersions((current) => [
-			...current,
-			{ id: `b${++nextId}`, name: samplePlanEditRestoredName(index + 1), kind: changed.length ? "meaning" : "wording", edits: version.edits },
-		]);
-		if (changed.length) setOutdated((current) => [...current, ...changed.filter((part) => !current.includes(part))]);
-		setMessages((current) => [
-			...current,
-			withNewId(samplePlanEditRestoredReply(index + 1, planVersions.length + 1, changed.length > 0, runs.length > 0)),
-		]);
-	};
 	/** "Yes, update it" (or "Update prototype" on its note): the prototype matches the plan again, as a new version, in Prototype. */
 	const matchPlan = () => {
 		setStep("prototype");
@@ -908,7 +872,6 @@ function WorkspacePrototype(props: SparksWorkspaceProps) {
 				const added = sampleDirections.find((d) => d.id === confirmingPath) ?? sampleDirectionFitCheck;
 				next = [...next, withNewId(samplePathBuildingReply(added.name, (directionPrototypes[added.id] ?? directionPrototypes["fit-check"]).screens, 0, added.id))];
 				startPath(added.id);
-				setPathDecisions((current) => [...current, { id: `path-${added.id}-${current.length}`, name: added.name, believe: chosenDraftFor(added).believe }]);
 				setStep("prototype");
 			} else next = [...next, withNewId(samplePathNotNowReply)];
 		} else if (step === "review") {
@@ -1262,8 +1225,8 @@ function WorkspacePrototype(props: SparksWorkspaceProps) {
 	};
 
 	/**
-	 * A direction's action in the PlanDocument (prds/sparks-plan-compare.md, "Directions in the plan"): before Plan is
-	 * done, picking it, as in the conversation; after, its path opens if it's built, or Sparks offers to build it.
+	 * A direction card's action (prds/sparks-plan-compare.md, "Directions in the plan"): before Plan is done, picking it;
+	 * after, its path opens if it's built, or Sparks offers to build it.
 	 */
 	const runDirection = (picked: (typeof sampleDirections)[number]) => {
 		if (!paths.length) {
@@ -1337,152 +1300,57 @@ function WorkspacePrototype(props: SparksWorkspaceProps) {
 			),
 		);
 
-	// The plan's sections after Plan's (the workspace takes those from the messages; prds/sparks.md, "The finished plan"):
-	// what we built, once the prototype is built (its spec: what's pretend, what the real thing would need), then where
-	// each later step stands, one line each with "Open". The evaluation and the review stay in their own steps' panels.
-	const prototypeBuilt = reached !== "plan" && (reached !== "prototype" || ready >= built.screens.length);
-	const validateSkipped = Boolean(review?.skipped) && runs.length === 0;
-	const reviewStatusLabel = { ready: "Ready for review", "in-review": "In review", waiting: "Waiting for a decision", advanced: "Advanced" } as const;
-	const reviewDecisionLabel = { advance: "Advanced", "iterate-validate": "Back to Evaluate", "iterate-choice": "Back to the choice in Plan" } as const;
-	const currentVersion = versions[versions.length - 1];
-	const stepLines: PlanStepLine[] = [
-		...(reached !== "plan"
-			? [
-					{
-						step: "Prototype",
-						text: prototypeBuilt
-							? `${paths.length > 1 ? `${direction.name}, v` : "V"}ersion ${versions.length}: ${currentVersion.name}.${paths.length > 1 ? ` ${paths.length} paths built.` : ""}${outdated.length ? " Built from an earlier version of the plan." : ""}`
-							: `Building, ${ready} of ${built.screens.length} screens.`,
-						onOpen: () => setStep("prototype"),
+	/**
+	 * Changing an answer in Plan (prds/sparks.md, "Changing an answer"): the question's card takes her new answer (a quick
+	 * reply it offered, or her own words) and her bubble says it; the summary that answer feeds is drafted again from her
+	 * answers, keeping whether she approved it (what we'll build follows a changed target). Once there's a prototype, the
+	 * part is out of date, and Sparks says what changed and offers to update the prototype, at the end of Plan.
+	 */
+	const changeAnswer = (replyId: string, answer: string, own: boolean) => {
+		const index = messages.findIndex((m) => m.id === replyId);
+		const ask = messages[index];
+		const reply = messages[index + 1];
+		const current = ask ? askedSuggestion(ask) : undefined;
+		if (!ask || !current || reply?.from !== "user") return;
+		const original = originalSuggestions.current.get(replyId) ?? { ...current, text: current.suggested ?? current.text };
+		const base: SparksSuggestion = { ...original, confirmed: true, answering: false, edited: undefined, unsure: undefined, suggested: original.text };
+		const suggestion: SparksSuggestion = own
+			? { ...base, text: answer, edited: true }
+			: answer === "I'm not sure"
+				? { ...base, assumption: true, unsure: true }
+				: answer === "Repeat purchases instead"
+					? { ...base, text: sampleSuccessRepeatMeasure, basis: undefined }
+					: base;
+		let next = messages.map((m, i) => (i === index ? answerSuggestion(m, suggestion, false) : i === index + 1 ? { ...reply, text: answer } : m));
+		const part: PlanPartId = current.part.startsWith("brief-") ? "brief" : current.part.startsWith("success-") ? "success" : "problem";
+		const has = (kind: SparksReplyPart["kind"]) => next.some((m) => m.from === "sparks" && m.parts.some((p) => p.kind === kind));
+		const problem = part === "problem" && has("problem") ? problemFrom(next) : undefined;
+		const brief = part === "brief" && has("brief") ? sampleBriefFrom(clarifyAnswers(next)) : undefined;
+		const success = part === "success" && has("success") ? sampleSuccessFrom(successAnswers(next)) : undefined;
+		const target = lastSuggestion(next, "success-target")?.text ?? "";
+		const directions = directionsFrom(next);
+		next = next.map((m) =>
+			m.from !== "sparks"
+				? m
+				: {
+						...m,
+						parts: m.parts.map((p) => {
+							if (p.kind === "problem" && problem) return { ...p, problem: { ...problem, approved: p.problem.approved } };
+							if (p.kind === "brief" && brief) return { ...p, brief: { ...brief, approved: p.brief.approved } };
+							if (p.kind === "success" && success) return { ...p, success: { ...success, approved: p.success.approved } };
+							const direction = p.kind === "chosen" && success ? directions.find((d) => d.name === p.chosen.name) : undefined;
+							if (p.kind === "chosen" && direction)
+								return { ...p, chosen: { ...sampleChosenFrom(direction, directions, target), approved: p.chosen.approved } };
+							return p;
+						}),
 					},
-				]
-			: []),
-		...(reached === "validate" || reached === "review"
-			? [
-					{
-						step: "Evaluate",
-						text: validateSkipped
-							? "Skipped: the hypothesis isn't tested."
-							: !lastRun
-								? "Not run yet."
-								: lastRun.stopped
-									? `Run ${runs.length} on version ${lastRun.evaluation.version}, stopped.`
-									: !lastRunFinished
-										? `Run ${runs.length} on version ${lastRun.evaluation.version}, running.`
-										: `Run ${runs.length} on version ${lastRun.evaluation.version}: ${lastRun.evaluation.read}. ${lastRun.evaluation.hypothesis.outcome}.${outdated.length ? " Run on an earlier version of the plan." : ""}`,
-						onOpen: validateSkipped ? undefined : () => setStep("validate"),
-					},
-				]
-			: []),
-		...(review
-			? [
-					{
-						step: "Review",
-						text: review.decision
-							? `${reviewDecisionLabel[review.decision.kind]}, by ${review.decision.owner}, ${review.decision.date}.`
-							: review.status.kind === "in-review"
-								? `In review: ${review.reviewers.filter((r) => r.status === "view").length} of ${review.reviewers.length} views in.`
-								: `${reviewStatusLabel[review.status.kind]}.`,
-						onOpen: () => setStep("review"),
-					},
-				]
-			: []),
-	];
-	const conceptSections: PlanSection[] = [
-		...(prototypeBuilt
-			? [
-					{
-						id: "prototype",
-						title: paths.length > 1 ? `What we built: ${direction.name}` : "What we built",
-						content: (
-							<PrototypeSection summary={prototypeSummaryFor(chosenId, direction.howItWorks, versions)} onTry={() => setStep("prototype")} />
-						),
-					},
-				]
-			: []),
-		...(stepLines.length ? [{ id: "where-it-stands", title: "Where it stands", content: <PlanSteps lines={stepLines} /> }] : []),
-	];
-
-	// The decisions after Plan's (prds/sparks.md, "The decision log"), from what happened. Each id carries the round (how
-	// many prototypes were built: a new pick after going back to the choice builds again and resets the later steps), so
-	// a later round's decisions are new entries and the earlier ones stay.
-	const round = messages.filter((m) => m.from === "sparks" && m.id.startsWith("prototype-building")).length;
-	const who = props.user.firstName;
-	const decisionLabel = {
-		advance: "Advanced the idea",
-		"iterate-validate": "Asked to iterate: back to Evaluate",
-		"iterate-choice": "Asked to iterate: back to the choice in Plan",
-	} as const;
-	const laterDecisions: DecisionEntry[] = [
-		// Each change to the PlanDocument after Plan finished, and each version brought back.
-		...planVersions.slice(1).map((version) => ({
-			id: `plan-edit-${version.id}`,
-			what: version.name,
-			detail:
-				version.kind === "meaning"
-					? "It changes what Plan says: the prototype was built from the earlier version."
-					: "Only the wording: nothing else changes.",
-			who,
-			step: "Plan",
-		})),
-		...pathDecisions.map((added) => ({ id: added.id, what: `Added a path: ${added.name}`, detail: added.believe, who, step: "Prototype" })),
-		...versions
-			.filter((v) => v.name === sampleVersionNames.lightText)
-			.map((v) => ({
-				id: `prototype-light-text-${round}-${v.id}`,
-				what: "Kept light gray text, against the design system",
-				detail: "It fails the contrast standard; it's listed under \"Departs from the design system\" for the UX team.",
-				who,
-				step: "Prototype",
-			})),
-		...(reached === "validate" || reached === "review"
-			? [{ id: `prototype-done-${round}`, what: `Finished Prototype at version ${runs[0]?.evaluation.version ?? versions.length}`, who, step: "Prototype" }]
-			: []),
-		...(review?.skipped && runs.length === 0
-			? [{ id: `validate-skipped-${round}`, what: "Skipped Evaluate", detail: "The hypothesis isn't tested; Review lists it as a gap.", who, step: "Evaluate" }]
-			: []),
-		...(review && !review.skipped && lastEvaluation
-			? [
-					{
-						id: `validate-go-ahead-${round}`,
-						what: "Went ahead to Review",
-						detail: `Evidence status: ${lastEvaluation.hypothesis.outcome}.`,
-						who,
-						step: "Evaluate",
-					},
-				]
-			: []),
-		...(review?.reviewers ?? [])
-			.filter((r) => r.status === "view" && r.view)
-			.map((r) => ({ id: `review-view-${round}-${r.id}`, what: r.view!, detail: r.why, who: r.department, step: "Review" })),
-		...(review?.recommendation
-			? [
-					{
-						id: `review-changes-${round}`,
-						what: review.engineeringEffort ? "Accepted the changes Sparks proposed after the reviews" : "Kept the idea as it was after the reviews",
-						who,
-						step: "Review",
-					},
-				]
-			: []),
-		...(review?.submitted && review.recommendation
-			? [{ id: `review-recommendation-${round}`, what: `Sent the recommendation to ${sampleDecisionOwner.name}`, detail: review.recommendation, who, step: "Review" }]
-			: []),
-		...(review?.decision
-			? [
-					{
-						id: `review-decision-${round}-${review.decision.kind}`,
-						what: decisionLabel[review.decision.kind],
-						detail: `"${review.decision.reason}"`,
-						who: review.decision.owner,
-						step: "Review",
-					},
-				]
-			: []),
-		...(messages.some((m) => m.from === "sparks" && m.id.startsWith("review-shared"))
-			? [{ id: `review-shared-${round}`, what: "Shared it with the reviewers' departments, without edit rights", who, step: "Review" }]
-			: []),
-	];
+		);
+		if (paths.length) {
+			setOutdated((list) => (list.includes(part) ? list : [...list, part]));
+			next = [...next, withNewId(samplePlanEditChangedReply(part, runs.length > 0))];
+		}
+		setMessages(next);
+	};
 
 	// Prototype: the concept she started from "New idea" (or reopened from its row) shows in "Your ideas", where it
 	// stands, and reopens with its conversation (prds/sparks.md, "The start page"; `demo-session.ts`).
@@ -1520,9 +1388,20 @@ function WorkspacePrototype(props: SparksWorkspaceProps) {
 		});
 	}, [tracksDemo, messages, step, reached, conceptName, shareMembers.length, review?.status.kind, lastEvaluation]);
 
+	// "Add Plan" in the "+" menu (demo only): Plan's whole conversation, up to the directions, as the Directions story
+	// has it. The workspace opens again on it (a new key), so it shows whole, at the directions, like a concept reopened.
+	const [planAdded, setPlanAdded] = React.useState(0);
+	const addPlan = () => {
+		setStep("plan");
+		setMessages(Directions.args?.messages ?? []);
+		setConceptName(sampleConceptName);
+		setPlanAdded((n) => n + 1);
+	};
+
 	return (
 		<SparksWorkspace
 			{...props}
+			key={planAdded}
 			conceptName={conceptName}
 			currentStep={step}
 			reachedStep={reached}
@@ -1530,17 +1409,11 @@ function WorkspacePrototype(props: SparksWorkspaceProps) {
 			share={{
 				members: shareMembers,
 				onInvite: (who, role) => addMembers([sampleShareMemberFor(who, role)]),
+				// Typing in the field lists the people and departments that match.
+				directory: sampleDirectory,
 				onRoleChange: (id, role) => setShareMembers((current) => current.map((m) => (m.id === id ? { ...m, role } : m))),
 				link: sampleShareLink,
 			}}
-			concept={conceptSections.length ? conceptSections : undefined}
-			planDocument={{
-				edits: planEdits,
-				onEdit: editPlan,
-				versions: planVersions,
-				onRestore: restorePlan,
-			}}
-			decisions={laterDecisions}
 			paths={{ built: paths, active: chosenId, onRun: runDirection }}
 			// Evaluate's empty state, once the prototype is built: the same as "Yes, evaluate it".
 			publish={publishButton}
@@ -1562,8 +1435,10 @@ function WorkspacePrototype(props: SparksWorkspaceProps) {
 			onSend={send}
 			onSuggestionEdit={editSuggestion}
 			onAnswerCancel={cancelAnswer}
+			onAnswerChange={changeAnswer}
 			// "Add from library": the AutoPartsHUB home on "My library", in its own tab, so the concept stays open here.
-			onAddFromLibrary={() => openStoryInNewTab(storyIds.autoPartsHubHome, { defaultTab: "library" })}
+			onAddPlan={reached === "plan" ? addPlan : undefined}
+			onAddFromLibrary={() => openStoryInNewTab(storyIds.autoPartsHubHome, { defaultTab: "library" }, "autopartshub-home")}
 			// Comments: the reviewers' feedback once it's in review; the dot while there's feedback she hasn't opened yet.
 			comments={{
 				reviewers: review?.status.kind === "ready" ? [] : (review?.reviewers ?? []),
@@ -1654,6 +1529,8 @@ function WorkspacePrototype(props: SparksWorkspaceProps) {
 								: undefined
 						}
 						commentAuthor={{ name: `${props.user.firstName} Morales`, avatarSrc: props.user.avatarSrc }}
+						// "@" in a comment tags people and teams at AutoParts Co.
+						mentionable={sampleMentionable}
 						// Each path has its own comments; the Comments panel lists them all, with their path.
 						comments={prototypeComments.filter((c) => (c.path?.id ?? chosenId) === chosenId)}
 						onCommentsChange={(shown) =>
@@ -2023,10 +1900,9 @@ export const ReviewWithoutValidate: Story = {
 };
 
 /**
- * Back on Plan after reaching Evaluate: Plan is done, so it shows the PlanDocument beside the conversation (the problem, what
- * we know, success, the directions, what we'll build, what we built, where it stands, decisions), with the conversation
- * at Plan's start. Dividers mark where it moved to Prototype and Evaluate; selecting a step scrolls there. Prototype and
- * Evaluate can be selected, Review can't yet. Not in Figma yet.
+ * Back on Plan after reaching Evaluate: Plan is done, and it's still the conversation it was built in, with nothing
+ * beside it: her answers to Sparks's questions show a pencil to change them (prds/sparks.md, "Changing an answer").
+ * Prototype and Evaluate can be selected, Review can't yet. Not in Figma yet.
  */
 export const StepsReached: Story = {
 	args: {

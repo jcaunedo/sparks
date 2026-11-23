@@ -41,8 +41,8 @@ type DirectionCardProps = {
 	/** Its place among the directions in the reply (1, 2…), Sparks's pick first: "1. Fit check before you buy". */
 	number?: number;
 	/**
-	 * Its call to action, full width at the bottom ("Generate prototype", or "Open prototype" once it's built): the same
-	 * as the direction's in the plan (`directionActionFor` in workspace/plan-sections.tsx).
+	 * Its call to action, full width at the bottom ("Generate prototype", or "Open prototype" once it's built):
+	 * `directionActionFor` in workspace/plan-parts.ts.
 	 */
 	action?: { label: string; onClick: () => void };
 	className?: string;

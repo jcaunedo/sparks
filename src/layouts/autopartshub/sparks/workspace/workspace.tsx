@@ -1,5 +1,5 @@
 import * as React from "react";
-import { ArrowLeft, Bell, Check, ChevronDown, FlaskConical, Folder, LoaderCircle, MessageCircle, MousePointerClick, Paperclip, Pencil, Users, X, Zap } from "lucide-react";
+import { ArrowLeft, Bell, Check, ChevronDown, FlaskConical, Folder, ListChecks, LoaderCircle, MessageCircle, MousePointerClick, Paperclip, Pencil, Users, X, Zap } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 
 import { AssistantMessage } from "@/components/chat/assistant-message";
@@ -43,9 +43,8 @@ import { sparksSteps, type SparksStep } from "../shared/steps";
 import type { IdeaComment } from "../review/review-panel";
 import type { PrototypeComment } from "../prototype/prototype-comments";
 import { CommentsPanel } from "./comments-panel";
-import { PlanDocument, type PlanSection } from "./plan-document";
-import { DecisionLog, useDecisionLog, type DecisionEntry } from "./decision-log";
-import { directionActionFor, planDecisions, planSections, type PlanEditing, type DirectionPaths } from "./plan-sections";
+import { SidePanelResizer, useSidePanelWidth } from "./side-panel";
+import { directionActionFor, type DirectionPaths } from "./plan-parts";
 import { SharePopover, type SharePopoverProps } from "./share-popover";
 import { HeaderIconButton } from "../../header-icon-button";
 import { NotificationsPopover, type NotificationsPopoverProps } from "../../notifications-popover";
@@ -76,6 +75,11 @@ type SparksSuggestion = {
 	unsure?: boolean;
 	/** "Not quite": the card folds to its question, and she answers it in the message box. */
 	answering?: boolean;
+	/**
+	 * Sparks's answer as it first suggested it, before her answer replaced or edited it: what the card shows again while
+	 * she changes her answer (prds/sparks.md, "Changing an answer"). Without it, `text`.
+	 */
+	suggested?: string;
 };
 
 /** Where a suggestion came from. */
@@ -149,6 +153,56 @@ type SparksReply = {
 /** One message in the conversation. Sparks's introduction comes first in every concept, outside this list. */
 type SparksMessage = SparksUserMessage | SparksReply;
 
+/** Changing her answer to a question card: what she answered, and what each choice does. */
+type AnswerChange = {
+	/** The quick reply she picked, if she picked one ("Yes, that's right", "Repeat purchases instead"). */
+	selected?: string;
+	/** Her own words, if she answered in them (typed after "Not quite", or an edit on the card). */
+	own?: string;
+	/** "Not quite": the card folds to its question, and she types her new answer in the message box. */
+	answering: boolean;
+	onReply: (reply: string) => void;
+	/** An edit on the card, saved: her new answer, in her words. */
+	onEdit: (text: string) => void;
+	/** "Keep my answer" (or Esc): nothing changes. */
+	onKeep: () => void;
+};
+
+/**
+ * The question she's changing her answer to, open again where it was asked (prds/sparks.md, "Changing an answer"):
+ * "Changing your answer" and "Keep my answer" above it, then its card as Sparks first asked it, Sparks's answer and its
+ * replies, the one she picked before with a check. After "Not quite", the card folds to its question while she types.
+ */
+function ChangingAnswer({ suggestion, replies, change }: { suggestion: SparksSuggestion; replies: string[]; change: AnswerChange }) {
+	return (
+		<div className='flex flex-col gap-2'>
+			<div className='flex items-center justify-between gap-3'>
+				<p className='min-w-0 text-sm text-muted-foreground'>
+					{change.own ? `Changing your answer: "${change.own}"` : "Changing your answer"}
+				</p>
+				{/* A link in the brand color, sm regular (like a direction card's "Show more", but regular). */}
+				<Button variant='link' className='h-auto shrink-0 p-0 text-sm font-normal' onClick={change.onKeep}>
+					Keep my answer
+				</Button>
+			</div>
+			{change.answering ? (
+				<AssistantMessage text={`**${suggestion.question}**`} />
+			) : (
+				<ClarificationCard
+					question={suggestion.question}
+					answer={suggestion.suggested ?? suggestion.text}
+					badge={suggestion.assumption ? assumptionBadge() : undefined}
+					source={suggestion.basis ? `Suggested by Sparks · from ${suggestion.basis.toLowerCase()}` : "Suggested by Sparks"}
+					replies={replies}
+					selectedReply={change.selected}
+					onReply={change.onReply}
+					onEdit={change.onEdit}
+				/>
+			)}
+		</div>
+	);
+}
+
 /**
  * A reply from Sparks. New, it shows Sparks thinking (ThinkingIndicator), then its parts one after the other: text
  * streams, a card Reveals. Already in the conversation when the concept opened, it shows whole.
@@ -160,14 +214,17 @@ function SparksReplyView({
 	onQuickReply,
 	onSuggestionEdit,
 	directionAction,
+	changing,
 }: {
 	reply: SparksReply;
 	animate: boolean;
 	showQuickReplies: boolean;
 	onQuickReply?: (text: string) => void;
 	onSuggestionEdit?: (part: string, text: string) => void;
-	/** A direction card's call to action ("Generate prototype"), the same as in the plan. */
+	/** A direction card's call to action ("Generate prototype", "Open prototype"). */
 	directionAction?: ReturnType<typeof directionActionFor>;
+	/** She's changing her answer to this reply's question: its card opens again (prds/sparks.md, "Changing an answer"). */
+	changing?: AnswerChange;
 }) {
 	const { prefersReducedMotion } = useMotionPreference();
 	const [thinking, setThinking] = React.useState(animate && Boolean(reply.thinking?.length));
@@ -239,6 +296,8 @@ function SparksReplyView({
 								)}
 								{part.text}
 							</p>
+						) : changing ? (
+							<ChangingAnswer suggestion={part.suggestion} replies={reply.quickReplies ?? []} change={changing} />
 						) : part.suggestion.confirmed || part.suggestion.answering ? (
 							// Answered, or "Not quite": the card folds to its question; her answer is (or goes) in her bubble.
 							<AssistantMessage text={`**${part.suggestion.question}**`} />
@@ -298,10 +357,22 @@ type SparksWorkspaceProps = {
 	 */
 	onAnswerCancel?: () => void;
 	/**
+	 * Changing an answer in Plan (prds/sparks.md, "Changing an answer"): her answers to Sparks's question cards show a
+	 * pencil, and the question opens again where it was asked. Called with the reply that asked it and her new answer: a
+	 * quick reply it offered (`own` false), or her own words, typed or edited on the card (`own` true). Picking the answer
+	 * she had changes nothing and isn't called. Without it, there's no pencil.
+	 */
+	onAnswerChange?: (replyId: string, answer: string, own: boolean) => void;
+	/**
 	 * The message box's "Initial prompt" (its "+" menu, sparks.ds "select-prompt-add"): the text it puts in the box, ready to
 	 * send or edit. Without it, the menu has no "Initial prompt".
 	 */
 	initialPrompt?: string;
+	/**
+	 * The "+" menu's "Add Plan", for the demo: fills Plan's conversation from her first message to the directions, as if
+	 * she'd answered every question, so the demo can start at the choice. Without it, the menu has no "Add Plan".
+	 */
+	onAddPlan?: () => void;
 	/** The "+" menu's "Add from library": opens the AutoPartsHUB home on "My library". */
 	onAddFromLibrary?: () => void;
 	/**
@@ -331,8 +402,8 @@ type SparksWorkspaceProps = {
 	onStepSelect?: (step: SparksStep) => void;
 	/**
 	 * What shows beside the conversation, e.g. the prototype in the Prototype step (prds/sparks-prototype.md, "Trying
-	 * it"). With it, the conversation narrows to a column on the left and this takes the rest of the width. On Plan once
-	 * Plan is done (a later step reached), the PlanDocument shows there unless this is given.
+	 * it"). With it, the conversation narrows to a column on the left and this takes the rest of the width. Plan has none:
+	 * it's the conversation, once it's done too (prds/sparks.md, "The finished plan").
 	 */
 	preview?: React.ReactNode;
 	/**
@@ -346,23 +417,8 @@ type SparksWorkspaceProps = {
 	 */
 	share?: Omit<SharePopoverProps, "children">;
 	/**
-	 * The plan's sections after Plan's (prds/sparks.md, "The finished plan"): what we built and where each later step
-	 * stands. Plan's come from what she approved in `messages`. The PlanDocument is Plan's panel once Plan is done.
-	 */
-	concept?: PlanSection[];
-	/**
-	 * Editing the PlanDocument (prds/sparks.md, "The finished plan"): her edits to Plan's four summaries and what saving one
-	 * does (`onEdit(part, text, before)`), and its versions, oldest first, with restoring. Without it, it's read only.
-	 */
-	planDocument?: PlanEditing & { versions: { id: string; name: string }[]; onRestore: (id: string) => void };
-	/**
-	 * The decisions after Plan's (prds/sparks.md, "The decision log"): Plan's come from `messages`. The workspace keeps
-	 * every entry it has seen, with when it first appeared, and shows them as "Decisions", last in the plan.
-	 */
-	decisions?: DecisionEntry[];
-	/**
 	 * The directions as paths in the prototype (prds/sparks-plan-compare.md, "Directions in the plan"): the ones
-	 * built, the one shown, and what the plan's "Choose this one", "Try this one too" and "Open its prototype" do.
+	 * built, the one shown, and what a direction card's "Generate prototype" and "Open prototype" do.
 	 */
 	paths?: DirectionPaths;
 	/**
@@ -388,8 +444,6 @@ type SparksWorkspaceProps = {
 /** The icon on a step's empty state, before Dana gets there. Product artwork. */
 const upcomingIcons = { prototype: MousePointerClick, validate: FlaskConical, review: Users } as const;
 
-/** The side panel's column (Comments): 480px wide in every step, 32px from the right edge, 24px from the bottom. */
-const sidePanelColumn = "flex w-[512px] min-h-0 shrink-0 flex-col pe-8 pb-6";
 
 /**
  * The header's outlined button, Share: Figma's Button Outlined lg · 36, its label alone (sparks.ds "Sparks Project",
@@ -463,16 +517,14 @@ function ConceptName({ name, onRename, onClose }: { name: string; onRename?: (na
 }
 
 /**
- * Sparks's first message in every concept (prds/sparks.md, "Sparks's introduction"): who it is and what she'll end up
- * with, where she starts (Plan, and what she'll define in it) and what follows, that she decides, and the question
- * that starts Plan. Product copy, not sample data.
+ * Sparks's first message in every concept (prds/sparks.md, "Sparks's introduction"): who it is, what she'll end up
+ * with and that she decides, then where she starts (Plan, and what she'll define in it) and what follows, and the
+ * question that starts Plan. Product copy, not sample data.
  */
 function sparksIntroduction(firstName: string) {
-	return `Hi ${firstName}, I'm Sparks. Together we'll turn your idea into a prototype you can test before anything gets built.
+	return `Hi ${firstName}, I'm Sparks. Together we'll turn your idea into a prototype you can test before anything gets built. I draft, you decide. Everything is saved as you go.
 
 We start with Plan: we'll define the problem, agree on what success looks like, and choose the direction to prototype. Then I'll build it, test it, and help you take it to the teams who decide.
-
-I draft, you decide. Everything is saved as you go.
 
 **What problem do you want to solve?**
 Describe it in your own words, the way you'd tell a colleague. Rough is fine.`;
@@ -491,7 +543,9 @@ function SparksWorkspace({
 	onSend,
 	onSuggestionEdit,
 	onAnswerCancel,
+	onAnswerChange,
 	initialPrompt,
+	onAddPlan,
 	onAddFromLibrary,
 	comments,
 	notifications,
@@ -499,9 +553,6 @@ function SparksWorkspace({
 	preview: previewProp,
 	composerContext,
 	share,
-	concept,
-	planDocument: planEditing,
-	decisions,
 	paths,
 	nextStepAction,
 	publish,
@@ -570,6 +621,14 @@ function SparksWorkspace({
 		else scrollRef.current?.scrollTo({ top: 0 });
 	}, [threadStep, threadLast]);
 
+	// A conversation that opens with history (a concept reopened, or "Add Plan") starts at its latest reply, where she
+	// left off, not at the introduction.
+	React.useLayoutEffect(() => {
+		const latest = threadLast ? itemRefs.current.get(threadLast.id) : undefined;
+		if (latest) scrollIntoViewSmoothly(latest, { reducedMotion: true, align: "start" });
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, []);
+
 	const last = messages[messages.length - 1];
 	const beforeLast = messages[messages.length - 2];
 	const lastIsNewReply = last?.from === "sparks" && !initialIds.has(last.id);
@@ -622,21 +681,63 @@ function SparksWorkspace({
 		const buttons = itemRefs.current.get(last.id)?.querySelectorAll("button") ?? [];
 		[...buttons].find((button) => notAnswers.has(button.textContent?.trim() ?? ""))?.focus();
 	}, [answering, last]);
-	// The finished plan and its sections (prds/sparks.md, "The finished plan"): what Plan shows once it's done.
-	// Edit mode: its parts are editable, and the conversation shows beside it; otherwise the plan is on its own.
-	const [editingPlan, setEditingPlan] = React.useState(false);
-	const logged = useDecisionLog([...planDecisions(messages, user.firstName), ...(decisions ?? [])]);
-	const sections: PlanSection[] = [
-		...planSections(messages, paths, planEditing ? { ...planEditing, editable: editingPlan } : undefined),
-		...(concept ?? []),
-		...(logged.length ? [{ id: "decisions", title: "Decisions", content: <DecisionLog decisions={logged} /> }] : []),
-	];
-	// A direction's call to action, on its card and in the PlanDocument alike.
+	// Changing an answer (prds/sparks.md, "Changing an answer"): her answer to a question card in Plan shows a pencil;
+	// selecting it opens the question again where it was asked, with her answer's bubble out of the way, until she picks
+	// a new answer or keeps hers. One at a time; selecting a step closes it.
+	const [changing, setChanging] = React.useState<{ answerId: string; replyId: string; answering: boolean }>();
+	React.useEffect(() => setChanging(undefined), [currentStep]);
+	/** The question card her message answers, if she can change that answer: the reply before it, answered. */
+	const changeableAsk = (index: number) => {
+		const message = messages[index];
+		const asked = messages[index - 1];
+		if (!onAnswerChange || message?.from !== "user" || asked?.from !== "sparks" || stepOf.get(message.id) !== "plan") return undefined;
+		if (notAnswers.has(message.text)) return undefined;
+		const part = asked.parts.find((p) => p.kind === "suggestion");
+		return part?.kind === "suggestion" && part.suggestion.confirmed ? { reply: asked, suggestion: part.suggestion } : undefined;
+	};
+	const changeIndex = changing ? messages.findIndex((m) => m.id === changing.answerId) : -1;
+	const changeAsk = changeIndex >= 0 ? changeableAsk(changeIndex) : undefined;
+	const changeAnswer = changeIndex >= 0 ? messages[changeIndex] : undefined;
+	// What she answered: a quick reply the question offered, or her own words.
+	const changeSelected =
+		changeAsk && changeAnswer?.from === "user" && changeAsk.reply.quickReplies?.includes(changeAnswer.text) ? changeAnswer.text : undefined;
+	const changeOwn = changeAsk && !changeSelected ? changeAsk.suggestion.text : undefined;
+	// Closing it gives focus back to the pencil she started from.
+	const closeChange = () => {
+		const id = changing?.answerId;
+		setChanging(undefined);
+		if (id) requestAnimationFrame(() => itemRefs.current.get(id)?.querySelector<HTMLButtonElement>("[data-change-answer]")?.focus());
+	};
+	const finishChange = (answer: string, own: boolean) => {
+		if (!changing) return;
+		const same = own ? answer.trim() === changeOwn?.trim() : answer === changeSelected;
+		if (!same) onAnswerChange?.(changing.replyId, own ? answer.trim() : answer, own);
+		closeChange();
+	};
+	const answerChange: AnswerChange | undefined = changing
+		? {
+				selected: changeSelected,
+				own: changeOwn,
+				answering: changing.answering,
+				onReply: (reply) =>
+					notAnswers.has(reply) ? setChanging({ ...changing, answering: true }) : finishChange(reply, false),
+				onEdit: (text) => finishChange(text, true),
+				onKeep: closeChange,
+			}
+		: undefined;
+	// "Not quite" while changing: the message box is ready for her new answer.
+	React.useEffect(() => {
+		if (changing?.answering) composerRef.current?.focus();
+	}, [changing?.answering]);
+
+	// A direction's call to action on its card.
 	const directionAction = directionActionFor(messages, paths);
 	// Comments: the reviewers' feedback and her comments on the prototype, 480px on the right in every step (DESIGN.md →
 	// "Side panels share one frame"); with no preview, the conversation stays centered in the rest. It opens only from
 	// "Comments", and takes focus.
 	const [commentsOpen, setCommentsOpen] = React.useState(false);
+	// Its width: 380px to start, dragged from its left edge between 300px and half the window; kept while it's closed.
+	const [commentsWidth, setCommentsWidth] = useSidePanelWidth();
 	const commentsButtonRef = React.useRef<HTMLButtonElement>(null);
 	const closeComments = () => {
 		setCommentsOpen(false);
@@ -648,38 +749,8 @@ function SparksWorkspace({
 	React.useEffect(() => setPeekStep(undefined), [currentStep]);
 	const peeked = sparksSteps.find((step) => step.id === peekStep);
 	const currentLabel = sparksSteps.find((step) => step.id === currentStep)?.label ?? "";
-	// Plan is done once a later step is reached: from then on, Plan shows the finished plan, on its own; the conversation
-	// shows only in edit mode ("Edit plan"), or when Sparks says something there (an edit's offer, "Build it?" for another
-	// path, going back to the choice). Selecting a step leaves edit mode.
-	const planDone = reachedIndex > 0;
-	React.useEffect(() => setEditingPlan(false), [currentStep]);
-	const repliedTo = React.useRef(last?.id);
-	React.useEffect(() => {
-		if (!last || last.id === repliedTo.current) return;
-		repliedTo.current = last.id;
-		if (currentStep === "plan" && planDone && last.from === "sparks") setEditingPlan(true);
-	}, [last, currentStep, planDone]);
-	// Turning edit mode on brings the conversation's latest message into view.
-	const editPlan = (on: boolean) => {
-		setEditingPlan(on);
-		if (on)
-			requestAnimationFrame(() => {
-				const latest = itemRefs.current.get(threadLast?.id ?? "");
-				if (latest) scrollIntoViewSmoothly(latest, { reducedMotion: Boolean(prefersReducedMotion), align: "nearest" });
-			});
-	};
-	const planView =
-		currentStep === "plan" && planDone ? (
-			<PlanDocument
-				sections={sections}
-				versions={planEditing?.versions}
-				onRestore={planEditing?.onRestore}
-				editing={editingPlan}
-				onEditingChange={planEditing ? editPlan : undefined}
-			/>
-		) : undefined;
-	// The finished plan on its own, or a step not reached yet (its empty state): no conversation, no message box.
-	const conversationHidden = Boolean(peeked?.upcoming) || (Boolean(planView) && !previewProp && !editingPlan);
+	// A step not reached yet (its empty state): no conversation, no message box.
+	const conversationHidden = Boolean(peeked?.upcoming);
 	const preview = peeked?.upcoming ? (
 		<section aria-label={peeked.label} className='flex min-h-0 flex-1 flex-col rounded-card bg-background-subtle p-4'>
 			<EmptyState
@@ -707,7 +778,7 @@ function SparksWorkspace({
 			/>
 		</section>
 	) : (
-		(previewProp ?? planView)
+		previewProp
 	);
 	const centered = !preview;
 
@@ -720,7 +791,10 @@ function SparksWorkspace({
 		// The screen's height: the conversation scrolls between the header and the message box.
 		// sparks.ds/Sparks "Sparks Project": white down to the middle, then a soft gray at the bottom (DESIGN.md → "Sparks
 		// Project background").
-		<div className='flex h-screen flex-col bg-background bg-linear-to-b from-background from-50% to-[color-mix(in_srgb,var(--background-subtle)_50%,var(--background))] text-foreground'>
+		// The Comments panel is a column of its own on the right, the screen's full height, beside the header too (Sparks
+		// "Sparks Project", 63:12460, "Plan summary"); everything else is in the column on its left.
+		<div className='flex h-screen bg-background bg-linear-to-b from-background from-50% to-[color-mix(in_srgb,var(--background-subtle)_50%,var(--background))] text-foreground'>
+		<div className='flex min-w-0 flex-1 flex-col'>
 			{/* sparks.ds "header-autopartshub" → "Sparks Project" (32:1145): the concept's name alone on the left (xl semibold,
 			    its menu on the chevron), the steps centered, the actions on the right. No logo, no back button, no avatar
 			    (DESIGN.md → "Sparks Project header"). */}
@@ -750,9 +824,9 @@ function SparksWorkspace({
 					</StepNav>
 				}
 			>
-				{/* Figma "Right" (sparks.ds "Sparks Project", 32:1145): Comments, notifications, then Share. No "Blueprint": the
-				    PlanDocument is Plan's panel once Plan is done (prds/sparks.md, "The finished plan"). No close button: "All ideas"
-				    goes back to the start page. */}
+				{/* Figma "Right" (sparks.ds "Sparks Project", 32:1145): Comments, notifications, then Share. No "Blueprint": Plan
+				    stays the conversation once it's done (prds/sparks.md, "The finished plan"). No close button: "All ideas" goes
+				    back to the start page. */}
 				<HeaderIconButton
 					ref={commentsButtonRef}
 					label='Comments'
@@ -814,7 +888,7 @@ function SparksWorkspace({
 			    the scrollbar sits at the page's edge and the text scrolls up to the header. */}
 			{/* With a preview (the prototype), the conversation is a 480px column on the left and the preview takes the rest. */}
 			<main className='flex min-h-0 flex-1'>
-			{/* Hidden, not removed, beside the finished plan: replies keep coming in and the scroll position stays. */}
+			{/* Hidden, not removed, while a step not reached yet shows its empty state: the scroll position stays. */}
 			{/* Beside a preview, the narrow column's text is 15px instead of 16px: messages, cards and the message box (every
 			    `text-base` inside it; DESIGN.md → "The conversation beside a preview is 15px"). */}
 			<div
@@ -835,7 +909,7 @@ function SparksWorkspace({
 							) : null}
 							{/* Only this step's conversation; the index stays the whole conversation's (quick replies only on the latest). */}
 							{messages.map((message, index) =>
-								stepOf.get(message.id) !== threadStep ? null : message.from === "user" ? (
+								stepOf.get(message.id) !== threadStep || message.id === changing?.answerId ? null : message.from === "user" ? (
 									// Dana's messages sit on the right (UserMessage caps itself at 80% of the column).
 									// 32px below it, as below Sparks's replies (the list's 16px gap plus mb-4).
 									<li
@@ -844,7 +918,38 @@ function SparksWorkspace({
 										className={cn("mb-4 flex justify-end last:mb-0", centered && "ps-16")}
 									>
 										{/* Centered, her messages keep 64px clear on the left (664px at most), as Sparks's replies do on the right. Not UserMessage's 80%. */}
-										<UserMessage className={preview ? undefined : "max-w-full"}>{userMessageText(messages, index)}</UserMessage>
+										{(() => {
+											const ask = changeableAsk(index);
+											const text = userMessageText(messages, index);
+											if (!ask) return <UserMessage className={preview ? undefined : "max-w-full"}>{text}</UserMessage>;
+											// Her answer to a question card: the pencil after it, inside the bubble, on its last line (a long
+											// answer wraps), changes it. 20px, centered on the 24px line, so the bubble keeps its height.
+											return (
+												<UserMessage className={cn("flex items-end gap-2", preview ? undefined : "max-w-full")}>
+													<span className='min-w-0'>{text}</span>
+													<Tooltip>
+														<TooltipTrigger asChild>
+															<button
+																type='button'
+																data-change-answer
+																aria-label={`Change answer: ${ask.suggestion.question}`}
+																onClick={() => {
+																	setChanging({ answerId: message.id, replyId: ask.reply.id, answering: false });
+																	setDraft("");
+																}}
+																className='-me-1 mb-0.5 flex size-5 shrink-0 items-center justify-center rounded-sm text-icon-muted outline-none transition-colors hover:text-icon focus-visible:ring-[3px] focus-visible:ring-ring/50 motion-reduce:transition-none [&_svg]:size-4'
+															>
+																<Pencil aria-hidden />
+															</button>
+														</TooltipTrigger>
+														{/* Above the pencil, not below like the other icon buttons (DESIGN.md → "Changing an answer"). */}
+														<TooltipContent side='top' sideOffset={6}>
+															Change answer
+														</TooltipContent>
+													</Tooltip>
+												</UserMessage>
+											);
+										})()}
 									</li>
 								) : (
 									// Sparks's replies keep 32px from what follows them, like the introduction.
@@ -867,12 +972,14 @@ function SparksWorkspace({
 										<SparksReplyView
 											reply={message}
 											animate={!initialIds.has(message.id) && !settled.current.has(message.id)}
-											showQuickReplies={index === messages.length - 1}
+											// While she changes an answer, only that question's replies show (and take Enter).
+											showQuickReplies={index === messages.length - 1 && !changing}
 											onQuickReply={send}
 											onSuggestionEdit={
 												onSuggestionEdit ? (part, text) => onSuggestionEdit(message.id, part, text) : undefined
 											}
 											directionAction={directionAction}
+											changing={message.id === changing?.replyId ? answerChange : undefined}
 										/>
 									</li>
 								),
@@ -901,19 +1008,29 @@ function SparksWorkspace({
 					<PromptComposer
 						ref={composerRef}
 						aria-label='Message Sparks'
-						placeholder={composerContext?.placeholder ?? (answering ? "Type your answer…" : "Message Sparks…")}
+						placeholder={
+							composerContext?.placeholder ??
+							(changing ? "Type your new answer…" : answering ? "Type your answer…" : "Message Sparks…")
+						}
 						// Controlled, so "Initial prompt" can fill it; it clears on send and on Esc.
 						value={draft}
 						onChange={(event) => setDraft(event.target.value)}
-						suggestion={offeredAnswer}
+						suggestion={changing?.answering ? (changeAsk?.suggestion.suggested ?? changeAsk?.suggestion.text) : offeredAnswer}
 						onSuggestionAccept={setDraft}
 						onCancel={
-							answering && onAnswerCancel
+							// Changing an answer: Esc after "Not quite" opens its card again; otherwise she keeps her answer.
+							changing
 								? () => {
 										setDraft("");
-										cancelAnswer();
+										if (changing.answering) setChanging({ ...changing, answering: false });
+										else closeChange();
 									}
-								: undefined
+								: answering && onAnswerCancel
+									? () => {
+											setDraft("");
+											cancelAnswer();
+										}
+									: undefined
 						}
 						// sparks.ds "select-prompt-add" (77:6726): attach, add from the library, connect, and the demo's initial prompt.
 						addMenu={
@@ -931,14 +1048,19 @@ function SparksWorkspace({
 									<Zap aria-hidden />
 									Connect
 								</DropdownMenuItem>
+								{/* The demo's shortcuts, after a line: the first message, ready to send, and the whole of Plan up to the choice. */}
+								{initialPrompt || onAddPlan ? <DropdownMenuSeparator /> : null}
 								{initialPrompt ? (
-									<>
-										<DropdownMenuSeparator />
-										<DropdownMenuItem onSelect={() => fillDraft(initialPrompt)}>
-											<MessageCircle aria-hidden />
-											Initial prompt
-										</DropdownMenuItem>
-									</>
+									<DropdownMenuItem onSelect={() => fillDraft(initialPrompt)}>
+										<MessageCircle aria-hidden />
+										Initial prompt
+									</DropdownMenuItem>
+								) : null}
+								{onAddPlan ? (
+									<DropdownMenuItem onSelect={onAddPlan}>
+										<ListChecks aria-hidden />
+										Add Plan
+									</DropdownMenuItem>
 								) : null}
 							</>
 						}
@@ -946,14 +1068,18 @@ function SparksWorkspace({
 						// A new concept: the box is ready for her answer to the introduction's question.
 						autoFocus={messages.length === 0}
 						onSubmit={(text) => {
-							send(text);
+							// While she changes an answer, what she types is her new answer, in her words.
+							if (changing) finishChange(text, true);
+							else send(text);
 							setDraft("");
 						}}
 					/>
 				</div>
 			</div>
 			{preview ? <div className={cn("flex min-h-0 min-w-0 flex-1 flex-col pr-8 pb-6", conversationHidden && "ps-8")}>{preview}</div> : null}
-			{/* The Comments panel, on the right of whatever's open; it slides in (fades, with reduced motion). */}
+			</main>
+		</div>
+			{/* The Comments panel, on the right edge, 480px, the screen's full height; it slides in (fades, with reduced motion). */}
 			<AnimatePresence initial={false}>
 				{commentsOpen ? (
 					<motion.aside
@@ -963,8 +1089,10 @@ function SparksWorkspace({
 						initial='initial'
 						animate='animate'
 						exit='exit'
-						className={sidePanelColumn}
+						className='relative flex h-full shrink-0 flex-col'
+						style={{ width: commentsWidth }}
 					>
+						<SidePanelResizer width={commentsWidth} onWidthChange={setCommentsWidth} label='Resize comments' />
 						<CommentsPanel
 							reviewers={comments?.reviewers ?? []}
 							unread={comments?.unread}
@@ -979,7 +1107,6 @@ function SparksWorkspace({
 					</motion.aside>
 				) : null}
 			</AnimatePresence>
-			</main>
 		</div>
 	);
 }

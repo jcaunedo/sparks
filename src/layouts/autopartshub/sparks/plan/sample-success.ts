@@ -313,7 +313,7 @@ export function sampleSuccessSummaryReply(answer: SuccessAnswer, success: Succes
 			{ kind: "success", success },
 			{
 				kind: "text",
-				text: "From here on, every idea gets checked against this.",
+				text: "From here on, every idea gets checked against this goal.",
 			},
 		],
 		quickReplies: sampleSuccessSummaryReplies,

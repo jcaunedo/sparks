@@ -1,7 +1,7 @@
 <!--
 Created: Nov 20, 2026
 Created by: Julio Caunedo
-Last updated: Nov 22, 2026 (the second tab is "My library" again; ~~the tabs are "Apps" and "Library", without "My"~~; selecting a notification opens its concept; notifications open a popover, with Unread and All; Sparks's "Add from library" opens the home on "My library"; the "Knowledge" tab is named "My library"; a notifications button in the header, before the profile photo; Cards open their app in a new tab)
+Last updated: Nov 23, 2026 (the home has one tab too: "Add from library" goes back to it; an app's card goes to its tab when it's already open, instead of opening another; the second tab is "My library" again; ~~the tabs are "Apps" and "Library", without "My"~~; selecting a notification opens its concept; notifications open a popover, with Unread and All; Sparks's "Add from library" opens the home on "My library"; the "Knowledge" tab is named "My library"; a notifications button in the header, before the profile photo; Cards open their app in a new tab)
 Scope: the AutoPartsHUB home screen (`AutoPartsHubHome`) and the app frame it sits in (`AutoPartsHubShell`): header, welcome, tabs and the user's apps.
 Purpose: defines what a signed-in user sees and can do on AutoPartsHUB's first screen, and records what's still undecided for the tabs that aren't designed yet.
 -->
@@ -68,7 +68,7 @@ One card per app the user has access to. Each card shows the app's logo and a on
 | Sales | "Track sales performance, revenue, and growth opportunities." |
 | Care | "Manage customer support, service quality, and escalations." |
 
-- ~~Selecting a card opens that app. Screen readers announce it as "Open {app name}".~~ ✅ **Resolved:** selecting a card opens that app in a new tab, so home stays open in this one. Screen readers announce it as "Open {app name} in a new tab".
+- ~~Selecting a card opens that app. Screen readers announce it as "Open {app name}".~~ ✅ **Resolved:** selecting a card opens that app in a new tab, so home stays open in this one. ~~Screen readers announce it as "Open {app name} in a new tab".~~ ✅ **Resolved:** each app has one tab: when it's already open, selecting its card again goes to that tab, as she left it (not reloaded), instead of opening another; once she closes it, the card opens a new one. Screen readers announce it as "Open {app name} in its own tab". Why: a second Sparks tab split her work in two, and she lost track of which one held her idea. ✅ **Resolved:** the home has one tab too: Sparks's "Add from library" goes back to the home's tab when it's open, on "My library", instead of opening another.
 - Cards fill the row left to right: three per row on desktop, two on tablet, one on phones.
 
 ⚠️ **Assumption:** the apps show in the order above, which is Figma's. Also in Open Questions.
@@ -114,12 +114,12 @@ The header keeps the full logo and the photo. The welcome lines wrap, the three 
 
 - The welcome line is the page's main heading.
 - The tabs follow the standard tab pattern: arrow keys move between them, and the selected tab's panel follows.
-- Each card is a single link named "Open {app name} in a new tab". The logo inside it is part of that link, not a separate image to announce.
+- Each card is a single link named ~~"Open {app name} in a new tab"~~ "Open {app name} in its own tab". The logo inside it is part of that link, not a separate image to announce.
 
 ## Acceptance Criteria
 
 - Given a signed-in user named Dana, when home opens, then it reads "Welcome back, Dana" and "Apps" is selected.
-- Each of the user's apps shows as a card with its logo and description; selecting a card opens that app in a new tab, and home stays open.
+- Each of the user's apps shows as a card with its logo and description; selecting a card opens that app in a new tab, and home stays open; selecting it again while that tab is open goes to it instead of opening another.
 - A user with no profile photo sees their first initial in the header, in the same color on every visit.
 - Selecting "Knowledge" shows "Nothing in Knowledge yet" and "When knowledge is added, it'll show up here."; selecting "Connections" shows "No connections yet" and "When connections are added, they'll show up here."; selecting "Apps" brings the cards back.
 - Arrow keys move between the tabs.

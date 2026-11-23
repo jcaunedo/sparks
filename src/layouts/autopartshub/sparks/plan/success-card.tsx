@@ -62,9 +62,10 @@ function successSummary(success: SuccessDraft) {
 		`- **Must not get worse:** ${inWords(success.notWorse)}`,
 		`- **Not part of this:** ${inWords(success.notInScope)}`,
 	].filter(Boolean);
+	// The goal named as one ("Goal:", "reached the goal"), so the demo reads plainly: what we're after, then how we'll know.
 	const text = [
-		inWords(success.goal),
-		"We'll know it worked by:",
+		`**Goal:** ${inWords(success.goal)}`,
+		"We'll know we've reached the goal by:",
 		lines.join("\n"),
 		success.assumptionChecks.length ? "How we'll check what we're assuming:" : "",
 		success.assumptionChecks.map(({ assumption, checkedBy }) => `- ${assumption} ${checkedBy}`).join("\n"),

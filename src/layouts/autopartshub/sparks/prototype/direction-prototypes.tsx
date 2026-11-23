@@ -11,7 +11,9 @@ import {
 	type PrototypeProps,
 } from "./more-prototypes";
 import type { PrototypeAudience } from "./prototype-panel";
-import type { PrototypeContents, PrototypeSummary } from "./prototype-section";
+
+/** What a prototype covers: for each audience and device, its screens and the steps of the journey each covers. */
+type PrototypeContents = { audience: string; device: string; screens: { name: string; covers: number[] }[] };
 
 /**
  * What Sparks builds for each direction (prds/sparks-prototype.md, "What Sparks builds"), by the direction's id: the
@@ -138,32 +140,4 @@ const directionPrototypes: Record<string, DirectionPrototype> = {
 	},
 };
 
-/** What AutoParts Co. doesn't have yet, from the changes, with the source. */
-const needsFor = (changes: FitCheckChanges) =>
-	changes.liveStock ? ["Stock at the nearest store, in real time: AutoParts Co.'s stores don't report it today (engineering context)."] : [];
-
-/** What departs from the design system, from the changes Dana kept. */
-const departsFor = (changes: FitCheckChanges) =>
-	changes.lightText ? ["Light gray secondary text: it fails the design system's contrast standard. You kept it."] : [];
-
-/** The Prototype section of the concept, for a direction's prototype at its current version. */
-function prototypeSummaryFor(
-	directionId: string,
-	howItWorks: string[],
-	versions: { id: string; name: string; changes: FitCheckChanges }[],
-): PrototypeSummary {
-	const built = directionPrototypes[directionId] ?? directionPrototypes["fit-check"];
-	const current = versions[versions.length - 1];
-	return {
-		version: { number: versions.length, name: current.name },
-		howItWorks,
-		contents: built.contents,
-		pretend: built.pretend(current.changes),
-		sampleData: built.sampleData,
-		needs: needsFor(current.changes),
-		departs: departsFor(current.changes),
-		versions: versions.map(({ id, name }) => ({ id, name })),
-	};
-}
-
-export { directionPrototypes, prototypeSummaryFor, type DirectionPrototype };
+export { directionPrototypes, type DirectionPrototype };

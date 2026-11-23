@@ -1,7 +1,7 @@
 <!--
 Created: Nov 21, 2026
 Created by: Julio Caunedo
-Last updated: Nov 22, 2026 (the step "Validate" renamed "Evaluate"; back at the choice, she picks on the direction cards, not quick replies; the finished plan, no longer "Blueprint"; the Blueprint no longer repeats the evaluation: one line in "Where it stands", with "Open"; each path in the prototype has its own runs; the spec panel is "Blueprint"; the Evaluation section in the Concept panel built; fixes built for every direction; the evaluation follows the chosen direction; "Go back to the choice" when the read is "Needs another look"; "Fix this in the prototype" only for fixes the prototype can make; "Go ahead to Review" opens Review; built as a reference layout: the plan, the run beside the conversation, the results, fixing in the prototype and running again, and the go-ahead; Evaluate starts from "Yes, evaluate it", not a button; Example range reaches the target (35–50%); what "reaches" means; counts aligned; "Needs a check")
+Last updated: Nov 23, 2026 (the plan has no "Where it stands" line for Evaluate: Plan stays the conversation; the step "Validate" renamed "Evaluate"; back at the choice, she picks on the direction cards, not quick replies; the finished plan, no longer "Blueprint"; the Blueprint no longer repeats the evaluation: one line in "Where it stands", with "Open"; each path in the prototype has its own runs; the spec panel is "Blueprint"; the Evaluation section in the Concept panel built; fixes built for every direction; the evaluation follows the chosen direction; "Go back to the choice" when the read is "Needs another look"; "Fix this in the prototype" only for fixes the prototype can make; "Go ahead to Review" opens Review; built as a reference layout: the plan, the run beside the conversation, the results, fixing in the prototype and running again, and the go-ahead; Evaluate starts from "Yes, evaluate it", not a button; Example range reaches the target (35–50%); what "reaches" means; counts aligned; "Needs a check")
 Scope: the Evaluate step of a Sparks concept, the third of four (Plan, Prototype, Evaluate, Review): the scenario-based AI evaluation (scenarios worked through the prototype, and checks against business data, previous experiments, engineering context and the design system), the findings, the evidence status of the hypothesis, Dana's go-ahead, and the Evaluation section of the concept.
 Purpose: defines how Dana learns, on her own and in minutes, what could go wrong with her concept and whether it can be built, before anyone else sees it, and how the evaluation stays honest about what an AI evaluation can and can't show.
 -->
@@ -182,7 +182,7 @@ When Dana has read the results, Sparks asks: "Do you want to take this to review
 
 ## The Evaluation section
 
-What the step adds to the concept, shown in Evaluate's panel beside the conversation; the plan has one line for it in "Where it stands" ([sparks.md](sparks.md), "The finished plan"):
+What the step adds to the concept, shown in Evaluate's panel beside the conversation~~; the plan has one line for it in "Where it stands" ([sparks.md](sparks.md), "The finished plan")~~ (Plan stays the conversation, with no "Where it stands": [sparks.md](sparks.md), "The finished plan"):
 
 | Part | Holds | Needed to finish |
 | --- | --- | --- |
@@ -211,7 +211,7 @@ What the step adds to the concept, shown in Evaluate's panel beside the conversa
 
 How it shows in the plan, as built ("Where it stands" → Evaluate, once Evaluate is reached): "Not run yet.", "Run 2 on version 3, running.", "Run 2 on version 3, stopped.", "Run 2 on version 3: Ready for review. Simulation supports hypothesis." (the last run's read and its evidence status), or "Skipped: the hypothesis isn't tested."; "Open" goes to Evaluate, where the full evaluation is.
 
-✅ **Resolved:** the plan no longer repeats the evaluation; it has one line on where Evaluate stands, with "Open". Why: the evaluation has its own panel in Evaluate, and the plan keeps the spec ([sparks.md](sparks.md), "The finished plan").
+✅ **Resolved:** the plan no longer repeats the evaluation~~; it has one line on where Evaluate stands, with "Open"~~ (and no "Where it stands": Plan stays the conversation). Why: the evaluation has its own panel in Evaluate, and the plan keeps the spec ([sparks.md](sparks.md), "The finished plan").
 
 ⚠️ **Gap:** her note with the go-ahead isn't built.
 

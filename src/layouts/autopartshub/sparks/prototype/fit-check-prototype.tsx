@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Check, ChevronLeft, CircleHelp, Search, ShoppingCart, TriangleAlert, X } from "lucide-react";
+import { Check, ChevronLeft, CircleHelp, Search, ShoppingCart, X } from "lucide-react";
 
 import { AutoPartsLogo } from "@/components/brand/autoparts-logo";
 import { Badge } from "@/components/data-display/badge";
@@ -534,8 +534,8 @@ function StaffLookup({ data, readyScreens }: { data: FitCheckData; readyScreens:
 type PrototypeViewProps = Pick<FitCheckPrototypeProps, "changes" | "pointing" | "pointedAt" | "onPoint" | "onTextChange">;
 
 /**
- * The frame every prototype's screens sit in: pointing (a click or Enter selects instead of using), what she can type
- * over, and the line that says nothing is real.
+ * The frame every prototype's screens sit in: pointing (a click or Enter selects instead of using) and what she can
+ * type over. The line that says nothing is real is outside the device, under it (`PrototypePanel`).
  */
 function PrototypeFrame({ changes, pointing, pointedAt, onPoint, onTextChange, children }: PrototypeViewProps & { children: React.ReactNode }) {
 	// Pointing: a click or Enter on a pointable element selects it instead of using it (prds/sparks-prototype.md,
@@ -561,11 +561,6 @@ function PrototypeFrame({ changes, pointing, pointedAt, onPoint, onTextChange, c
 			)}
 		>
 			{children}
-			{/* So nothing reads as real. */}
-			<p className='mt-auto flex items-center gap-1.5 border-t border-border px-4 py-2 text-xs text-muted-foreground'>
-				<TriangleAlert className='size-3.5' aria-hidden />
-				Prototype: made-up data, nothing is real.
-			</p>
 		</div>
 		</ViewContext.Provider>
 	);

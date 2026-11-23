@@ -1,5 +1,5 @@
 import * as React from "react";
-import { CornerDownLeft } from "lucide-react";
+import { Check, CornerDownLeft } from "lucide-react";
 
 import { Button } from "@/components/buttons/button";
 import { useEnterShortcut } from "@/lib/hooks/use-enter-shortcut";
@@ -15,6 +15,11 @@ type QuickRepliesProps = Omit<React.ComponentProps<"div">, "children"> & {
 	 * message box. On by default; turn it off when another set of replies on the screen has it.
 	 */
 	enter?: boolean;
+	/**
+	 * The reply picked before, while the user changes an answer: it shows a check after its label (a 16px `Check` in
+	 * `text-icon-muted`) and `aria-pressed`. Picking it again keeps that answer.
+	 */
+	selected?: string;
 };
 
 /**
@@ -22,13 +27,14 @@ type QuickRepliesProps = Omit<React.ComponentProps<"div">, "children"> & {
  * radius/button/lg, shadow-xs, 10px apart, on the right. The first reply (the "continue") is last, at the right edge, with
  * the ↵ key after its label; the order on screen is the order in the page, so Tab follows it.
  */
-function QuickReplies({ replies, onReply, enter = true, className, ...props }: QuickRepliesProps) {
+function QuickReplies({ replies, onReply, enter = true, selected, className, ...props }: QuickRepliesProps) {
 	const main = replies[0];
 	useEnterShortcut(enter && main !== undefined && onReply ? () => onReply(main) : undefined);
 	return (
 		<div data-slot='quick-replies' className={cn("flex w-full flex-wrap justify-end gap-2.5", className)} {...props}>
 			{[...replies].reverse().map((reply) => {
 				const isMain = enter && reply === main;
+				const isSelected = selected !== undefined && reply === selected;
 				return (
 					<Button
 						key={reply}
@@ -36,9 +42,11 @@ function QuickReplies({ replies, onReply, enter = true, className, ...props }: Q
 						// The main reply: the label's 14px on the left, the key's 10px on the right (Figma: 8px padding, the icon's 2px).
 						className={cn("rounded-button-lg px-3.5 text-sm font-semibold text-foreground shadow-xs", isMain && "pe-2.5")}
 						aria-keyshortcuts={isMain ? "Enter" : undefined}
+						aria-pressed={selected !== undefined ? isSelected : undefined}
 						onClick={() => onReply?.(reply)}
 					>
 						{reply}
+						{isSelected ? <Check aria-hidden className='text-icon-muted' /> : null}
 						{isMain ? <CornerDownLeft aria-hidden /> : null}
 					</Button>
 				);

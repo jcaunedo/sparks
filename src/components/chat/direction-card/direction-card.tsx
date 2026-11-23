@@ -1,9 +1,10 @@
 import * as React from "react";
 import { cva, type VariantProps } from "class-variance-authority";
-import { ChevronDown, MapPin } from "lucide-react";
+import { ChevronDown, ChevronsDownUp, ChevronsUpDown, MapPin } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 
 import { Button } from "@/components/buttons/button";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/overlays/tooltip";
 import { Typography } from "@/components/typography/typography";
 import { expandVariants, useExpandClip, useMotionPreference } from "@/lib/motion";
 import { cn } from "@/lib/utils";
@@ -68,7 +69,8 @@ function Line({ label, content }: DirectionCardLine) {
 /**
  * One way to solve a problem, as the AI assistant proposes it in the conversation (sparks.ds "direction-card", node
  * 89:151: State=Collapsed and State=Expanded): its name and badges, description, where it changes things, its ratings
- * and the lines always shown; the details one select away ("Show more"); and its action, full width at the bottom.
+ * and the lines always shown; the details one select away ("Show more", or anywhere on the header, with the chevrons on the
+ * right of the title); and its action, full width at the bottom.
  */
 function DirectionCard({
 	title,
@@ -89,6 +91,16 @@ function DirectionCard({
 	const { prefersReducedMotion } = useMotionPreference();
 	const clip = useExpandClip();
 	const detailsId = React.useId();
+	const expandable = details.length > 0;
+	const toggle = () => setOpen((value) => !value);
+	const toggleLabel = open ? "Show less" : "Show more";
+
+	// The whole header opens and closes the details, like "Show more"; a click on a link or button inside it (a badge's
+	// popover, the chevrons) does its own thing. Keyboard and screen readers use the chevrons button, which says the state.
+	const onHeaderClick = (event: React.MouseEvent<HTMLElement>) => {
+		if (!expandable || (event.target as HTMLElement).closest("a, button, [role='button']")) return;
+		toggle();
+	};
 
 	return (
 		<section
@@ -98,14 +110,39 @@ function DirectionCard({
 			className={cn(directionCardVariants({ emphasized, className }))}
 			{...props}
 		>
-			<header className='flex flex-col gap-1'>
-				{/* Figma "Title": the number and name on the left, the badges on the right of the same line; 4px more below it. */}
+			<header className={cn("group/header flex flex-col gap-1", expandable && "cursor-pointer")} onClick={onHeaderClick}>
+				{/* Figma "Title": the number and name on the left, the badges and the chevrons on the right of the same line; 4px more below it. */}
 				<div className='flex items-start gap-3 pb-1'>
 					<Typography as='h3' size='lg' weight='semibold' className='min-w-0 flex-1 text-foreground-prominent'>
 						{number ? `${number}. ` : null}
 						{title}
 					</Typography>
-					{badges ? <div className='flex shrink-0 flex-wrap items-start justify-end gap-2 pt-0.5'>{badges}</div> : null}
+					{/* Figma "Labels": the badges, then the 20px chevrons (up-down closed, down-up open), 8px apart: foreground-subtle,
+					the icon color while the header is hovered. */}
+					{badges || expandable ? (
+						<div className='flex shrink-0 flex-wrap items-center justify-end gap-2 pt-0.5'>
+							{badges}
+							{expandable ? (
+								<Tooltip>
+									<TooltipTrigger asChild>
+										<button
+											type='button'
+											aria-expanded={open}
+											aria-controls={detailsId}
+											aria-label={`${toggleLabel}: ${title}`}
+											onClick={toggle}
+											className='rounded-sm text-foreground-subtle outline-none transition-colors group-hover/header:text-icon focus-visible:text-icon focus-visible:ring-[3px] focus-visible:ring-ring/50 motion-reduce:transition-none'
+										>
+											{open ? <ChevronsDownUp aria-hidden className='size-5' /> : <ChevronsUpDown aria-hidden className='size-5' />}
+										</button>
+									</TooltipTrigger>
+									<TooltipContent side='bottom' sideOffset={6}>
+										{toggleLabel}
+									</TooltipContent>
+								</Tooltip>
+							) : null}
+						</div>
+					) : null}
 				</div>
 				<p className='text-base text-foreground'>{description}</p>
 				{/* Figma "Where": a 14px map pin and the text in colors/decorative/decorative-1. */}
@@ -161,15 +198,15 @@ function DirectionCard({
 						</AnimatePresence>
 					</div>
 					{/* "Show more" / "Show less": sm medium in the brand color, a 16px chevron 4px after it. */}
-					{details.length ? (
+					{expandable ? (
 						<Button
 							variant='link'
 							aria-expanded={open}
 							aria-controls={detailsId}
-							onClick={() => setOpen((value) => !value)}
+							onClick={toggle}
 							className='h-auto w-fit gap-1 p-0 text-sm font-medium [&_svg]:size-4'
 						>
-							{open ? "Show less" : "Show more"}
+							{toggleLabel}
 							<ChevronDown aria-hidden className={cn("transition-transform motion-reduce:transition-none", open && "rotate-180")} />
 						</Button>
 					) : null}

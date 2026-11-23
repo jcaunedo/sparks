@@ -1,5 +1,5 @@
 import * as React from "react";
-import { ArrowUp, CircleCheck, RotateCcw, Trash2 } from "lucide-react";
+import { ArrowUp, AtSign, CircleCheck, RotateCcw, Trash2 } from "lucide-react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/data-display/avatar";
 import { Button } from "@/components/buttons/button";
@@ -7,6 +7,8 @@ import { Popover, PopoverAnchor, PopoverContent, PopoverTrigger } from "@/compon
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/overlays/tooltip";
 import { formatRelativeDate } from "@/lib/relative-date";
 import { cn } from "@/lib/utils";
+
+import { handlePeopleKeys, matchPeople, PeopleList, type PeopleOption } from "../shared/people-list";
 
 /*
  * Comments on the prototype (prds/sparks-prototype.md, "Commenting on it"): with "Add comment" on, a click on the
@@ -16,8 +18,14 @@ import { cn } from "@/lib/utils";
 /** Who wrote it: name and photo, and for a reviewer their team ("UX team"), shown after the name. */
 type PrototypeCommentAuthor = { name: string; avatarSrc?: string; role?: string };
 
+/**
+ * Someone who can be tagged in a comment with "@" (prds/sparks-prototype.md, "Commenting on it"): a person, with their
+ * team, or a whole department.
+ */
+type CommentMention = PeopleOption;
+
 /** A reply in a comment's thread. */
-type PrototypeCommentReply = { id: string; text: string; createdAt: string; author: PrototypeCommentAuthor };
+type PrototypeCommentReply = { id: string; text: string; createdAt: string; author: PrototypeCommentAuthor; mentions?: CommentMention[] };
 
 /**
  * Where a comment sits: an element she can point at (`point`, so the pin comes back when its screen does), or else the
@@ -36,6 +44,8 @@ type PrototypeComment = CommentAnchor & {
 	text: string;
 	createdAt: string;
 	author: PrototypeCommentAuthor;
+	/** Who it tags ("@Priya Shah", "@Catalog"): shown in the brand color in the text. */
+	mentions?: CommentMention[];
 	/** The thread: replies, oldest first. */
 	replies?: PrototypeCommentReply[];
 	/** Marked as resolved: its pin leaves the prototype (it shows again when it's opened from the Comments panel). */
@@ -54,6 +64,8 @@ type PrototypeCommentsProps = {
 	onDelete: (id: string) => void;
 	/** A reply added, or the comment resolved or reopened. Without it, the thread is read-only. */
 	onUpdate?: (comment: PrototypeComment) => void;
+	/** Who can be tagged with "@" in a comment or a reply: people and departments. Without it, there's no "@". */
+	mentionable?: CommentMention[];
 	/** The comment whose popover is open, e.g. opened from the Comments panel; with `onOpenChange`, controlled. */
 	openId?: string;
 	onOpenChange?: (id: string | undefined) => void;
@@ -100,35 +112,174 @@ function Pin({ author, open, className, ...props }: React.ComponentProps<"button
 	);
 }
 
-/** The box she writes in: Enter adds the comment, Shift+Enter a new line, Esc (the popover's) drops it. */
-function CommentForm({ onSubmit, label = "Comment", placeholder = "Add a comment", autoFocus = true, rows = 3 }: { onSubmit: (text: string) => void; label?: string; placeholder?: string; autoFocus?: boolean; rows?: number }) {
+/** A comment's text with the people and teams it tags ("@Priya Shah") in the brand color. */
+function MentionText({ text, mentions = [] }: { text: string; mentions?: CommentMention[] }) {
+	const names = mentions.map((m) => m.name).sort((x, y) => y.length - x.length);
+	if (!names.length) return <>{text}</>;
+	const pattern = new RegExp(`(@(?:${names.map((n) => n.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|")}))`, "g");
+	return (
+		<>
+			{text.split(pattern).map((piece, index) =>
+				index % 2 ? (
+					<span key={index} className='font-medium text-primary'>
+						{piece}
+					</span>
+				) : (
+					piece
+				),
+			)}
+		</>
+	);
+}
+
+/** The "@…" being typed right before the caret, if any: where it starts and what's typed after it. */
+function mentionQuery(text: string, caret: number) {
+	const before = text.slice(0, caret);
+	const at = before.lastIndexOf("@");
+	if (at < 0 || (at > 0 && !/\s/.test(before[at - 1]))) return undefined;
+	const query = before.slice(at + 1);
+	return query.length <= 30 && !/\n/.test(query) ? { start: at, query } : undefined;
+}
+
+/**
+ * The box she writes in: Enter adds the comment, Shift+Enter a new line, Esc (the popover's) drops it. With
+ * `mentionable`, "@" (typed, or the button at the bottom left) opens the list of people and teams to tag: typing narrows
+ * it, ↑/↓ move, Enter or Tab picks, Esc closes only the list.
+ */
+function CommentForm({
+	onSubmit,
+	label = "Comment",
+	placeholder = "Add a comment",
+	autoFocus = true,
+	rows = 3,
+	mentionable = [],
+}: {
+	onSubmit: (text: string, mentions: CommentMention[]) => void;
+	label?: string;
+	placeholder?: string;
+	autoFocus?: boolean;
+	rows?: number;
+	mentionable?: CommentMention[];
+}) {
 	const [text, setText] = React.useState("");
-	const submit = () => text.trim() && onSubmit(text.trim());
+	const [caret, setCaret] = React.useState(0);
+	const [tagged, setTagged] = React.useState<CommentMention[]>([]);
+	const [active, setActive] = React.useState(0);
+	const [dismissed, setDismissed] = React.useState<number>();
+	const ref = React.useRef<HTMLTextAreaElement>(null);
+	const listId = React.useId();
+
+	const query = mentionable.length ? mentionQuery(text, caret) : undefined;
+	const matches = query ? matchPeople(mentionable, query.query) : [];
+	const listOpen = Boolean(query) && matches.length > 0 && dismissed !== query?.start;
+	React.useEffect(() => setActive(0), [query?.query]);
+
+	const reset = () => {
+		setText("");
+		setTagged([]);
+		setCaret(0);
+	};
+	const submit = () => {
+		const value = text.trim();
+		if (!value) return;
+		// Only the tags still in the text.
+		onSubmit(value, tagged.filter((m) => value.includes(`@${m.name}`)));
+		reset();
+	};
+	// Where the caret goes after a tag is put in: set right after the text renders, before she types on.
+	const pendingCaret = React.useRef<number>(undefined);
+	React.useLayoutEffect(() => {
+		const position = pendingCaret.current;
+		if (position === undefined || !ref.current) return;
+		pendingCaret.current = undefined;
+		ref.current.focus();
+		ref.current.setSelectionRange(position, position);
+		setCaret(position);
+	}, [text]);
+	const moveCaret = (position: number) => {
+		pendingCaret.current = position;
+	};
+	const pick = (mention: CommentMention) => {
+		if (!query) return;
+		const inserted = `@${mention.name} `;
+		const next = text.slice(0, query.start) + inserted + text.slice(caret);
+		setText(next);
+		setTagged((current) => (current.some((m) => m.id === mention.id) ? current : [...current, mention]));
+		moveCaret(query.start + inserted.length);
+	};
+	// The "@" button: starts a tag where the caret is (after a space), and opens the list.
+	const startMention = () => {
+		const position = ref.current?.selectionStart ?? text.length;
+		const before = text.slice(0, position);
+		const insert = before && !/\s$/.test(before) ? " @" : "@";
+		setText(before + insert + text.slice(position));
+		setDismissed(undefined);
+		moveCaret(position + insert.length);
+	};
+
 	return (
 		<form
 			onSubmit={(event) => {
 				event.preventDefault();
 				submit();
-				setText("");
 			}}
 		>
-			<textarea
-				autoFocus={autoFocus}
-				aria-label={label}
-				placeholder={placeholder}
-				rows={rows}
-				value={text}
-				onChange={(event) => setText(event.target.value)}
-				onKeyDown={(event) => {
-					if (event.key === "Enter" && !event.shiftKey) {
-						event.preventDefault();
-						submit();
-						setText("");
-					}
-				}}
-				className='block w-full resize-none bg-transparent px-4 pt-4 text-sm text-foreground outline-none placeholder:text-muted-foreground'
-			/>
-			<div className='flex justify-end border-t border-border px-3 py-2'>
+			<div className='relative'>
+				<textarea
+					ref={ref}
+					autoFocus={autoFocus}
+					aria-label={label}
+					placeholder={placeholder}
+					rows={rows}
+					value={text}
+					role={mentionable.length ? "combobox" : undefined}
+					aria-autocomplete={mentionable.length ? "list" : undefined}
+					aria-expanded={mentionable.length ? listOpen : undefined}
+					aria-controls={listOpen ? listId : undefined}
+					aria-activedescendant={listOpen ? `${listId}-${active}` : undefined}
+					onChange={(event) => {
+						setText(event.target.value);
+						setCaret(event.target.selectionStart);
+					}}
+					onSelect={(event) => setCaret(event.currentTarget.selectionStart)}
+					onKeyDown={(event) => {
+						// The list's keys first; Esc closes the list, not the comment.
+						if (listOpen && handlePeopleKeys(event, { options: matches, active, setActive, pick, close: () => setDismissed(query?.start) }))
+							return;
+						if (event.key === "Enter" && !event.shiftKey) {
+							event.preventDefault();
+							submit();
+						}
+					}}
+					className='block w-full resize-none bg-transparent px-4 pt-4 text-sm text-foreground outline-none placeholder:text-muted-foreground'
+				/>
+				{/* The people and teams to tag, under the box (the same list as Share's field). */}
+				{listOpen ? (
+					<PeopleList
+						id={listId}
+						label='People and teams'
+						options={matches}
+						active={active}
+						onActiveChange={setActive}
+						onPick={pick}
+						className='absolute inset-x-2 top-full mt-1'
+					/>
+				) : null}
+			</div>
+			{/* "@" at the bottom left, to tag someone; send on the right. */}
+			<div className={cn("flex items-center border-t border-border px-3 py-2", mentionable.length ? "justify-between" : "justify-end")}>
+				{mentionable.length ? (
+					<Tooltip>
+						<TooltipTrigger asChild>
+							<Button type='button' variant='ghost' size='icon' aria-label='Mention someone' className='size-8 rounded-full text-icon' onClick={startMention}>
+								<AtSign aria-hidden />
+							</Button>
+						</TooltipTrigger>
+						<TooltipContent side='bottom' sideOffset={6}>
+							Mention someone
+						</TooltipContent>
+					</Tooltip>
+				) : null}
 				<Button type='submit' size='icon' aria-label={label === "Comment" ? "Add comment" : `Send ${label.toLowerCase()}`} disabled={!text.trim()} className='size-8 rounded-full'>
 					<ArrowUp aria-hidden />
 				</Button>
@@ -138,7 +289,19 @@ function CommentForm({ onSubmit, label = "Comment", placeholder = "Add a comment
 }
 
 /** One message in a thread: avatar, name, team, when, then the text. */
-function ThreadEntry({ author, createdAt, text, actions }: { author: PrototypeCommentAuthor; createdAt: string; text: string; actions?: React.ReactNode }) {
+function ThreadEntry({
+	author,
+	createdAt,
+	text,
+	mentions,
+	actions,
+}: {
+	author: PrototypeCommentAuthor;
+	createdAt: string;
+	text: string;
+	mentions?: CommentMention[];
+	actions?: React.ReactNode;
+}) {
 	const time = formatRelativeDate(createdAt);
 	return (
 		<div className='flex flex-col gap-1'>
@@ -154,7 +317,9 @@ function ThreadEntry({ author, createdAt, text, actions }: { author: PrototypeCo
 				</time>
 				{actions ? <span className='ms-auto flex items-center gap-0.5'>{actions}</span> : null}
 			</div>
-			<p className='ps-8 text-sm whitespace-pre-line text-foreground'>{text}</p>
+			<p className='ps-8 text-sm whitespace-pre-line text-foreground'>
+				<MentionText text={text} mentions={mentions} />
+			</p>
 		</div>
 	);
 }
@@ -179,7 +344,19 @@ function ThreadAction({ label, onClick, children }: { label: string; onClick: ()
  * The prototype with its comment pins over it. The pins sit in a layer of their own beside the screens, placed from the
  * element each is anchored to, and move with it as the screen changes or scrolls.
  */
-function PrototypeComments({ active, author, scope, comments, onAdd, onDelete, onUpdate, openId: openIdProp, onOpenChange, children }: PrototypeCommentsProps) {
+function PrototypeComments({
+	active,
+	author,
+	scope,
+	comments,
+	onAdd,
+	onDelete,
+	onUpdate,
+	mentionable,
+	openId: openIdProp,
+	onOpenChange,
+	children,
+}: PrototypeCommentsProps) {
 	const contentRef = React.useRef<HTMLDivElement>(null);
 	const wrapperRef = React.useRef<HTMLDivElement>(null);
 	const [draft, setDraft] = React.useState<CommentAnchor | null>(null);
@@ -295,6 +472,7 @@ function PrototypeComments({ active, author, scope, comments, onAdd, onDelete, o
 									author={comment.author}
 									createdAt={comment.createdAt}
 									text={comment.text}
+									mentions={comment.mentions}
 									actions={
 										<>
 											{onUpdate ? (
@@ -329,7 +507,7 @@ function PrototypeComments({ active, author, scope, comments, onAdd, onDelete, o
 									}
 								/>
 								{(comment.replies ?? []).map((reply) => (
-									<ThreadEntry key={reply.id} author={reply.author} createdAt={reply.createdAt} text={reply.text} />
+									<ThreadEntry key={reply.id} author={reply.author} createdAt={reply.createdAt} text={reply.text} mentions={reply.mentions} />
 								))}
 							</div>
 							{onUpdate ? (
@@ -339,11 +517,15 @@ function PrototypeComments({ active, author, scope, comments, onAdd, onDelete, o
 										placeholder='Reply'
 										rows={1}
 										autoFocus={false}
-										onSubmit={(text) =>
+										mentionable={mentionable}
+										onSubmit={(text, mentions) =>
 											onUpdate({
 												...comment,
 												resolved: false,
-												replies: [...(comment.replies ?? []), { id: `reply-${Date.now()}`, text, createdAt: new Date().toISOString(), author }],
+												replies: [
+													...(comment.replies ?? []),
+													{ id: `reply-${Date.now()}`, text, createdAt: new Date().toISOString(), author, mentions: mentions.length ? mentions : undefined },
+												],
 											})
 										}
 									/>
@@ -368,9 +550,10 @@ function PrototypeComments({ active, author, scope, comments, onAdd, onDelete, o
 						onInteractOutside={(event) => contentRef.current?.contains(event.target as Node) && event.preventDefault()}
 					>
 						<CommentForm
-							onSubmit={(text) => {
+							mentionable={mentionable}
+							onSubmit={(text, mentions) => {
 								const id = `comment-${Date.now()}`;
-								onAdd({ ...draft, id, scope, text, createdAt: new Date().toISOString(), author });
+								onAdd({ ...draft, id, scope, text, createdAt: new Date().toISOString(), author, mentions: mentions.length ? mentions : undefined });
 								setDraft(null);
 							}}
 						/>
@@ -381,4 +564,4 @@ function PrototypeComments({ active, author, scope, comments, onAdd, onDelete, o
 	);
 }
 
-export { PrototypeComments, type CommentScope, type PrototypeComment, type PrototypeCommentAuthor, type PrototypeCommentReply, type PrototypeCommentsProps };
+export { MentionText, PrototypeComments, type CommentMention, type CommentScope, type PrototypeComment, type PrototypeCommentAuthor, type PrototypeCommentReply, type PrototypeCommentsProps };

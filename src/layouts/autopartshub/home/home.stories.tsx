@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 
-import { storyIds, withStoryLinks } from "../../story-links";
+import { storyIds, withStoryLinks, withTabName } from "../../story-links";
 import { AutoPartsHubHome } from "./home";
 import { sampleApps } from "./sample-apps";
 import { sampleUser } from "../sample-data/sample-user";
@@ -15,7 +15,8 @@ const meta = {
 	},
 	// Prototype: the Sparks card opens the Sparks start page in a new tab, as the cards do.
 	// "#sparks" opens Sparks in its own tab; a notification about a concept opens that concept in its own tab too.
-	decorators: [withStoryLinks(() => ({ ...conceptStoryLinks(true), "#sparks": { storyId: storyIds.sparksStartPage, newTab: true } }))],
+	// The home's tab is named, so Sparks's "Add from library" brings it back instead of opening another.
+	decorators: [withTabName("autopartshub-home"), withStoryLinks(() => ({ ...conceptStoryLinks(true), "#sparks": { storyId: storyIds.sparksStartPage, newTab: true, tab: "autopartshub-sparks" } }))],
 	args: {
 		user: sampleUser,
 		notifications: { notifications: sampleNotifications, now: sampleNotificationsNow },

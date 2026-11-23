@@ -15,7 +15,7 @@ import { cn } from "@/lib/utils";
 import type { AutoPartsHubUser } from "../../autopartshub";
 import { HeaderActions } from "../../header-actions";
 import type { NotificationsPopoverProps } from "../../notifications-popover";
-import type { PrototypeComment, PrototypeCommentAuthor } from "../prototype/prototype-comments";
+import { MentionText, type CommentMention, type PrototypeComment, type PrototypeCommentAuthor } from "../prototype/prototype-comments";
 import { PrototypePanel, type PrototypeAudience } from "../prototype/prototype-panel";
 import { ReviewDocument, reviewPartTitles, viewTone, type ConceptForReview, type IdeaComment, type Reviewer } from "../review/review-panel";
 
@@ -49,6 +49,8 @@ type PublishedIdeaProps = {
 	/** Comments pinned on the prototype, everyone's, with their threads. */
 	prototypeComments: PrototypeComment[];
 	onPrototypeCommentsChange: (comments: PrototypeComment[]) => void;
+	/** Who can be tagged with "@" in a comment on the prototype: people and departments. */
+	mentionable?: CommentMention[];
 	/** Comments on parts of the idea, everyone's. */
 	ideaComments: IdeaComment[];
 	onIdeaCommentsChange: (comments: IdeaComment[]) => void;
@@ -78,6 +80,7 @@ function CommentRow({
 	createdAt,
 	where,
 	text,
+	mentions,
 	unclear,
 	replies = 0,
 	resolved,
@@ -87,6 +90,7 @@ function CommentRow({
 	createdAt: string;
 	where: string;
 	text: string;
+	mentions?: CommentMention[];
 	unclear?: boolean;
 	replies?: number;
 	resolved?: boolean;
@@ -112,7 +116,9 @@ function CommentRow({
 					</time>
 				</span>
 				<span className='truncate text-xs text-muted-foreground'>{where}</span>
-				<span className={cn("text-sm whitespace-pre-line", resolved ? "text-muted-foreground" : "text-foreground")}>{text}</span>
+				<span className={cn("text-sm whitespace-pre-line", resolved ? "text-muted-foreground" : "text-foreground")}>
+					<MentionText text={text} mentions={mentions} />
+				</span>
 				{unclear || replies || resolved ? (
 					<span className='flex flex-wrap items-center gap-3 pt-0.5 text-xs text-muted-foreground'>
 						{unclear ? (
@@ -157,6 +163,7 @@ function PublishedIdea({
 	concept,
 	prototype,
 	prototypeComments,
+	mentionable,
 	onPrototypeCommentsChange,
 	ideaComments,
 	onIdeaCommentsChange,
@@ -345,6 +352,7 @@ function PublishedIdea({
 														.filter(Boolean)
 														.join(" · ")}
 													text={entry.comment.text}
+													mentions={entry.comment.mentions}
 													replies={entry.comment.replies?.length}
 													resolved={entry.comment.resolved}
 													onOpen={() => openPrototypeComment(entry.comment.id)}
@@ -441,6 +449,7 @@ function PublishedIdea({
 						commentAuthor={reviewer}
 						comments={prototypeComments}
 						onCommentsChange={onPrototypeCommentsChange}
+						mentionable={mentionable}
 						openComment={openPin}
 						onOpenCommentChange={setOpenPin}
 					>

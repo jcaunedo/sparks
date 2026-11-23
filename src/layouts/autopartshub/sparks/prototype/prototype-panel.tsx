@@ -2,13 +2,12 @@ import * as React from "react";
 import { Maximize2, TriangleAlert, MessageCirclePlus, Monitor, MousePointerClick, RotateCcw, Smartphone } from "lucide-react";
 
 import { Button } from "@/components/buttons/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/forms/select";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/overlays/tooltip";
 import { cn } from "@/lib/utils";
 
 import { HeaderIconButton } from "../../header-icon-button";
 import { VersionsMenu } from "../shared/versions-menu";
-import { PrototypeComments, type PrototypeComment, type PrototypeCommentAuthor } from "./prototype-comments";
+import { PrototypeComments, type CommentMention, type PrototypeComment, type PrototypeCommentAuthor } from "./prototype-comments";
 
 type PrototypeAudience = { id: string; label: string; /** The device it suits (customers on a phone, staff at the counter); the prototype opens on the first audience's, and switching audience keeps the device. */ device: PrototypeDevice };
 type PrototypeDevice = "phone" | "desktop";
@@ -30,6 +29,8 @@ type PrototypePanelProps = {
 	onRestore?: (id: string) => void;
 	/** Who adds comments ("Add comment"): her name and photo on each pin. Without it, there's no "Add comment". */
 	commentAuthor?: PrototypeCommentAuthor;
+	/** Who can be tagged with "@" in a comment: people and departments (`PrototypeComments` `mentionable`). */
+	mentionable?: CommentMention[];
 	/**
 	 * The comments on the prototype, with `onCommentsChange` to keep them outside (the Comments panel lists them);
 	 * without, the panel keeps its own.
@@ -121,6 +122,7 @@ function PrototypePanel({
 	onRestore,
 	notice,
 	commentAuthor,
+	mentionable,
 	comments: commentsProp,
 	onCommentsChange,
 	openComment,
@@ -186,11 +188,13 @@ function PrototypePanel({
 	}, [fullScreen, closeFullScreen]);
 
 	const frame = (
-		<div className={cn("flex min-h-0 flex-1 justify-center overflow-hidden", device === "phone" ? "items-start py-4" : "items-stretch")}>
+		// The device, then under it, outside it, a small note that nothing is real (so nothing in the prototype reads as
+		// real, without taking room in its screens).
+		<div className={cn("flex min-h-0 flex-1 flex-col items-center overflow-hidden", device === "phone" && "pt-4")}>
 			<div
 				className={cn(
-					"scrollbar-subtle overflow-y-auto border border-border bg-background shadow-sm",
-					device === "phone" ? "h-full max-h-[760px] w-[375px] rounded-[32px]" : "h-full w-full rounded-card",
+					"scrollbar-subtle min-h-0 flex-1 overflow-y-auto border border-border bg-background shadow-sm",
+					device === "phone" ? "max-h-[760px] w-[375px] rounded-[32px]" : "w-full rounded-card",
 				)}
 			>
 				{commentAuthor ? (
@@ -202,6 +206,7 @@ function PrototypePanel({
 						onAdd={(comment) => setComments((current) => [...current, comment])}
 						onDelete={(id) => setComments((current) => current.filter((comment) => comment.id !== id))}
 						onUpdate={(updated) => setComments((current) => current.map((comment) => (comment.id === updated.id ? updated : comment)))}
+						mentionable={mentionable}
 						openId={onOpenCommentChange ? openComment : undefined}
 						onOpenChange={onOpenCommentChange}
 					>
@@ -211,6 +216,10 @@ function PrototypePanel({
 					<React.Fragment key={`${audience}-${run}`}>{children(audience)}</React.Fragment>
 				)}
 			</div>
+			<p className='flex shrink-0 items-center gap-1.5 pt-2 text-xs text-muted-foreground'>
+				<TriangleAlert aria-hidden className='size-3.5 shrink-0' />
+				Prototype: made-up data, nothing is real.
+			</p>
 		</div>
 	);
 
@@ -221,27 +230,19 @@ function PrototypePanel({
 			    (beside the plan), the actions keep their width and the direction's name truncates. */}
 			<div className='grid grid-cols-[1fr_auto_1fr] items-center gap-4'>
 				<div className='flex min-w-0 items-center gap-2'>
-					{/* Which direction this is, numbered as on its card: its name with one path; with more, the switcher in
-					    the same place (the directions she's built, in the order built). The name in the style of a heading in
-					    Sparks's messages ("Ready for me to put it through its paces?"): base semibold, foreground-prominent. */}
-					{paths.length === 1 ? (
-						<h2 className='min-w-0 truncate text-base font-semibold text-foreground-prominent' title={paths[0].label}>
-							{paths[0].label}
-						</h2>
-					) : null}
-					{paths.length > 1 ? (
-						<Select value={path} onValueChange={(id) => onPathChange?.(id)}>
-							<SelectTrigger aria-label='Path' className='h-9 max-w-64 bg-background'>
-								<SelectValue />
-							</SelectTrigger>
-							<SelectContent position='popper' align='start'>
-								{paths.map((option) => (
-									<SelectItem key={option.id} value={option.id}>
-										{option.label}
-									</SelectItem>
-								))}
-							</SelectContent>
-						</Select>
+					{/* Which direction this is, numbered as on its card, in the style of a heading in Sparks's messages (base
+					    semibold, foreground-prominent), with "Version {n}" under it. The title is the menu: the versions, newest
+					    first, with "Restore", and with more than one path, the paths to switch between (prds/sparks-prototype.md,
+					    "Versions", "Paths"). */}
+					{paths.length ? (
+						<VersionsMenu
+							title={(paths.find((option) => option.id === path) ?? paths[0]).label}
+							versions={versions}
+							onRestore={onRestore}
+							paths={paths}
+							path={path}
+							onPathChange={onPathChange}
+						/>
 					) : null}
 				</div>
 				{/* In the middle, together: who it's for and the device. */}
@@ -296,7 +297,6 @@ function PrototypePanel({
 							<MessageCirclePlus aria-hidden />
 						</HeaderIconButton>
 					) : null}
-					{versions.length ? <VersionsMenu versions={versions} onRestore={onRestore} /> : null}
 					<HeaderIconButton label='Start over' onClick={() => setRun((r) => r + 1)}>
 						<RotateCcw aria-hidden />
 					</HeaderIconButton>

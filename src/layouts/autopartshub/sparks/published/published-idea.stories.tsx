@@ -7,6 +7,7 @@ import "../../../story-links";
 import { directionPrototypes } from "../prototype/direction-prototypes";
 import type { PrototypeComment } from "../prototype/prototype-comments";
 import { sampleFitCheck } from "../prototype/sample-fit-check";
+import { sampleMentionable } from "../shared/sample-share";
 import type { IdeaComment } from "../review/review-panel";
 import { PublishedIdea, type PublishedIdeaProps, type ReviewerView } from "./published-idea";
 import {
@@ -61,6 +62,7 @@ const meta = {
 			render: (audience) => fitCheck.render({ data: sampleFitCheck, audience, readyScreens: fitCheck.screens.length, changes: {} }),
 		},
 		prototypeComments: samplePublishedPrototypeComments,
+		mentionable: sampleMentionable,
 		ideaComments: samplePublishedIdeaComments,
 	},
 } satisfies Meta<typeof PublishedIdeaPrototype>;

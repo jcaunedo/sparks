@@ -8,10 +8,12 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/overlays/p
 import { Typography } from "@/components/typography/typography";
 import { cn } from "@/lib/utils";
 
+import { handlePeopleKeys, matchPeople, PeopleList, type PeopleOption } from "../shared/people-list";
+
 /*
  * "Share" (prds/sparks.md, "Sharing a concept"): a popover from the header, in every step. Dana adds a person or a
- * department as "Can view" or "Can comment"; nobody she adds can change anything, and her conversation with Sparks stays
- * hidden.
+ * department as "Can view", "Can comment" or "Can edit". Only "Can edit" (a collaborator) can change the idea and sees
+ * her conversation with Sparks; for everyone else it stays hidden.
  * Kept simple on purpose: it isn't designed yet (not in Figma).
  */
 
@@ -22,17 +24,21 @@ type ShareMember = {
 	name: string;
 	/** A person's email, or a department's size ("12 people"). */
 	detail?: string;
-	/** Owner: Dana. Everyone she adds can view, or view and comment; never change anything. */
+	/** Owner: Dana. Everyone she adds can view, view and comment, or edit (a collaborator). */
 	role: "owner" | ShareRole;
 	avatarSrc?: string;
 };
 
-/** What someone she adds can do: look at the concept and the prototype, or also leave feedback. */
-type ShareRole = "viewer" | "commenter";
+/**
+ * What someone she adds can do: look at the idea and the prototype, also leave feedback, or work on it with her (a
+ * collaborator: they change the plan, the prototype and the rest, and take part in the conversation with Sparks).
+ */
+type ShareRole = "viewer" | "commenter" | "editor";
 
 const shareRoles: { value: ShareRole; label: string }[] = [
 	{ value: "viewer", label: "Can view" },
 	{ value: "commenter", label: "Can comment" },
+	{ value: "editor", label: "Can edit" },
 ];
 
 type SharePopoverProps = {
@@ -40,6 +46,12 @@ type SharePopoverProps = {
 	members: ShareMember[];
 	/** She added someone: what she typed (a name, an email or a department), with the role. The caller works out who it is. */
 	onInvite: (who: string, role: ShareRole) => void;
+	/**
+	 * The company's people (with their team) and departments: typing in the field shows the ones that match, to pick
+	 * from (`PeopleList`, the same list as "@" in comments). Picking one invites them with the role on the field's right.
+	 * Anyone else is invited by email: "Invite" shows once the field holds a valid email.
+	 */
+	directory?: PeopleOption[];
 	/** She changed the role of someone she added. */
 	onRoleChange?: (id: string, role: ShareRole) => void;
 	/** The concept's link, for "Copy link". */
@@ -69,17 +81,31 @@ function MemberAvatar({ member, className }: { member: ShareMember; className?: 
 }
 
 /** The concept's sharing: copy its link, add a person or a department, and who has access. */
-function SharePopover({ members, onInvite, onRoleChange, link, children }: SharePopoverProps) {
+function SharePopover({ members, onInvite, directory = [], onRoleChange, link, children }: SharePopoverProps) {
 	const [value, setValue] = React.useState("");
+	// The people and departments matching what she's typed, without those who already have access.
+	const [active, setActive] = React.useState(0);
+	const [listClosed, setListClosed] = React.useState(false);
+	const listId = React.useId();
+	const has = new Set(members.map((member) => member.name.toLowerCase()));
+	const matches = value.trim() ? matchPeople(directory.filter((option) => !has.has(option.name.toLowerCase())), value) : [];
+	const listOpen = matches.length > 0 && !listClosed;
+	const pick = (option: PeopleOption) => {
+		onInvite(option.name, role);
+		setValue("");
+		inputRef.current?.focus();
+	};
 	const [role, setRole] = React.useState<ShareRole>("commenter");
 	const [copied, setCopied] = React.useState(false);
 	const inputId = React.useId();
 	const inputRef = React.useRef<HTMLInputElement>(null);
 	const descriptionId = React.useId();
 
+	// "Invite" is for an email: people and departments in the directory are picked from the list.
+	const email = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
 	const invite = () => {
 		const who = value.trim();
-		if (!who) return;
+		if (!email) return;
 		onInvite(who, role);
 		setValue("");
 	};
@@ -113,11 +139,12 @@ function SharePopover({ members, onInvite, onRoleChange, link, children }: Share
 					</Button>
 				</div>
 				<p id={descriptionId} className='text-sm text-muted-foreground'>
-					People and departments you add can see the idea and the prototype, and with "Can comment", leave feedback.
-					They can't change anything, and your conversation with Sparks stays hidden.
+					People and departments you add can see the idea and the prototype. With "Can comment", they can also leave
+					feedback. With "Can edit", they work on it with you, in your conversation with Sparks too; otherwise, it
+					stays hidden.
 				</p>
 				<form
-					className='flex gap-2'
+					className='relative flex gap-2'
 					onSubmit={(event) => {
 						event.preventDefault();
 						invite();
@@ -132,17 +159,45 @@ function SharePopover({ members, onInvite, onRoleChange, link, children }: Share
 							ref={inputRef}
 							id={inputId}
 							value={value}
-							onChange={(event) => setValue(event.target.value)}
+							onChange={(event) => {
+								setValue(event.target.value);
+								setActive(0);
+								setListClosed(false);
+							}}
+							onKeyDown={(event) => {
+								// The list's keys while it's open; Esc closes the list, not Share.
+								if (listOpen) handlePeopleKeys(event, { options: matches, active, setActive, pick, close: () => setListClosed(true) });
+							}}
 							placeholder='Name, email or department'
 							aria-describedby={descriptionId}
 							autoComplete='off'
+							role={directory.length ? "combobox" : undefined}
+							aria-autocomplete={directory.length ? "list" : undefined}
+							aria-expanded={directory.length ? listOpen : undefined}
+							aria-controls={listOpen ? listId : undefined}
+							aria-activedescendant={listOpen ? `${listId}-${active}` : undefined}
 							className='h-full min-w-0 flex-1 bg-transparent ps-3 text-sm text-foreground outline-none placeholder:text-foreground-subtle'
 						/>
 						<RoleSelect value={role} onChange={setRole} label='Role for who you invite' />
 					</div>
-					<Button type='submit' variant='neutral' className='rounded-button-lg px-3.5 font-semibold' disabled={!value.trim()}>
-						Invite
-					</Button>
+					{/* Only once what she's typed is an email; until then the field takes the whole row. */}
+					{email ? (
+						<Button type='submit' variant='neutral' className='rounded-button-lg px-3.5 font-semibold'>
+							Invite
+						</Button>
+					) : null}
+					{/* What matches, under the field, as wide as it (the role and "Invite" stay visible). */}
+					{listOpen ? (
+						<PeopleList
+							id={listId}
+							label='People and departments'
+							options={matches}
+							active={active}
+							onActiveChange={setActive}
+							onPick={pick}
+							className='absolute inset-x-0 top-full mt-1'
+						/>
+					) : null}
 				</form>
 				<div className='flex flex-col gap-2'>
 					<p className='text-sm text-muted-foreground'>Who has access</p>
@@ -175,7 +230,7 @@ function SharePopover({ members, onInvite, onRoleChange, link, children }: Share
 }
 
 /**
- * "Can view" or "Can comment", as a `Select` without a border: the trigger is the role and a chevron, the list sparks.ds's
+ * "Can view", "Can comment" or "Can edit", as a `Select` without a border: the trigger is the role and a chevron, the list sparks.ds's
  * Select panel. Used in the invite field and on each person or department she added.
  */
 function RoleSelect({ value, onChange, label }: { value: ShareRole; onChange: (role: ShareRole) => void; label: string }) {
