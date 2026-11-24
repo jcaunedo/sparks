@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Car, Check, ChevronLeft, ClipboardList, Search, ShoppingCart, TriangleAlert, Users } from "lucide-react";
+import { Car, Check, ChevronDown, ClipboardList, Search, TriangleAlert, Users } from "lucide-react";
 
 import { AutoPartsLogo } from "@/components/brand/autoparts-logo";
 import { Badge } from "@/components/data-display/badge";
@@ -7,14 +7,32 @@ import { Button } from "@/components/buttons/button";
 import { cn } from "@/lib/utils";
 
 import {
+	ActionBar,
+	BackLink,
+	CartHeading,
+	CartTotals,
+	choiceClass,
 	EditableText,
 	Field,
 	FitMessage,
+	OrderPlaced,
+	PartCard,
+	PartCarousel,
 	PartImage,
+	PartLayout,
+	PartRow,
+	pillClass,
 	PrototypeFrame,
+	screenBody,
+	screenTitle,
+	sectionTitle,
+	ShopHeader,
+	ShopScreen,
 	useButton,
 	useChanges,
+	VehiclePicker,
 	vehicleName,
+	vehicleSteps,
 	type FitCheckData,
 	type FitPart,
 	type FitResult,
@@ -24,7 +42,9 @@ import {
 
 /*
  * The prototypes for the other three directions (prds/sparks-prototype.md, "What Sparks builds"), on the same made-up
- * data as "Fit check before you buy", with the same frame: pointing, typing over text, nothing real.
+ * data as "Fit check before you buy", with the same frame: pointing, typing over text, nothing real. Their customer
+ * screens use the same shop pieces as "Fit check before you buy" (`ShopHeader`, `PartLayout`, `PartRow`, `ActionBar`…),
+ * so every prototype's shop looks and behaves the same.
  */
 
 type PrototypeProps = PrototypeViewProps & {
@@ -33,55 +53,6 @@ type PrototypeProps = PrototypeViewProps & {
 	/** The screen it opens on, by its place in the direction's screens, as it's being built; without it, where the journey starts. */
 	openOn?: number;
 };
-
-/** The shop's top bar: the name, an optional vehicle and the cart. */
-function ShopHeader({ cart, onCart, vehicle }: { cart: number; onCart?: () => void; vehicle?: string }) {
-	// Sticky: the store's header stays at the top while the page scrolls under it.
-	return (
-		<header className='sticky top-0 z-10 flex items-center justify-between gap-3 border-b border-border bg-background px-4 py-3'>
-			{/* The store's own logo: sparks.ds "AutoParts Logo" (73:5941), 20px tall. */}
-			<AutoPartsLogo className='h-5' />
-			<div className='flex items-center gap-2'>
-				{vehicle ? <span className='rounded-full bg-background-subtle px-2.5 py-1 text-xs font-medium text-foreground'>{vehicle}</span> : null}
-				<button
-					type='button'
-					aria-label={`Cart, ${cart} items`}
-					onClick={onCart}
-					className='relative grid size-8 place-items-center rounded-full text-icon hover:bg-background-subtle'
-				>
-					<ShoppingCart className='size-4' aria-hidden />
-					{cart ? (
-						<span className='absolute -top-0.5 -right-0.5 grid size-4 place-items-center rounded-full bg-primary text-[10px] font-semibold text-primary-foreground'>
-							{cart}
-						</span>
-					) : null}
-				</button>
-			</div>
-		</header>
-	);
-}
-
-/** "Back", to the screen before. */
-function Back({ onClick }: { onClick: () => void }) {
-	return (
-		<button type='button' onClick={onClick} className='flex w-fit items-center gap-1 text-sm text-muted-foreground hover:text-foreground'>
-			<ChevronLeft className='size-4' aria-hidden /> Back
-		</button>
-	);
-}
-
-/** The pretend order confirmation. */
-function Ordered({ onDone }: { onDone: () => void }) {
-	return (
-		<div className='flex flex-col items-start gap-3 p-4'>
-			<h2 className='text-lg font-semibold text-foreground-prominent'>Order placed</h2>
-			<p className='text-sm text-muted-foreground'>This is pretend: nothing was ordered, and no one was charged.</p>
-			<Button variant='outline' className='rounded-button-lg' onClick={onDone}>
-				Keep shopping
-			</Button>
-		</div>
-	);
-}
 
 /**
  * The flag, written out: color is a second signal, never the only one. Worded as a reminder once Evaluate's fix is
@@ -92,12 +63,12 @@ function ReturnFlag() {
 	return flagReminder ? (
 		<Badge variant='flat' tone='blue' size='sm' className='w-fit'>
 			<Car aria-hidden />
-			Check the fit for your vehicle
+			Check the fit first
 		</Badge>
 	) : (
 		<Badge variant='flat' tone='amber' size='sm' className='w-fit'>
 			<TriangleAlert aria-hidden />
-			Often returned: check the fit before you buy
+			Often returned
 		</Badge>
 	);
 }
@@ -138,40 +109,34 @@ function FlagReturnsPrototype({ data, openOn, ...view }: PrototypeProps) {
 	// Outside its own frame, so the changes come from the props (useChanges() works inside the frame).
 	const flagReminder = view.changes?.flagReminder;
 	const flagRate = view.changes?.flagRate;
+	const larger = view.changes?.larger;
 	const fitListOpen = fitListShown ?? Boolean(view.changes?.fitListOpen);
+	const cartParts = cart.map((id) => data.parts.find((p) => p.id === id)!);
 	const header = <ShopHeader cart={cart.length} onCart={() => setScreen("cart")} />;
+	const openPart = (id: string) => {
+		setPartId(id);
+		setScreen("part");
+		setFitListOpen(undefined);
+	};
 
 	let body: React.ReactNode;
 	if (screen === "results" || !part) {
 		body = (
-			<div className='flex flex-col gap-3 p-4'>
-				<div className='flex h-9 items-center gap-2 rounded-input border border-border px-2.5 text-sm text-foreground'>
-					<Search className='size-4 text-icon' aria-hidden />
+			<div className={screenBody}>
+				<div className='flex h-11 items-center gap-2 rounded-full bg-background-subtle px-4 text-base text-foreground'>
+					<Search className='size-5 text-icon' aria-hidden />
 					{data.search ?? "Parts"}
 				</div>
 				<EditableText as='span' id='results-title' className='text-sm text-muted-foreground'>
 					{`${data.parts.length} results`}
 				</EditableText>
-				<ul className='flex flex-col divide-y divide-border'>
+				<ul className='flex flex-col gap-5'>
 					{data.parts.map((p) => (
 						<li key={p.id}>
-							<button
-								type='button'
-								onClick={() => {
-									setPartId(p.id);
-									setScreen("part");
-									setFitListOpen(undefined);
-								}}
-								className='flex w-full items-start gap-3 py-3 text-left'
-							>
-								<PartImage part={p} className='size-16 shrink-0' />
-								<span className='flex min-w-0 flex-1 flex-col gap-1.5'>
-									<span className='text-sm font-semibold text-foreground'>{p.name}</span>
-									<span className='text-sm text-muted-foreground'>{p.price}</span>
-									{p.oftenReturned ? <ReturnFlag /> : null}
-									{p.oftenReturned && flagRate ? <span className='text-xs text-muted-foreground'>{p.returnRate}</span> : null}
-								</span>
-							</button>
+							<PartRow part={p} onOpen={() => openPart(p.id)}>
+								{p.oftenReturned ? <ReturnFlag /> : null}
+								{p.oftenReturned && flagRate ? <span className='text-xs text-muted-foreground'>{p.returnRate}</span> : null}
+							</PartRow>
 						</li>
 					))}
 				</ul>
@@ -179,82 +144,107 @@ function FlagReturnsPrototype({ data, openOn, ...view }: PrototypeProps) {
 		);
 	} else if (screen === "part") {
 		body = (
-			<div className='flex flex-col gap-4 p-4'>
-				<Back onClick={() => setScreen("results")} />
-				<PartImage part={part} className='aspect-[4/3] w-full' />
-				<div className='flex flex-col gap-2'>
-					<h2 className='text-lg font-semibold text-foreground-prominent'>{part.name}</h2>
-					<span className='text-sm text-muted-foreground'>{part.price}</span>
-					{part.oftenReturned ? (
-						<>
-							<ReturnFlag />
-							<p className='text-sm text-foreground'>
-								{flagReminder
-									? `${part.returnRate}, almost always because it was bought for a different vehicle. Check the fit list before you buy.`
-									: `${part.returnRate}. Most people who send it back bought it for a different vehicle.`}
-							</p>
-						</>
-					) : null}
+			<>
+				<div className='px-4 pt-3 @3xl:px-10'>
+					<BackLink onClick={() => setScreen("results")} />
 				</div>
-				<div className='flex flex-col gap-2 rounded-md bg-background-subtle p-3'>
-					<button
-						type='button'
-						aria-expanded={fitListOpen}
-						onClick={() => setFitListOpen(!fitListOpen)}
-						className='w-fit text-sm font-semibold text-foreground underline-offset-4 hover:underline'
-					>
-						{fitListOpen ? "Hide the fit list" : "Check the fit list"}
-					</button>
-					{fitListOpen ? (
-						<ul className='flex list-disc flex-col gap-1 ps-5 text-sm text-foreground'>
-							{(part.fitsVehicles ?? []).map((vehicle) => (
-								<li key={vehicle}>{vehicle}</li>
-							))}
-						</ul>
-					) : null}
-				</div>
-				<Button {...addButton.props} disabled={cart.includes(part.id)} onClick={() => setCart((c) => [...c, part.id])}>
-					{cart.includes(part.id) ? "In your cart" : addButton.label}
-				</Button>
-			</div>
+				<PartLayout
+					part={part}
+					action={
+						<Button
+							{...addButton.props}
+							variant='neutral'
+							className={pillClass("add-to-cart", larger)}
+							disabled={cart.includes(part.id)}
+							onClick={() => setCart((c) => [...c, part.id])}
+						>
+							{cart.includes(part.id) ? "In your cart" : addButton.label}
+						</Button>
+					}
+					after={<PartCarousel title='Other parts' parts={data.parts.filter((p) => p.id !== part.id)} onOpen={openPart} />}
+				>
+					<div className='flex flex-col gap-3'>
+						<div className='flex flex-col gap-1'>
+							<h2 className={screenTitle}>{part.name}</h2>
+							<span className='text-lg text-foreground'>{part.price}</span>
+						</div>
+						{part.oftenReturned ? (
+							<>
+								<ReturnFlag />
+								<p className='text-base text-foreground'>
+									{flagReminder
+										? `${part.returnRate}, almost always because it was bought for a different vehicle. Check the fit list before you buy.`
+										: `${part.returnRate}. Most people who send it back bought it for a different vehicle.`}
+								</p>
+							</>
+						) : null}
+					</div>
+					{/* The fit list, as a row that opens in place. */}
+					<section className='flex flex-col border-y border-border'>
+						<button
+							type='button'
+							aria-expanded={fitListOpen}
+							onClick={() => setFitListOpen(!fitListOpen)}
+							className='flex h-14 w-full items-center justify-between gap-3 text-left text-base font-medium text-foreground outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50'
+						>
+							{fitListOpen ? "Hide the fit list" : "Check the fit list"}
+							<ChevronDown className={cn("size-5 text-icon transition-transform motion-reduce:transition-none", fitListOpen && "rotate-180")} aria-hidden />
+						</button>
+						{fitListOpen ? (
+							<ul className='flex flex-col gap-2 pb-4 text-base text-foreground'>
+								{(part.fitsVehicles ?? []).map((vehicle) => (
+									<li key={vehicle}>{vehicle}</li>
+								))}
+							</ul>
+						) : null}
+					</section>
+				</PartLayout>
+			</>
 		);
 	} else if (screen === "ordered") {
-		body = <Ordered onDone={() => { setCart([]); setScreen("results"); }} />;
+		body = (
+			<OrderPlaced
+				onDone={() => {
+					setCart([]);
+					setScreen("results");
+				}}
+			/>
+		);
 	} else {
 		body = (
-			<div className='flex flex-col gap-4 p-4'>
-				<Back onClick={() => setScreen(part ? "part" : "results")} />
-				<EditableText as='h2' id='cart-title' className='text-lg font-semibold text-foreground-prominent'>
-					Your cart
-				</EditableText>
-				{cart.length === 0 ? (
-					<p className='text-sm text-muted-foreground'>Your cart is empty.</p>
-				) : (
-					<ul className='flex flex-col divide-y divide-border border-y border-border'>
-						{cart.map((id) => {
-							const item = data.parts.find((p) => p.id === id)!;
-							return (
-								<li key={id} className='flex items-start justify-between gap-3 py-3'>
-									<span className='flex flex-col gap-1.5'>
-										<span className='text-sm font-semibold text-foreground'>{item.name}</span>
-										{item.oftenReturned ? <ReturnFlag /> : null}
-									</span>
-									<span className='text-sm text-muted-foreground'>{item.price}</span>
-								</li>
-							);
-						})}
-					</ul>
-				)}
-				<Button className='rounded-button-lg' disabled={cart.length === 0} onClick={() => setScreen("ordered")}>
-					Place order
-				</Button>
-			</div>
+			<>
+				<div className={screenBody}>
+					<BackLink onClick={() => setScreen(part ? "part" : "results")} />
+					<CartHeading parts={cartParts} />
+					{cart.length === 0 ? (
+						<p className='text-base text-muted-foreground'>Your cart is empty.</p>
+					) : (
+						<>
+							<ul className='flex flex-col gap-5'>
+								{cartParts.map((item) => (
+									<li key={item.id}>
+										<PartRow part={item}>{item.oftenReturned ? <ReturnFlag /> : null}</PartRow>
+									</li>
+								))}
+							</ul>
+							<CartTotals parts={cartParts} />
+						</>
+					)}
+				</div>
+				<ActionBar>
+					<Button variant='neutral' className={pillClass("place-order", larger)} disabled={cart.length === 0} onClick={() => setScreen("ordered")}>
+						Place order
+					</Button>
+				</ActionBar>
+			</>
 		);
 	}
 	return (
 		<PrototypeFrame {...view}>
-			{header}
-			{body}
+			<ShopScreen screen={`${screen}-${partId ?? ""}`}>
+				{header}
+				{body}
+			</ShopScreen>
 		</PrototypeFrame>
 	);
 }
@@ -265,12 +255,15 @@ function FlagReturnsPrototype({ data, openOn, ...view }: PrototypeProps) {
 
 const checkoutScreens = ["the shop", "the cart", "the fit check at checkout", "the store staff order lookup"];
 
+/** The vehicle another one is picked as at checkout: year, make and model. */
+const otherVehicleSteps = vehicleSteps.slice(0, 3);
+
 /**
  * Shopping as today; at checkout, every item is checked against the vehicle, with a swap for what doesn't fit. Evaluate's
  * fixes: the fit checked as parts go in the cart (`cartCheck`), and another vehicle at checkout (`otherVehicle`).
  */
 function CheckoutCustomer({ data, openOn }: { data: FitCheckData; openOn?: number }) {
-	const { cartCheck, otherVehicle, explainFit, swapPriceDiff } = useChanges();
+	const { cartCheck, otherVehicle, explainFit, swapPriceDiff, larger } = useChanges();
 	const [cart, setCart] = React.useState<string[]>(() => (openOn ? data.parts.slice(0, 2).map((p) => p.id) : []));
 	const [screen, setScreen] = React.useState<"shop" | "cart" | "checkout" | "ordered">(openOn === 1 ? "cart" : openOn === 2 ? "checkout" : "shop");
 	const [picked, setPicked] = React.useState<"saved" | "other" | undefined>(openOn === 2 ? "saved" : undefined);
@@ -283,9 +276,8 @@ function CheckoutCustomer({ data, openOn }: { data: FitCheckData; openOn?: numbe
 	const otherReady = Boolean(other.year && other.make && other.model);
 	const checked: FitVehicle | undefined = choice === "saved" ? vehicle : choice === "other" && otherReady ? { ...other, trim: "", engine: "" } : undefined;
 	const fitOf = (item: FitPart) => (choice === "other" ? fitForVehicle(item, other) : item.fit);
-	const header = (
-		<ShopHeader cart={cart.length} vehicle={cartCheck ? vehicleName(vehicle) : undefined} onCart={() => setScreen("cart")} />
-	);
+	const cartParts = cart.map((id) => data.parts.find((p) => p.id === id)!);
+	const header = <ShopHeader cart={cart.length} vehicle={cartCheck ? vehicle : undefined} onCart={() => setScreen("cart")} />;
 	const reset = () => {
 		setCart([]);
 		setScreen("shop");
@@ -312,14 +304,14 @@ function CheckoutCustomer({ data, openOn }: { data: FitCheckData; openOn?: numbe
 							<Button
 								variant='outline'
 								size='sm'
-								className='rounded-button-md shadow-xs'
+								className='h-9 rounded-full px-4'
 								onClick={() => setCart((c) => (c.includes(swap.id) ? c.filter((cid) => cid !== item.id) : c.map((cid) => (cid === item.id ? swap.id : cid))))}
 							>
 								Swap for {swap.name}, {swap.price}
 								{swapPriceDiff ? ` (${priceDifference(swap.price, item.price)})` : ""}
 							</Button>
 						) : null}
-						<Button variant='ghost' size='sm' className='rounded-button-md' onClick={() => setCart((c) => c.filter((cid) => cid !== item.id))}>
+						<Button variant='ghost' size='sm' className='h-9 rounded-full px-4' onClick={() => setCart((c) => c.filter((cid) => cid !== item.id))}>
 							Remove it
 						</Button>
 					</div>
@@ -328,129 +320,158 @@ function CheckoutCustomer({ data, openOn }: { data: FitCheckData; openOn?: numbe
 		);
 	};
 
-	if (screen === "ordered") return (<>{header}<Ordered onDone={reset} /></>);
+	if (screen === "ordered")
+		return (
+			<ShopScreen screen='ordered'>
+				{header}
+				<OrderPlaced onDone={reset} />
+			</ShopScreen>
+		);
 
 	if (screen === "checkout")
 		return (
-			<>
+			<ShopScreen screen='checkout'>
 				{header}
-				<div className='flex flex-col gap-4 p-4'>
-					<Back onClick={() => setScreen("cart")} />
-					<EditableText as='h2' id='checkout-title' className='text-lg font-semibold text-foreground-prominent'>
+				<div className={screenBody}>
+					<BackLink onClick={() => setScreen("cart")} />
+					<EditableText as='h2' id='checkout-title' className={screenTitle}>
 						Checkout
 					</EditableText>
-					<div role='radiogroup' aria-label='Which vehicle are these parts for?' className='flex flex-col gap-2 rounded-md border border-border p-3'>
-						<span className='flex items-center gap-2 text-sm font-semibold text-foreground'>
-							<Car className='size-4 text-icon' aria-hidden /> Which vehicle are these parts for?
-						</span>
-						<label className='flex items-center gap-2 text-sm text-foreground'>
-							<input type='radio' name='vehicle' checked={choice === "saved"} onChange={() => setPicked("saved")} />
-							{vehicleName(vehicle)} {vehicle.trim} {vehicle.engine} (saved)
-						</label>
-						{otherVehicle ? (
-							<label className='flex items-center gap-2 text-sm text-foreground'>
-								<input type='radio' name='vehicle' checked={choice === "other"} onChange={() => setPicked("other")} />
-								Another vehicle
-							</label>
-						) : null}
+					{/* Which vehicle: the saved one or (with Evaluate's fix) another, as tiles. Another is picked like the
+					    vehicle picker: year, make and model, one at a time. */}
+					<section className='flex flex-col gap-3'>
+						<h3 className={sectionTitle}>Which vehicle are these parts for?</h3>
+						<div role='group' aria-label='Which vehicle are these parts for?' className='flex flex-col gap-2'>
+							<button
+								type='button'
+								aria-pressed={choice === "saved"}
+								onClick={() => setPicked("saved")}
+								className={cn("flex items-center gap-3 p-4 text-left", choiceClass(choice === "saved"))}
+							>
+								<Car className='size-5 shrink-0 text-icon' aria-hidden />
+								<span className='flex flex-col'>
+									<span className='text-base'>{vehicleName(vehicle)}</span>
+									<span className='font-normal text-muted-foreground'>
+										{vehicle.trim} · {vehicle.engine} · Saved
+									</span>
+								</span>
+							</button>
+							{otherVehicle ? (
+								<button
+									type='button'
+									aria-pressed={choice === "other"}
+									onClick={() => setPicked("other")}
+									className={cn("flex items-center gap-3 p-4 text-left text-base", choiceClass(choice === "other"))}
+								>
+									<Car className='size-5 shrink-0 text-icon' aria-hidden />
+									Another vehicle
+								</button>
+							) : null}
+						</div>
 						{choice === "other" ? (
-							<div className='grid grid-cols-3 gap-2 pt-1'>
-								<Field label='Year' value={other.year} options={data.options.years} onChange={(year) => setOther((o) => ({ ...o, year }))} />
-								<Field label='Make' value={other.make} options={data.options.makes} onChange={(make) => setOther((o) => ({ ...o, make }))} />
-								<Field label='Model' value={other.model} options={data.options.models} onChange={(model) => setOther((o) => ({ ...o, model }))} />
-							</div>
+							<VehiclePicker
+								options={data.options}
+								steps={otherVehicleSteps}
+								value={other}
+								onChange={(v) => setOther({ year: v.year ?? "", make: v.make ?? "", model: v.model ?? "" })}
+							/>
 						) : null}
-					</div>
+					</section>
 					{checked ? (
-						<ul className='flex flex-col divide-y divide-border border-y border-border'>
-							{cart.map((id) => {
-								const item = data.parts.find((p) => p.id === id)!;
-								return (
-									<li key={id} className='flex flex-col gap-2 py-3'>
-										<div className='flex items-start justify-between gap-3'>
-											<span className='text-sm font-semibold text-foreground'>{item.name}</span>
-											<span className='text-sm text-muted-foreground'>{item.price}</span>
-										</div>
-										{fitRow(item, checked, fitOf(item))}
+						<>
+							<ul className='flex flex-col gap-5'>
+								{cartParts.map((item) => (
+									<li key={item.id}>
+										<PartRow part={item}>{fitRow(item, checked, fitOf(item))}</PartRow>
 									</li>
-								);
-							})}
-						</ul>
+								))}
+							</ul>
+							<CartTotals parts={cartParts} />
+						</>
 					) : (
-						<p className='text-sm text-muted-foreground'>
+						<p className='text-base text-muted-foreground'>
 							{choice === "other" ? "Pick the year, make and model, and I'll check everything in your cart fits it." : "Pick the vehicle, and I'll check everything in your cart fits it."}
 						</p>
 					)}
-					<Button {...orderButton.props} disabled={!checked || cart.length === 0} onClick={() => setScreen("ordered")}>
+				</div>
+				<ActionBar>
+					<Button
+						{...orderButton.props}
+						variant='neutral'
+						className={pillClass("place-order", larger)}
+						disabled={!checked || cart.length === 0}
+						onClick={() => setScreen("ordered")}
+					>
 						{orderButton.label}
 					</Button>
-				</div>
-			</>
+				</ActionBar>
+			</ShopScreen>
 		);
 
 	if (screen === "cart")
 		return (
-			<>
+			<ShopScreen screen='cart'>
 				{header}
-				<div className='flex flex-col gap-4 p-4'>
-					<Back onClick={() => setScreen("shop")} />
-					<EditableText as='h2' id='cart-title' className='text-lg font-semibold text-foreground-prominent'>
-						Your cart
-					</EditableText>
+				<div className={screenBody}>
+					<BackLink onClick={() => setScreen("shop")} />
+					<CartHeading parts={cartParts} />
 					{cart.length === 0 ? (
-						<p className='text-sm text-muted-foreground'>Your cart is empty.</p>
+						<p className='text-base text-muted-foreground'>Your cart is empty.</p>
 					) : (
-						<ul className='flex flex-col divide-y divide-border border-y border-border'>
-							{cart.map((id) => {
-								const item = data.parts.find((p) => p.id === id)!;
-								return (
-									<li key={id} className='flex flex-col gap-2 py-3'>
-										<div className='flex items-center justify-between gap-3'>
-											<span className='text-sm font-semibold text-foreground'>{item.name}</span>
-											<span className='text-sm text-muted-foreground'>{item.price}</span>
-										</div>
-										{cartCheck ? fitRow(item, vehicle, item.fit) : null}
+						<>
+							<ul className='flex flex-col gap-5'>
+								{cartParts.map((item) => (
+									<li key={item.id}>
+										<PartRow part={item}>{cartCheck ? fitRow(item, vehicle, item.fit) : null}</PartRow>
 									</li>
-								);
-							})}
-						</ul>
+								))}
+							</ul>
+							<CartTotals parts={cartParts} />
+						</>
 					)}
-					<Button {...checkoutButton.props} disabled={cart.length === 0} onClick={() => setScreen("checkout")}>
+				</div>
+				<ActionBar>
+					<Button
+						{...checkoutButton.props}
+						variant='neutral'
+						className={pillClass("go-to-checkout", larger)}
+						disabled={cart.length === 0}
+						onClick={() => setScreen("checkout")}
+					>
 						{checkoutButton.label}
 					</Button>
-				</div>
-			</>
+				</ActionBar>
+			</ShopScreen>
 		);
 
 	return (
-		<>
+		<ShopScreen screen='shop'>
 			{header}
-			<div className='flex flex-col gap-3 p-4'>
-				<EditableText as='h2' id='shop-title' className='text-lg font-semibold text-foreground-prominent'>
+			<div className='flex flex-col gap-6 px-4 pt-6 pb-8 @3xl:px-10'>
+				<EditableText as='h2' id='shop-title' className={screenTitle}>
 					Popular parts
 				</EditableText>
-				<ul className='grid grid-cols-2 gap-3'>
+				<ul className='grid grid-cols-2 gap-x-3 gap-y-6 @3xl:grid-cols-4'>
 					{data.parts.map((p) => (
-						<li key={p.id} className='flex flex-col gap-2 rounded-md border border-border p-2'>
-							<PartImage part={p} className='aspect-square w-full' />
-							<span className='text-sm font-semibold text-foreground'>{p.name}</span>
-							<span className='text-sm text-muted-foreground'>{p.price}</span>
-							<Button
-								variant='outline'
-								size='sm'
-								className='rounded-button-md shadow-xs'
-								disabled={cart.includes(p.id)}
-								onClick={() => setCart((c) => [...c, p.id])}
-							>
-								{cart.includes(p.id) ? "In your cart" : "Add to cart"}
-							</Button>
-							{/* Checked as it goes in the cart: no surprises at checkout. */}
-							{cartCheck && cart.includes(p.id) ? fitRow(p, vehicle, p.fit) : null}
+						<li key={p.id}>
+							<PartCard part={p}>
+								<Button
+									variant='outline'
+									size='sm'
+									className='h-9 w-full rounded-full'
+									disabled={cart.includes(p.id)}
+									onClick={() => setCart((c) => [...c, p.id])}
+								>
+									{cart.includes(p.id) ? "In your cart" : "Add to cart"}
+								</Button>
+								{/* Checked as it goes in the cart: no surprises at checkout. */}
+								{cartCheck && cart.includes(p.id) ? fitRow(p, vehicle, p.fit) : null}
+							</PartCard>
 						</li>
 					))}
 				</ul>
 			</div>
-		</>
+		</ShopScreen>
 	);
 }
 
@@ -802,19 +823,25 @@ function FitDataFitList({ data }: { data: FitCheckData }) {
 	const [reported, setReported] = React.useState(false);
 	const part = data.parts.find((p) => p.id === "spark-plugs") ?? data.parts[0];
 	return (
-		<>
+		<ShopScreen screen='fit-list'>
 			<ShopHeader cart={0} />
-			<div className='flex flex-col gap-4 p-4'>
-				<PartImage part={part} className='aspect-[4/3] w-full' />
+			<PartLayout
+				part={part}
+				action={
+					<Button variant='neutral' className={pillClass()}>
+						Add to cart
+					</Button>
+				}
+			>
 				<div className='flex flex-col gap-1'>
-					<h2 className='text-lg font-semibold text-foreground-prominent'>{part.name}</h2>
-					<span className='text-sm text-muted-foreground'>{part.price}</span>
+					<h2 className={screenTitle}>{part.name}</h2>
+					<span className='text-lg text-foreground'>{part.price}</span>
 				</div>
-				<div className='flex flex-col gap-2 rounded-md bg-background-subtle p-3'>
-					<EditableText as='span' id='fit-list-title' className='text-sm font-semibold text-foreground'>
+				<section className='flex flex-col gap-3 rounded-card bg-background-subtle p-4'>
+					<EditableText as='span' id='fit-list-title' className={sectionTitle}>
 						Fits these vehicles
 					</EditableText>
-					<ul className='flex flex-col gap-1 text-sm text-foreground'>
+					<ul className='flex flex-col gap-2 text-base text-foreground'>
 						{(part.fitsVehicles ?? []).map((vehicle) => (
 							<li key={vehicle}>{vehicle}</li>
 						))}
@@ -840,10 +867,9 @@ function FitDataFitList({ data }: { data: FitCheckData }) {
 							</button>
 						)
 					) : null}
-				</div>
-				<Button className='rounded-button-lg'>Add to cart</Button>
-			</div>
-		</>
+				</section>
+			</PartLayout>
+		</ShopScreen>
 	);
 }
 

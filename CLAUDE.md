@@ -235,7 +235,7 @@ Mirror these names when a new component has the same concept. Keep this list cur
   - Fits its text, wraps long messages and keeps typed line breaks; at most 80% of its container's width. The conversation layout aligns it to the end
 - **EmptyState** (`feedback/empty-state`): the centered message for any view, tab or filter with nothing to show. Same API as verita-ucl's
   - `title` (required), `description`, `icon` (optional slot above the title)
-  - `buttonLabel` + `buttonProps` (forwarded to a `sm` primary `Button`); omit `buttonLabel` for no button. `secondaryButtonLabel` + `secondaryButtonProps`: a second, outlined `sm` button 8px before the main one (e.g. "Back to Prototype" before "Evaluate the prototype")
+  - `buttonLabel` + `buttonProps` (forwarded to a `Button`, sparks.ds Solid · Neutral (dark) lg · 36: 36px, 12px corners, semibold); omit `buttonLabel` for no button. `secondaryButtonLabel` + `secondaryButtonProps`: a second, outlined button, the same size, 8px before the main one (e.g. "Back to Prototype" before "Evaluate the prototype")
   - Centers itself in its parent: give it `flex-1` or a height through `className`. Its text is at most 480px wide, so a long description stays readable in a wide panel
 - **PromptComposer** (`chat/prompt-composer`): the message box for talking to an AI assistant (Sparks), fills its container's width
   - Textarea props go to the textarea (`value`/`defaultValue`/`onChange`, `placeholder`, `aria-label`, `disabled`); `className` styles the frame. Grows with its text up to 240px, then scrolls

@@ -378,7 +378,7 @@ Exception: the pencil on Dana's answers in Sparks opens its tooltip above ("Chan
 
 ## Empty states (`feedback/empty-state/empty-state.tsx`)
 
-**Rule:** every view, tab or filter with nothing to show uses `EmptyState`, and only its copy changes: optional icon, title (`lg` semibold, foreground), description (`base`, `muted-foreground`), 8px apart, and an optional `sm` primary button 16px below (with an optional outlined second button 8px before it, the main action last, as Cancel before Save). It's ported from verita-ucl's `EmptyState`, with the same layout and props. sparks.ds has no empty-state design.
+**Rule:** every view, tab or filter with nothing to show uses `EmptyState`, and only its copy changes: optional icon, title (`lg` semibold, foreground), description (`base`, `muted-foreground`), 8px apart, and an optional ~~`sm` primary~~ button 16px below, sparks.ds "Button" Solid · Neutral (`variant='neutral'`, dark), lg · 36: `size` default (36px) with `rounded-button-lg px-3.5 font-semibold` (`emptyStateButtonClasses`), as the Sparks header's Share and Publish (with an optional outlined second button 8px before it, the same size plus `shadow-xs`, the main action last, as Cancel before Save). Don't set `size='lg'`: UCL's `lg` is 40px, Figma's lg is 36px (SIZE-SCALE.md). It's ported from verita-ucl's `EmptyState`, with the same layout and props. sparks.ds has no empty-state design.
 
 **Why:** one empty state everywhere, so an empty tab never looks like a broken blank panel and every empty view reads the same. Without a Figma source, this entry is the reference: a later edit shouldn't restyle it per screen.
 

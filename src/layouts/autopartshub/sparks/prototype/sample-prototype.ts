@@ -54,34 +54,6 @@ export function samplePrototypeBuildingReply(directionId: string, screens: strin
 	};
 }
 
-/**
- * Another direction as a path, from the plan (prds/sparks-plan-compare.md, "Directions in the plan"): Sparks
- * says what it will build, next to what, and what it will test, and asks once. The id carries the direction.
- */
-export function samplePathConfirmReply(directionId: string, name: string, current: string, believe: string): SparksReply {
-	return {
-		id: `path-confirm-${directionId}`,
-		from: "sparks",
-		parts: [
-			{
-				kind: "text",
-				text: `I'll build "${name}" as another path, next to "${current}". Both stay: you switch between them at the top of the prototype, and each keeps its own versions and evaluation.\n\n**What we'll test:** ${believe}\n\n**Build it?**`,
-			},
-		],
-		quickReplies: samplePathConfirmReplies,
-	};
-}
-
-/** The answers to building another path. */
-export const samplePathConfirmReplies = ["Yes, build it", "Not now"];
-
-/** "Not now": nothing changes. */
-export const samplePathNotNowReply: SparksReply = {
-	id: "path-not-now",
-	from: "sparks",
-	parts: [{ kind: "text", text: "Okay. It's in your plan whenever you want to try it." }],
-};
-
 /** The answers to the question that finishes the step. */
 export const samplePrototypeReadyReplies = ["Yes, evaluate it", "Go to Review instead"];
 

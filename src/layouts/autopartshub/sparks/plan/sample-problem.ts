@@ -77,7 +77,7 @@ export const sampleProblemStatementReply: SparksReply = {
 	parts: [
 		{
 			kind: "text",
-			text: "Thanks, Dana. I'll keep your idea for later, when we look at solutions. Here's the problem as I understand it, in a bit more detail:",
+			text: "Thanks, Dana. Here's the problem as I understand it, in a bit more detail:",
 		},
 		{
 			kind: "suggestion",

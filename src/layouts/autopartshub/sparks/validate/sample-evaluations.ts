@@ -117,7 +117,7 @@ function flagReturns(changes: FitCheckChanges): EvaluationBody {
 				where: "Search results",
 				severity: "Hurts",
 				method: "AI simulation, 1 of 6 customer scenarios",
-				fix: 'Word it as a reminder: "Check the fit for your vehicle".',
+				fix: 'Word it as a reminder: "Check the fit first".',
 				status: reminder ? "fixed" : "open",
 			},
 			{
@@ -185,7 +185,7 @@ function flagReturns(changes: FitCheckChanges): EvaluationBody {
 				task: "Buy a part that fits, starting from nothing.",
 				outcome: reminder ? "done" : "struggled",
 				summary: reminder
-					? 'Read "Check the fit for your vehicle", opened the fit list and bought the filter that fits.'
+					? 'Read "Check the fit first", opened the fit list and bought the filter that fits.'
 					: "Took the flag to mean the part is bad, and left to buy elsewhere.",
 				steps: [
 					{

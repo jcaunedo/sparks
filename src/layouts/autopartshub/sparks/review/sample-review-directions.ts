@@ -134,7 +134,7 @@ const flagReturns: ReviewProfile = {
 		{
 			story: "As a customer buying online, I see in search results which parts often come back, so I check the fit before I buy.",
 			criteria: [
-				`Given a part that comes back as "doesn't fit" more than 1 in 10 times, when it shows in search results, then it's marked "${changes.flagReminder ? "Check the fit for your vehicle" : "Often returned: check the fit"}", in words, not color alone.`,
+				`Given a part that comes back as "doesn't fit" more than 1 in 10 times, when it shows in search results, then it's marked "${changes.flagReminder ? "Check the fit first" : "Often returned"}", in words, not color alone.`,
 				"Given a part that doesn't, then nothing is marked.",
 			],
 		},
@@ -174,10 +174,10 @@ const flagReturns: ReviewProfile = {
 		changes.flagReminder
 			? undefined
 			: {
-					proposal: 'Word the flag as a reminder, "Check the fit for your vehicle", as the UX team suggests. It changes the prototype, so Evaluate will need a check.',
+					proposal: 'Word the flag as a reminder, "Check the fit first", as the UX team suggests. It changes the prototype, so Evaluate will need a check.',
 					changes: { ...changes, flagReminder: true },
 					version: "Flag worded as a reminder, from the UX team's review",
-					done: 'the flag reads "Check the fit for your vehicle"',
+					done: 'the flag reads "Check the fit first"',
 				},
 	question: () => 'Can the counts include only "doesn\'t fit" returns before launch?',
 	effort: { short: "about 2 weeks", line: "Effort: about 2 weeks for the web team, before the holiday freeze (from engineering)." },

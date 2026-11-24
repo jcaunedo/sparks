@@ -1,9 +1,10 @@
 import * as React from "react";
-import { Check, ChevronLeft, CircleHelp, Search, ShoppingCart, X } from "lucide-react";
+import { Car, Check, ChevronLeft, CircleHelp, Search, ShoppingCart, X } from "lucide-react";
 
 import { AutoPartsLogo } from "@/components/brand/autoparts-logo";
 import { Badge } from "@/components/data-display/badge";
 import { Button } from "@/components/buttons/button";
+import { scrollContainerOf } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 
 /*
@@ -270,6 +271,383 @@ function Field({ label, value, options, onChange }: { label: string; value: stri
 	);
 }
 
+/** The vehicle's details, in the order the picker asks for them. */
+const vehicleSteps = [
+	{ key: "year", label: "Year", options: "years" },
+	{ key: "make", label: "Make", options: "makes" },
+	{ key: "model", label: "Model", options: "models" },
+	{ key: "trim", label: "Trim", options: "trims" },
+	{ key: "engine", label: "Engine", options: "engines" },
+] as const;
+type VehicleStep = (typeof vehicleSteps)[number];
+
+/** "$54.99" → 54.99, for the cart's totals. */
+const priceValue = (price: string) => Number(price.replace(/[^0-9.]/g, "")) || 0;
+const formatPrice = (value: number) => `$${value.toFixed(2)}`;
+
+/*
+ * The shop's screens, shared by every prototype's customer view, in a big-type retail app style
+ * (prds/sparks-prototype.md, "How the customer's screens look"): large tight headings, generous space, product photos on
+ * a soft gray, choices as tiles instead of dropdowns, and one dark pill button per screen, pinned to the bottom on the
+ * phone. In the store's colors, with its logo. `ShopScreen` is a `@container`: the desktop frame lays a part out in two
+ * columns (the frame's width, not the window's).
+ */
+
+/** A screen's heading, in the shop's big type. */
+const screenTitle = "text-2xl font-semibold tracking-tight text-foreground-prominent";
+/** A section's heading inside a screen. */
+const sectionTitle = "text-lg font-semibold text-foreground-prominent";
+/** A screen's content column: centered, at most 576px on the desktop. */
+const screenBody = "mx-auto flex w-full max-w-xl flex-col gap-6 px-4 pt-6 pb-8";
+
+/** The screen's main button: a dark, full-width pill, larger when she asked for it. */
+function pillClass(id?: string, larger?: string[]) {
+	return cn("h-12 w-full rounded-full px-6 text-base", id && larger?.includes(id) && "h-14 text-lg");
+}
+
+/** A screen of the shop. A new `screen` starts at its top: the device's scroll area goes back up (never the page). */
+function ShopScreen({ screen, children }: { screen: string; children: React.ReactNode }) {
+	const ref = React.useRef<HTMLDivElement>(null);
+	React.useEffect(() => {
+		const root = ref.current;
+		if (!root) return;
+		const scroller = scrollContainerOf(root);
+		if (scroller !== document.documentElement) scroller.scrollTo({ top: 0 });
+	}, [screen]);
+	return (
+		<div ref={ref} className='@container flex flex-1 flex-col'>
+			{children}
+		</div>
+	);
+}
+
+/**
+ * The store's header, sticky at the top: the logo and the cart. With a vehicle, a bar under it says which one parts are
+ * checked against, with "Change" when it can be changed.
+ */
+function ShopHeader({
+	cart,
+	onCart,
+	vehicle,
+	onChangeVehicle,
+}: {
+	cart: number;
+	onCart?: () => void;
+	vehicle?: FitVehicle;
+	onChangeVehicle?: () => void;
+}) {
+	return (
+		<div className='sticky top-0 z-20 bg-background'>
+			<header className='flex items-center justify-between gap-3 px-4 py-3 @3xl:px-10'>
+				{/* The store's own logo: sparks.ds "AutoParts Logo" (73:5941), 20px tall. */}
+				<AutoPartsLogo className='h-5' />
+				<button
+					type='button'
+					aria-label={`Cart, ${cart} items`}
+					onClick={onCart}
+					className='relative grid size-10 place-items-center rounded-full text-icon hover:bg-background-subtle'
+				>
+					<ShoppingCart className='size-5' aria-hidden />
+					{cart ? (
+						<span className='absolute top-1 right-1 grid size-4 place-items-center rounded-full bg-neutral text-[10px] font-semibold text-neutral-foreground'>
+							{cart}
+						</span>
+					) : null}
+				</button>
+			</header>
+			{vehicle ? (
+				<div className='flex items-center justify-between gap-3 bg-background-subtle px-4 py-2.5 text-sm @3xl:px-10'>
+					<span className='flex min-w-0 items-center gap-2 text-foreground'>
+						<Car className='size-4 shrink-0 text-icon' aria-hidden />
+						<span className='truncate'>
+							<span className='font-medium'>{vehicleName(vehicle)}</span>{" "}
+							<span className='text-muted-foreground'>{[vehicle.trim, vehicle.engine].filter(Boolean).join(" · ")}</span>
+						</span>
+					</span>
+					{onChangeVehicle ? (
+						<button
+							type='button'
+							onClick={onChangeVehicle}
+							className='shrink-0 font-medium text-foreground underline underline-offset-4 hover:text-muted-foreground'
+						>
+							Change
+						</button>
+					) : null}
+				</div>
+			) : null}
+		</div>
+	);
+}
+
+/** "Back", to the screen before. */
+function BackLink({ onClick }: { onClick: () => void }) {
+	return (
+		<button type='button' onClick={onClick} className='-ms-1 flex w-fit items-center gap-1 text-sm font-medium text-muted-foreground hover:text-foreground'>
+			<ChevronLeft className='size-4' aria-hidden /> Back
+		</button>
+	);
+}
+
+/** The bottom bar holding a screen's main button: pinned to the bottom on the phone, in the flow on the desktop. */
+function ActionBar({ children, className }: { children: React.ReactNode; className?: string }) {
+	return (
+		<div
+			className={cn(
+				"sticky bottom-0 z-10 mt-auto border-t border-border bg-background px-4 pt-3 pb-4 @3xl:static @3xl:border-0 @3xl:bg-transparent @3xl:pb-10",
+				className,
+			)}
+		>
+			<div className='mx-auto flex w-full max-w-xl flex-col items-center gap-2'>{children}</div>
+		</div>
+	);
+}
+
+/** A part's photo on a soft gray tile, the photo's white melting into it. */
+function PartPhoto({ part, className, imageClassName }: { part: FitPart; className?: string; imageClassName?: string }) {
+	return (
+		<span className={cn("block shrink-0 overflow-hidden rounded-lg bg-background-subtle", className)}>
+			<PartImage part={part} className={cn("size-full rounded-none bg-transparent p-2 mix-blend-multiply", imageClassName)} />
+		</span>
+	);
+}
+
+/** A part as a card: its photo, the name and the price, opening it when `onOpen` is given; `children` go under it. */
+function PartCard({ part, onOpen, children }: { part: FitPart; onOpen?: () => void; children?: React.ReactNode }) {
+	const content = (
+		<>
+			<PartPhoto
+				part={part}
+				className='aspect-square w-full group-focus-visible:ring-[3px] group-focus-visible:ring-ring/50'
+				imageClassName='p-3 transition-transform group-hover:scale-[1.03] motion-reduce:transition-none'
+			/>
+			<span className='flex flex-col'>
+				<span className='line-clamp-2 text-sm font-medium text-foreground'>{part.name}</span>
+				<span className='text-sm text-muted-foreground'>{part.price}</span>
+			</span>
+		</>
+	);
+	return (
+		<div className='flex flex-col gap-2'>
+			{onOpen ? (
+				<button type='button' onClick={onOpen} className='group flex flex-col gap-2 text-left outline-none'>
+					{content}
+				</button>
+			) : (
+				<div className='flex flex-col gap-2'>{content}</div>
+			)}
+			{children}
+		</div>
+	);
+}
+
+/**
+ * A part as a row: its photo on the left, then the name, the price and `children` (a fit message, a flag). Opens it when
+ * `onOpen` is given (then `children` can't hold buttons).
+ */
+function PartRow({ part, onOpen, children }: { part: FitPart; onOpen?: () => void; children?: React.ReactNode }) {
+	const content = (
+		<>
+			<PartPhoto part={part} className='size-24' />
+			<span className='flex min-w-0 flex-1 flex-col gap-1.5'>
+				<span className='text-base font-medium text-foreground'>{part.name}</span>
+				<span className='text-sm text-muted-foreground'>{part.price}</span>
+				{children}
+			</span>
+		</>
+	);
+	return onOpen ? (
+		<button type='button' onClick={onOpen} className='flex w-full items-start gap-4 rounded-lg text-left outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50'>
+			{content}
+		</button>
+	) : (
+		<div className='flex items-start gap-4'>{content}</div>
+	);
+}
+
+/** The cart's totals: subtotal, pickup and total. */
+function CartTotals({ parts }: { parts: FitPart[] }) {
+	const subtotal = parts.reduce((sum, part) => sum + priceValue(part.price), 0);
+	return (
+		<dl className='flex flex-col gap-2 border-t border-border pt-5 text-base'>
+			<div className='flex justify-between'>
+				<dt className='text-muted-foreground'>Subtotal</dt>
+				<dd className='text-foreground'>{formatPrice(subtotal)}</dd>
+			</div>
+			<div className='flex justify-between'>
+				<dt className='text-muted-foreground'>Pickup at Store 214</dt>
+				<dd className='text-foreground'>Free</dd>
+			</div>
+			<div className='flex justify-between border-t border-border pt-3 font-semibold'>
+				<dt className='text-foreground-prominent'>Total</dt>
+				<dd className='text-foreground-prominent'>{formatPrice(subtotal)}</dd>
+			</div>
+		</dl>
+	);
+}
+
+/** "Your cart", with how many items and what they come to. */
+function CartHeading({ parts }: { parts: FitPart[] }) {
+	const total = parts.reduce((sum, part) => sum + priceValue(part.price), 0);
+	return (
+		<div className='flex flex-col gap-1'>
+			<EditableText as='h2' id='cart-title' className={screenTitle}>
+				Your cart
+			</EditableText>
+			<span className='text-base text-muted-foreground'>
+				{parts.length === 1 ? "1 item" : `${parts.length} items`}
+				{parts.length ? ` · ${formatPrice(total)}` : ""}
+			</span>
+		</div>
+	);
+}
+
+/** The pretend order confirmation, with "Keep shopping". */
+function OrderPlaced({ onDone }: { onDone: () => void }) {
+	return (
+		<>
+			<div className='mx-auto flex w-full max-w-xl flex-1 flex-col items-center justify-center gap-4 px-4 py-12 text-center'>
+				<span className='grid size-14 place-items-center rounded-full bg-neutral text-neutral-foreground'>
+					<Check className='size-7' aria-hidden />
+				</span>
+				<h2 className={screenTitle}>Order placed</h2>
+				<p className='text-base text-muted-foreground'>This is pretend: nothing was ordered, and no one was charged.</p>
+			</div>
+			<ActionBar>
+				<Button variant='outline' className={pillClass()} onClick={onDone}>
+					Keep shopping
+				</Button>
+			</ActionBar>
+		</>
+	);
+}
+
+/**
+ * A part's page: its photo edge to edge on the phone (beside the details on the desktop), the details, then `after`
+ * (other parts). `action`, the main button, sits with the details on the desktop and is pinned to the bottom on the phone.
+ */
+function PartLayout({ part, children, action, after }: { part: FitPart; children: React.ReactNode; action: React.ReactNode; after?: React.ReactNode }) {
+	return (
+		<>
+			<div className='flex flex-col @3xl:grid @3xl:grid-cols-2 @3xl:gap-10 @3xl:px-10 @3xl:pt-6'>
+				<PartPhoto part={part} className='aspect-square w-full rounded-none @3xl:rounded-card' imageClassName='p-8' />
+				<div className='flex flex-col gap-6 px-4 pt-5 pb-8 @3xl:px-0 @3xl:pt-0'>
+					{children}
+					<div className='hidden @3xl:block'>{action}</div>
+				</div>
+			</div>
+			{after}
+			<ActionBar className='@3xl:hidden'>{action}</ActionBar>
+		</>
+	);
+}
+
+/** A row of part cards that scrolls sideways on the phone, a grid on the desktop. */
+function PartCarousel({ title, parts, onOpen }: { title: string; parts: FitPart[]; onOpen: (id: string) => void }) {
+	if (!parts.length) return null;
+	return (
+		<section className='flex flex-col gap-3 pb-8 @3xl:px-10'>
+			<h3 className={cn(sectionTitle, "px-4 @3xl:px-0")}>{title}</h3>
+			<ul className='scrollbar-subtle flex snap-x gap-3 overflow-x-auto px-4 pb-1 @3xl:grid @3xl:grid-cols-4 @3xl:px-0'>
+				{parts.map((p) => (
+					<li key={p.id} className='w-36 shrink-0 snap-start @3xl:w-auto'>
+						<PartCard part={p} onOpen={() => onOpen(p.id)} />
+					</li>
+				))}
+			</ul>
+		</section>
+	);
+}
+
+/** One choice as a tile: bordered, the chosen one outlined in the text color. */
+function choiceClass(chosen: boolean) {
+	return cn(
+		"rounded-lg border text-sm font-medium text-foreground transition-colors outline-none hover:border-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50 motion-reduce:transition-none",
+		chosen ? "border-foreground ring-1 ring-foreground" : "border-border",
+	);
+}
+
+/**
+ * The vehicle picker: one detail at a time, as tiles; picking one moves to the next. What's picked shows above as chips,
+ * and selecting one asks that detail again. With every detail picked, the vehicle shows as it'll be saved.
+ */
+function VehiclePicker({
+	options,
+	steps = vehicleSteps,
+	value,
+	onChange,
+}: {
+	options: FitCheckData["options"];
+	steps?: readonly VehicleStep[];
+	value: Partial<FitVehicle>;
+	onChange: (value: Partial<FitVehicle>) => void;
+}) {
+	const [asking, setAsking] = React.useState<keyof FitVehicle>();
+	const current = steps.find((step) => step.key === asking) ?? steps.find((step) => !value[step.key]);
+	const picked = steps.filter((step) => value[step.key]);
+	return (
+		<div className='flex flex-col gap-6'>
+			{picked.length ? (
+				<ul aria-label='Your vehicle so far' className='flex flex-wrap gap-2'>
+					{picked.map((step) => (
+						<li key={step.key}>
+							<button
+								type='button'
+								aria-label={`${step.label}: ${value[step.key]}. Change`}
+								aria-current={current?.key === step.key ? "step" : undefined}
+								onClick={() => setAsking(step.key)}
+								className={cn(
+									"flex h-9 items-center rounded-full border px-3.5 text-sm font-medium text-foreground hover:border-border-defined",
+									current?.key === step.key ? "border-foreground" : "border-border bg-background-subtle",
+								)}
+							>
+								{value[step.key]}
+							</button>
+						</li>
+					))}
+				</ul>
+			) : null}
+			{current ? (
+				<fieldset className='flex flex-col'>
+					<legend className='flex w-full items-baseline justify-between pb-3'>
+						<span className={sectionTitle}>{current.label}</span>
+						<span className='text-sm text-muted-foreground'>
+							{steps.indexOf(current) + 1} of {steps.length}
+						</span>
+					</legend>
+					<div className={cn("grid gap-2", current.key === "year" || current.key === "trim" ? "grid-cols-3" : "grid-cols-2")}>
+						{options[current.options].map((option) => (
+							<button
+								key={option}
+								type='button'
+								aria-pressed={value[current.key] === option}
+								onClick={() => {
+									onChange({ ...value, [current.key]: option });
+									setAsking(undefined);
+								}}
+								className={cn("h-12 px-3", choiceClass(value[current.key] === option))}
+							>
+								{option}
+							</button>
+						))}
+					</div>
+				</fieldset>
+			) : (
+				<div className='flex items-center gap-4 rounded-card bg-background-subtle p-4'>
+					<span className='grid size-12 shrink-0 place-items-center rounded-full bg-background'>
+						<Car className='size-6 text-icon' aria-hidden />
+					</span>
+					<span className='flex flex-col'>
+						<span className='text-base font-semibold text-foreground-prominent'>{vehicleName(value as FitVehicle)}</span>
+						{value.trim || value.engine ? (
+							<span className='text-sm text-muted-foreground'>{[value.trim, value.engine].filter(Boolean).join(" · ")}</span>
+						) : null}
+					</span>
+				</div>
+			)}
+		</div>
+	);
+}
+
 /** The customer's shop: add a vehicle, open parts and see whether they fit, the cart and a pretend order. */
 function CustomerShop({ data, openOn }: { data: FitCheckData; openOn?: number }) {
 	const [vehicle, setVehicle] = React.useState<Partial<FitVehicle>>({});
@@ -285,177 +663,177 @@ function CustomerShop({ data, openOn }: { data: FitCheckData; openOn?: number })
 	const cartButton = useButton("add-to-cart", "Add to cart");
 	const orderButton = useButton("place-order", "Place order");
 	const part = data.parts.find((p) => p.id === partId) ?? data.parts[0];
-	const complete = (["year", "make", "model", "trim", "engine"] as const).every((key) => vehicle[key]);
-
-	// Sticky: the store's header stays at the top while the page scrolls under it.
+	const complete = vehicleSteps.every((step) => vehicle[step.key]);
+	const cartParts = cart.map((id) => data.parts.find((p) => p.id === id)!);
 	const header = (
-		<header className='sticky top-0 z-10 flex items-center justify-between gap-3 border-b border-border bg-background px-4 py-3'>
-			{/* The store's own logo: sparks.ds "AutoParts Logo" (73:5941), 20px tall. */}
-			<AutoPartsLogo className='h-5' />
-			<div className='flex items-center gap-2'>
-				{saved ? (
-					<button
-						type='button'
-						onClick={() => setSaved(null)}
-						className='rounded-full bg-background-subtle px-2.5 py-1 text-xs font-medium text-foreground hover:bg-muted'
-					>
-						{vehicleName(saved)} · Change
-					</button>
-				) : null}
-				<button
-					type='button'
-					aria-label={`Cart, ${cart.length} items`}
-					onClick={() => saved && setView("cart")}
-					className='relative grid size-8 place-items-center rounded-full text-icon hover:bg-background-subtle'
-				>
-					<ShoppingCart className='size-4' aria-hidden />
-					{cart.length ? (
-						<span className='absolute -top-0.5 -right-0.5 grid size-4 place-items-center rounded-full bg-primary text-[10px] font-semibold text-primary-foreground'>
-							{cart.length}
-						</span>
-					) : null}
-				</button>
-			</div>
-		</header>
+		<ShopHeader
+			cart={cart.length}
+			onCart={() => saved && setView("cart")}
+			vehicle={saved ?? undefined}
+			onChangeVehicle={() => setSaved(null)}
+		/>
 	);
 
 	// 1. The vehicle picker.
 	if (!saved)
 		return (
-			<>
+			<ShopScreen screen='vehicle'>
 				{header}
-				<div className='flex flex-col gap-4 p-4'>
-					<div className='flex flex-col gap-1'>
-						<EditableText as='h2' id='vehicle-title' className='text-lg font-semibold text-foreground-prominent'>
+				<div className={screenBody}>
+					<div className='flex flex-col gap-2'>
+						<EditableText as='h2' id='vehicle-title' className={screenTitle}>
 							Add your vehicle
 						</EditableText>
-						<EditableText id='vehicle-hint' className='text-sm text-muted-foreground'>
+						<EditableText id='vehicle-hint' className='text-base text-muted-foreground'>
 							Add it once, and every part shows whether it fits.
 						</EditableText>
 					</div>
-					<div className='grid grid-cols-2 gap-3'>
-						<Field label='Year' value={vehicle.year ?? ""} options={data.options.years} onChange={(year) => setVehicle((v) => ({ ...v, year }))} />
-						<Field label='Make' value={vehicle.make ?? ""} options={data.options.makes} onChange={(make) => setVehicle((v) => ({ ...v, make }))} />
-						<Field label='Model' value={vehicle.model ?? ""} options={data.options.models} onChange={(model) => setVehicle((v) => ({ ...v, model }))} />
-						<Field label='Trim' value={vehicle.trim ?? ""} options={data.options.trims} onChange={(trim) => setVehicle((v) => ({ ...v, trim }))} />
-						<div className='col-span-2'>
-							<Field label='Engine' value={vehicle.engine ?? ""} options={data.options.engines} onChange={(engine) => setVehicle((v) => ({ ...v, engine }))} />
-						</div>
-					</div>
-					<div className='flex flex-wrap gap-2'>
-						<Button {...saveButton.props} disabled={!complete} onClick={() => setSaved(vehicle as FitVehicle)}>
-							{saveButton.label}
-						</Button>
-						<Button variant='ghost' className='rounded-button-lg' onClick={() => setVehicle(data.vehicle)}>
-							Use a sample vehicle
-						</Button>
-					</div>
+					<VehiclePicker options={data.options} value={vehicle} onChange={setVehicle} />
 				</div>
-			</>
+				<ActionBar>
+					<Button
+						{...saveButton.props}
+						variant='neutral'
+						className={pillClass("save-vehicle", changes?.larger)}
+						disabled={!complete}
+						onClick={() => setSaved(vehicle as FitVehicle)}
+					>
+						{saveButton.label}
+					</Button>
+					<button
+						type='button'
+						onClick={() => setVehicle(data.vehicle)}
+						className='h-9 text-sm font-medium text-foreground underline underline-offset-4 hover:text-muted-foreground'
+					>
+						Use a sample vehicle
+					</button>
+				</ActionBar>
+			</ShopScreen>
 		);
 
-	// 4. The cart, and the pretend order.
-	if (view === "cart" || view === "ordered")
+	// 4. The pretend order.
+	if (view === "ordered")
 		return (
-			<>
+			<ShopScreen screen='ordered'>
 				{header}
-				{view === "ordered" ? (
-					<div className='flex flex-col items-start gap-3 p-4'>
-						<h2 className='text-lg font-semibold text-foreground-prominent'>Order placed</h2>
-						<p className='text-sm text-muted-foreground'>This is pretend: nothing was ordered, and no one was charged.</p>
-						<Button variant='outline' className='rounded-button-lg' onClick={() => { setCart([]); setView("part"); }}>
-							Keep shopping
-						</Button>
-					</div>
-				) : (
-					<div className='flex flex-col gap-4 p-4'>
-						<button type='button' onClick={() => setView("part")} className='flex w-fit items-center gap-1 text-sm text-muted-foreground hover:text-foreground'>
-							<ChevronLeft className='size-4' aria-hidden /> Back
-						</button>
-						<EditableText as='h2' id='cart-title' className='text-lg font-semibold text-foreground-prominent'>
-							Your cart
-						</EditableText>
-						{cart.length === 0 ? (
-							<p className='text-sm text-muted-foreground'>Your cart is empty.</p>
-						) : (
-							<ul className='flex flex-col divide-y divide-border border-y border-border'>
-								{cart.map((id) => {
-									const item = data.parts.find((p) => p.id === id)!;
-									return (
-										<li key={id} className='flex items-start justify-between gap-3 py-3'>
-											<div className='flex flex-col gap-1.5'>
-												<span className='text-sm font-semibold text-foreground'>{item.name}</span>
-												<FitMessage part={item} vehicle={saved} />
-											</div>
-											<span className='text-sm text-muted-foreground'>{item.price}</span>
-										</li>
-									);
-								})}
+				<OrderPlaced
+					onDone={() => {
+						setCart([]);
+						setView("part");
+					}}
+				/>
+			</ShopScreen>
+		);
+
+	// 4. The cart.
+	if (view === "cart")
+		return (
+			<ShopScreen screen='cart'>
+				{header}
+				<div className={screenBody}>
+					<BackLink onClick={() => setView("part")} />
+					<CartHeading parts={cartParts} />
+					{cart.length === 0 ? (
+						<p className='text-base text-muted-foreground'>Your cart is empty.</p>
+					) : (
+						<>
+							<ul className='flex flex-col gap-5'>
+								{cartParts.map((item) => (
+									<li key={item.id}>
+										<PartRow part={item}>
+											<FitMessage part={item} vehicle={saved} />
+										</PartRow>
+									</li>
+								))}
 							</ul>
-						)}
-						<Button {...orderButton.props} disabled={cart.length === 0} onClick={() => setView("ordered")}>
-							{orderButton.label}
-						</Button>
-					</div>
-				)}
-			</>
+							<CartTotals parts={cartParts} />
+						</>
+					)}
+				</div>
+				<ActionBar>
+					<Button
+						{...orderButton.props}
+						variant='neutral'
+						className={pillClass("place-order", changes?.larger)}
+						disabled={cart.length === 0}
+						onClick={() => setView("ordered")}
+					>
+						{orderButton.label}
+					</Button>
+				</ActionBar>
+			</ShopScreen>
 		);
 
 	// 2–3. A part, with whether it fits; and the other parts to open.
 	return (
-		<>
+		<ShopScreen screen={`part-${part.id}`}>
 			{header}
-			<div className='flex flex-col gap-4 p-4'>
-				<PartImage part={part} className='aspect-[4/3] w-full' />
-				<div className='flex flex-col gap-2'>
-					<h2 className='text-lg font-semibold text-foreground-prominent'>{part.name}</h2>
-					{changes?.fitAbovePrice ? <FitMessage part={part} vehicle={saved} /> : null}
-					<span className='text-sm text-muted-foreground'>{part.price}</span>
-					{changes?.fitAbovePrice ? null : <FitMessage part={part} vehicle={saved} />}
+			<PartLayout
+				part={part}
+				action={
+					<Button
+						{...cartButton.props}
+						variant='neutral'
+						className={pillClass("add-to-cart", changes?.larger)}
+						disabled={part.fit === "doesnt" || cart.includes(part.id)}
+						onClick={() => setCart((c) => [...c, part.id])}
+					>
+						{cart.includes(part.id) ? "In your cart" : part.fit === "doesnt" ? "Doesn't fit your vehicle" : cartButton.label}
+					</Button>
+				}
+				after={
+					<PartCarousel
+						title='Other parts'
+						parts={data.parts.filter((p) => p.id !== part.id && !part.fitsInstead?.includes(p.id))}
+						onOpen={setPartId}
+					/>
+				}
+			>
+				<div className='flex flex-col gap-3'>
+					<div className='flex flex-col gap-1'>
+						<h2 className={screenTitle}>{part.name}</h2>
+						{changes?.fitAbovePrice ? null : <span className='text-lg text-foreground'>{part.price}</span>}
+					</div>
+					<FitMessage part={part} vehicle={saved} />
+					{changes?.fitAbovePrice ? <span className='text-lg text-foreground'>{part.price}</span> : null}
 					{changes?.liveStock && part.fit !== "doesnt" ? (
 						// Pretend: AutoParts Co. doesn't have live stock by store today.
 						<span className='text-sm text-foreground'>In stock at Store 214, 2.1 miles away</span>
 					) : null}
 				</div>
 				{part.fit === "doesnt" && part.fitsInstead?.length ? (
-					<div className='flex flex-col gap-2 rounded-md bg-background-subtle p-3'>
-						<EditableText as='span' id='fits-instead' className='text-sm font-semibold text-foreground'>
+					<section className='flex flex-col gap-3'>
+						<EditableText as='span' id='fits-instead' className={sectionTitle}>
 							{`Parts that fit your ${vehicleName(saved)}`}
 						</EditableText>
-						{part.fitsInstead.map((id) => {
-							const other = data.parts.find((p) => p.id === id)!;
-							return (
-								<button key={id} type='button' onClick={() => setPartId(id)} className='flex items-center justify-between gap-2 text-left text-sm text-foreground underline-offset-4 hover:underline'>
-									{other.name} <span className='text-muted-foreground'>{other.price}</span>
-								</button>
-							);
-						})}
-					</div>
+						<ul className='flex flex-col gap-3'>
+							{part.fitsInstead.map((id) => {
+								const other = data.parts.find((p) => p.id === id)!;
+								return (
+									<li key={id}>
+										<button
+											type='button'
+											onClick={() => setPartId(id)}
+											className='flex w-full items-center gap-4 rounded-card border border-border p-3 text-left outline-none hover:border-border-defined focus-visible:ring-[3px] focus-visible:ring-ring/50'
+										>
+											<PartPhoto part={other} className='size-16' imageClassName='p-1.5' />
+											<span className='flex min-w-0 flex-1 flex-col gap-1'>
+												<span className='text-sm font-medium text-foreground'>{other.name}</span>
+												<span className='text-sm text-muted-foreground'>{other.price}</span>
+											</span>
+											<Badge variant='flat' tone='green' size='xs'>
+												<Check aria-hidden />
+												Fits
+											</Badge>
+										</button>
+									</li>
+								);
+							})}
+						</ul>
+					</section>
 				) : null}
-				<Button
-					{...cartButton.props}
-					disabled={part.fit === "doesnt" || cart.includes(part.id)}
-					onClick={() => setCart((c) => [...c, part.id])}
-				>
-					{cart.includes(part.id) ? "In your cart" : part.fit === "doesnt" ? "Doesn't fit your vehicle" : cartButton.label}
-				</Button>
-				<div className='flex flex-col gap-2 border-t border-border pt-3'>
-					<span className='text-sm font-semibold text-foreground'>Other parts</span>
-					<ul className='flex flex-col gap-1'>
-						{data.parts
-							.filter((p) => p.id !== part.id)
-							.map((p) => (
-								<li key={p.id}>
-									<button type='button' onClick={() => setPartId(p.id)} className='flex w-full items-center justify-between gap-2 rounded-md px-2 py-1.5 text-left text-sm text-foreground hover:bg-background-subtle'>
-										{p.name}
-										<span className='text-muted-foreground'>{p.price}</span>
-									</button>
-								</li>
-							))}
-					</ul>
-				</div>
-			</div>
-		</>
+			</PartLayout>
+		</ShopScreen>
 	);
 }
 
@@ -556,6 +934,25 @@ function FitCheckPrototype({ data, audience, openOn, ...view }: FitCheckPrototyp
 }
 
 export {
+	ActionBar,
+	BackLink,
+	CartHeading,
+	CartTotals,
+	choiceClass,
+	OrderPlaced,
+	PartCard,
+	PartCarousel,
+	PartLayout,
+	PartPhoto,
+	PartRow,
+	pillClass,
+	screenBody,
+	screenTitle,
+	sectionTitle,
+	ShopHeader,
+	ShopScreen,
+	VehiclePicker,
+	vehicleSteps,
 	EditableText,
 	PartImage,
 	Field,

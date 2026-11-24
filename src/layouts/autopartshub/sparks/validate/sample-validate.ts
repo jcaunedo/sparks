@@ -173,7 +173,7 @@ function findingsFor(changes: FitCheckChanges): EvaluationFinding[] {
 export const sampleFixes: Record<string, { changes: FitCheckChanges; summary: string; version: string }> = {
 	"fit-below-price": { changes: { fitAbovePrice: true }, summary: "the fit message is right under the part's name, above the price", version: "Fit message above the price" },
 	"unsure-dead-end": { changes: { unsureHelp: true }, summary: '"We\'re not sure this fits" offers "See the fit list" and "Ask a store"', version: "A next step when the fit isn't known" },
-	"flag-quality": { changes: { flagReminder: true }, summary: 'the flag reads "Check the fit for your vehicle", as a reminder, not a warning', version: "Flag worded as a reminder" },
+	"flag-quality": { changes: { flagReminder: true }, summary: 'the flag reads "Check the fit first", as a reminder, not a warning', version: "Flag worded as a reminder" },
 	"checkout-late": { changes: { cartCheck: true }, summary: "the fit is checked as parts go in the cart, so checkout has no surprises", version: "Fit checked in the cart" },
 	"checkout-one-vehicle": { changes: { otherVehicle: true }, summary: 'checkout offers "Another vehicle", with its year, make and model', version: "Another vehicle at checkout" },
 	"counter-slow": { changes: { counterPrefill: true }, summary: "the counter fills the vehicle in from the customer's account, so noting it is one tap", version: "Vehicle filled in at the counter" },

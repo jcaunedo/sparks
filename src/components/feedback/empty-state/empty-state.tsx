@@ -27,6 +27,13 @@ type EmptyStateProps = Omit<React.ComponentProps<"div">, "title"> & {
 };
 
 /**
+ * sparks.ds "Button" lg · 36 (38:94), the main one Solid · Neutral (dark): UCL's `default` size (36px, SIZE-SCALE.md: Figma's names are one step off), with
+ * Figma's 12px corners, 14px side padding and semibold text, as the Sparks header's Share and Publish
+ * (DESIGN.md → "Empty states").
+ */
+const emptyStateButtonClasses = "rounded-button-lg px-3.5 font-semibold";
+
+/**
  * A centered message for a view, tab or filter with nothing to show: optional icon, title,
  * description and an optional button. Every empty view uses this layout; only the copy changes.
  * Centers itself in the space its parent gives it: pass `className='flex-1'` or a height to fill a panel.
@@ -72,12 +79,12 @@ function EmptyState({
 			{(buttonLabel || secondaryButtonLabel) && (
 				<div className='flex flex-wrap items-center justify-center gap-2'>
 					{secondaryButtonLabel && (
-						<Button size='sm' variant='outline' {...secondaryButtonProps}>
+						<Button variant='outline' {...secondaryButtonProps} className={cn(emptyStateButtonClasses, "shadow-xs", secondaryButtonProps?.className)}>
 							{secondaryButtonLabel}
 						</Button>
 					)}
 					{buttonLabel && (
-						<Button size='sm' {...buttonProps}>
+						<Button variant='neutral' {...buttonProps} className={cn(emptyStateButtonClasses, buttonProps?.className)}>
 							{buttonLabel}
 						</Button>
 					)}

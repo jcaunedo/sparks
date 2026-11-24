@@ -107,9 +107,6 @@ import {
 	sampleLiveStockReply,
 	sampleNothingToRestoreReply,
 	samplePrototypeBuildingReply,
-	samplePathConfirmReplies,
-	samplePathConfirmReply,
-	samplePathNotNowReply,
 	samplePrototypeDoneReply,
 	samplePrototypeIntent,
 	samplePrototypeReadyReplies,
@@ -916,22 +913,11 @@ function WorkspacePrototype(props: SparksWorkspaceProps) {
 		// "What we'll build": a typed yes builds it, a typed no asks what's off.
 		const buildsIt = text === sampleBuildIt || yesPattern.test(text);
 		const notQuite = noPattern.test(text);
-		// Another path, offered from the plan: "Yes, build it" builds it beside the others; "Not now" leaves it.
-		const confirmingPath =
-			lastAsk?.id.startsWith("path-confirm-") && answeringAsk ? lastAsk.id.replace(/^path-confirm-/, "").replace(/-\d+$/, "") : undefined;
-
 		// Sparks's offer after a change in the plan: "Yes, update it" updates the prototype; "Not now" leaves its note.
 		const onPlanEditOffer = Boolean(lastAsk?.id.startsWith("plan-edit-changed")) && answeringAsk && samplePlanEditUpdateReplies.includes(text);
 
 		if (onPlanEditOffer) {
 			next = [...next, text === samplePlanEditUpdateReplies[0] ? matchPlan() : withNewId(samplePlanEditNotNowReply)];
-		} else if (confirmingPath && samplePathConfirmReplies.includes(text)) {
-			if (text === samplePathConfirmReplies[0]) {
-				const added = sampleDirections.find((d) => d.id === confirmingPath) ?? sampleDirectionFitCheck;
-				next = [...next, withNewId(samplePrototypeBuildingReply(added.id, screensOf(added.id)))];
-				startPath(added.id);
-				setStep("prototype");
-			} else next = [...next, withNewId(samplePathNotNowReply)];
 		} else if (step === "review") {
 			// Review: the invitation, the reviews' proposed changes, the recommendation and submitting, then sharing.
 			const askId = lastAsk?.id ?? "";
@@ -1254,7 +1240,7 @@ function WorkspacePrototype(props: SparksWorkspaceProps) {
 
 	/**
 	 * A direction card's action (prds/sparks-plan-compare.md, "Directions in the plan"): before Plan is done, picking it;
-	 * after, its path opens if it's built, or Sparks offers to build it.
+	 * after, its path opens if it's built, or Sparks builds it as another path at once.
 	 */
 	const runDirection = (picked: (typeof sampleDirections)[number]) => {
 		if (!paths.length) {
@@ -1278,11 +1264,16 @@ function WorkspacePrototype(props: SparksWorkspaceProps) {
 			setStep("prototype");
 			return;
 		}
+		// Another direction, once Plan is done: "Generate prototype" is her go-ahead, so Sparks builds it as another path at
+		// once, with no "Build it?" (prds/sparks-plan-compare.md, "Directions in the plan"). Prototype opens; her message
+		// and Sparks's progress belong there, where its path will be. What it built says it's a new path.
+		setStep("prototype");
 		setMessages((current) => [
 			...current,
-			{ id: `u${++nextId}`, from: "user", text: `Let's also try "${picked.name}".` },
-			withNewId(samplePathConfirmReply(picked.id, picked.name, direction.name, chosenDraftFor(picked).believe)),
+			{ id: `u${++nextId}`, from: "user", text: `Let's also try "${picked.name}".`, step: "prototype" },
+			{ ...withNewId(samplePrototypeBuildingReply(picked.id, screensOf(picked.id))), step: "prototype" },
 		]);
+		startPath(picked.id);
 	};
 
 	// Esc after "Not quite": the card opens again, as before she picked it.

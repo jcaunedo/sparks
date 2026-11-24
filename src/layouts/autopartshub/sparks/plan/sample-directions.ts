@@ -50,7 +50,7 @@ export const sampleDirectionFlagReturns: DirectionDraft = {
 	good: "Quick to build, with data AutoParts Co. already has. Search results aren't frozen for the holidays, so it could go live before January.",
 	howItWorks: [
 		"You search for a part.",
-		"Parts that come back often say \"Often returned: check the fit before you buy\".",
+		"Parts that come back often say \"Often returned\".",
 		"You check the fit list before you add it to your cart.",
 	],
 	expectedImpact:
