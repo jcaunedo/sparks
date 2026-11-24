@@ -47,6 +47,7 @@ Don't go past `deliberate` (600 ms). A new value goes in `tokens.ts` with a comm
 - `standardTransition`: common UI changes. Smooth acceleration, controlled deceleration, no overshoot.
 - `enterTransition`: elements arriving. Quick start, gentle finish.
 - `exitTransition`: elements leaving. Shorter than enter, decisive.
+- `easeOutTransition`: a layout shifting between two arrangements (Plan → Prototype). Ease-out at `normal` (300 ms): full speed at the start, settles gently.
 - `subtleSpring` / `responsiveSpring` / `layoutSpring`: press, direct manipulation, layout and shared-element movement. High damping, no visible bounce.
 
 ## Vocabulary
@@ -85,6 +86,7 @@ Plus `fadeVariants`, `overlayVariants` (scrims), `panelVariants` (drawers) and `
 - **AI work, step by step** (`ActivityFeed`, `chat/activity-feed`): the status is `ThinkingIndicator`; under it the latest five steps (Feed), a check drawn on as each finishes (Draw), the thinking dot at 6px on the one in progress. Done, it folds to one line that opens the steps (Expand). The same as archie-ucl's. Reduced motion: steps fade, no `layout`.
 - **Assemble** (`BuildingScreen`, `sparks/prototype/building-screen.tsx`): a prototype screen being built, from blank: a gray block where each piece goes, one after another over `assembleWireframe`, then each replaced by the real piece, top to bottom, over `assembleFill` (Reveal). Reduced motion: the screen shows whole.
 - **Sparks's replies** (`SparksReplyView` in the workspace): where a section of Plan ends inside one, the divider draws (Draw), Sparks thinks below it, then the next section comes in; first Sparks thinking (`ThinkingIndicator` with the reply's `thinking` lines) for about `thinkingStep` per line, then the parts in order: text streams, a card Reveals (`revealVariants`), and each waits for the one before it to finish. Quick replies Reveal once it's done. Under reduced motion everything appears at once after the thinking.
+- **Step change** (Sparks's workspace, Plan → Prototype and back): the conversation eases between the full width and its 480px column on `easeOutTransition`, while the prototype, at its final width, is pushed in from the right edge and fades in. Only between those two layouts (not for a step's empty state). Reduced motion: it switches at once. The code contract is in DESIGN.md → "Sparks Project background and column".
 - **Scrolling to a new reply:** when Dana sends, the conversation scrolls (`scrollIntoViewSmoothly`, `align: "start"`, on `scrollTransition`) so her message sits at the top of the view, and the reply comes in below it without the view following it. Any wheel, touch, click or key stops the scroll, from the frame after it starts (the Enter that sent the message mustn't stop it). Reduced motion: it jumps.
 
 ## Layout and presence

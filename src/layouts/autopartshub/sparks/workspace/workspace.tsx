@@ -1,6 +1,6 @@
 import * as React from "react";
 import { ArrowLeft, Bell, ChevronDown, FlaskConical, Folder, ListChecks, MessageCircle, MousePointerClick, Paperclip, Pencil, Users, X, Zap } from "lucide-react";
-import { AnimatePresence, motion } from "motion/react";
+import { animate as animateElement, AnimatePresence, motion } from "motion/react";
 
 import { ActivityFeed } from "@/components/chat/activity-feed";
 import { AssistantMessage } from "@/components/chat/assistant-message";
@@ -26,6 +26,7 @@ import { Typography } from "@/components/typography/typography";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/overlays/tooltip";
 import { cn } from "@/lib/utils";
 import {
+	easeOutTransition,
 	motionDuration,
 	overlayVariants,
 	panelVariants,
@@ -828,6 +829,40 @@ function SparksWorkspace({
 	);
 	const centered = !preview;
 
+	// Plan → Prototype (and back): the conversation narrows from the full width to its 480px column while the preview
+	// slides in from the right behind it, on `easeOutTransition` (ease-out, 300ms; MOTION.md → "Step change"). Only
+	// between the two layouts with the conversation showing, not for a step's empty state. Reduced motion: it switches.
+	// At rest the classes size the column (`flex-1` centered, `w-[480px]` beside a preview); only during the shift is its
+	// width set inline, from one to the other, then cleared.
+	const mainRef = React.useRef<HTMLElement>(null);
+	const columnRef = React.useRef<HTMLDivElement>(null);
+	const conversationWidth = 480;
+	const split = Boolean(preview) && !conversationHidden;
+	const [layoutWas, setLayoutWas] = React.useState({ split, hidden: conversationHidden });
+	// The shift in progress, with <main>'s width when it started.
+	const [shift, setShift] = React.useState<{ mainWidth: number }>();
+	if (layoutWas.split !== split || layoutWas.hidden !== conversationHidden) {
+		const eases = layoutWas.split !== split && !layoutWas.hidden && !conversationHidden && !prefersReducedMotion;
+		const mainWidth = mainRef.current?.clientWidth ?? 0;
+		setShift(eases && mainWidth > conversationWidth ? { mainWidth } : undefined);
+		setLayoutWas({ split, hidden: conversationHidden });
+	}
+	React.useLayoutEffect(() => {
+		const column = columnRef.current;
+		if (!shift || !column) return;
+		const from = split ? shift.mainWidth : conversationWidth;
+		const to = split ? conversationWidth : shift.mainWidth;
+		// Set before the first paint, so the column never shows at its content's width.
+		column.style.width = `${from}px`;
+		const controls = animateElement(column, { width: [`${from}px`, `${to}px`] }, easeOutTransition);
+		controls.then(() => setShift(undefined));
+		return () => {
+			controls.stop();
+			column.style.width = "";
+		};
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [shift]);
+
 	// Pointing at something: the box is ready for what to change.
 	React.useEffect(() => {
 		if (composerContext) composerRef.current?.focus();
@@ -933,14 +968,18 @@ function SparksWorkspace({
 			    padding is the space above the first message), the message box 24px from the bottom. The whole area scrolls, so
 			    the scrollbar sits at the page's edge and the text scrolls up to the header. */}
 			{/* With a preview (the prototype), the conversation is a 480px column on the left and the preview takes the rest. */}
-			<main className='flex min-h-0 flex-1'>
+			{/* Clipped while the layout shifts, so the preview comes in from the right edge. */}
+			<main ref={mainRef} className={cn("flex min-h-0 flex-1", shift && "overflow-hidden")}>
 			{/* Hidden, not removed, while a step not reached yet shows its empty state: the scroll position stays. */}
 			{/* Beside a preview, the narrow column's text is 15px instead of 16px: messages, cards and the message box (every
 			    `text-base` inside it; DESIGN.md → "The conversation beside a preview is 15px"). */}
+			{/* While the layout shifts, its width is set inline (see `shift`), so no width class then. */}
 			<div
+				ref={columnRef}
 				className={cn(
 					"flex min-h-0 flex-col",
-					preview ? "w-[480px] shrink-0 [&_.text-base]:text-[15px]" : "min-w-0 flex-1",
+					shift ? "min-w-0 shrink-0" : preview ? "w-[480px] shrink-0" : "min-w-0 flex-1",
+					preview && "[&_.text-base]:text-[15px]",
 					conversationHidden && "hidden",
 				)}
 			>
@@ -1123,7 +1162,19 @@ function SparksWorkspace({
 					/>
 				</div>
 			</div>
-			{preview ? <div className={cn("flex min-h-0 min-w-0 flex-1 flex-col pr-8 pb-6", conversationHidden && "ps-8")}>{preview}</div> : null}
+			{/* While the layout shifts, the preview keeps its final width (pushed in from the right as the conversation
+			    narrows) and fades in. */}
+			{preview ? (
+				<motion.div
+					initial={shift && split ? { opacity: 0 } : false}
+					animate={{ opacity: 1 }}
+					transition={easeOutTransition}
+					style={shift && split ? { width: shift.mainWidth - conversationWidth, flex: "none" } : undefined}
+					className={cn("flex min-h-0 min-w-0 flex-1 flex-col pr-8 pb-6", conversationHidden && "ps-8")}
+				>
+					{preview}
+				</motion.div>
+			) : null}
 			</main>
 		</div>
 			{/* The Comments panel, on the right edge, 480px, the screen's full height; it slides in (fades, with reduced motion). */}

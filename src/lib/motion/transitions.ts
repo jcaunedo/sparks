@@ -45,6 +45,16 @@ const scrollTransition: Transition = {
 };
 
 /**
+ * A layout shifting between two arrangements (Sparks's workspace going from Plan to Prototype: the conversation
+ * narrows to its column while the preview comes in): ease-out at `motionDuration.normal` (300ms), so it starts at
+ * full speed and settles gently, no overshoot.
+ */
+const easeOutTransition: Transition = {
+	duration: motionDuration.normal,
+	ease: [0, 0, 0.2, 1],
+};
+
+/**
  * Spring presets for direct manipulation, drag, press,
  * shared-element movement, responsive layout changes. Deliberately
  * non-bouncy (high damping) per the brand's "Calm/Refined" personality.
@@ -77,6 +87,7 @@ export {
 	exitTransition,
 	swapEnterTransition,
 	scrollTransition,
+	easeOutTransition,
 	subtleSpring,
 	responsiveSpring,
 	layoutSpring,

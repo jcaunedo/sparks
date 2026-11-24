@@ -6,6 +6,7 @@ export {
   exitTransition,
   swapEnterTransition,
   scrollTransition,
+  easeOutTransition,
   subtleSpring,
   responsiveSpring,
   layoutSpring,
