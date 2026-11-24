@@ -45,6 +45,16 @@ const scrollTransition: Transition = {
 };
 
 /**
+ * A long auto-scroll meant to be watched, not just to bring something into view (after "Add Plan", the conversation
+ * glides from the introduction down to the directions): the standard curve at `motionDuration.glideScroll` (1.2s), past
+ * the usual 600ms cap on purpose.
+ */
+const glideScrollTransition: Transition = {
+	...standardTransition,
+	duration: motionDuration.glideScroll,
+};
+
+/**
  * A layout shifting between two arrangements (Sparks's workspace going from Plan to Prototype: the conversation
  * narrows to its column while the preview comes in): ease-out at `motionDuration.normal` (300ms), so it starts at
  * full speed and settles gently, no overshoot.
@@ -52,6 +62,16 @@ const scrollTransition: Transition = {
 const easeOutTransition: Transition = {
 	duration: motionDuration.normal,
 	ease: [0, 0, 0.2, 1],
+};
+
+/**
+ * Carousel (`carouselVariants`): the screen leaving and the one arriving move together, as one strip, on the standard
+ * curve at `motionDuration.slow` (500ms). Both use the same transition, so the exit isn't shorter than the enter: a
+ * shorter exit would open a gap between them.
+ */
+const carouselTransition: Transition = {
+	...standardTransition,
+	duration: motionDuration.slow,
 };
 
 /**
@@ -87,7 +107,9 @@ export {
 	exitTransition,
 	swapEnterTransition,
 	scrollTransition,
+	glideScrollTransition,
 	easeOutTransition,
+	carouselTransition,
 	subtleSpring,
 	responsiveSpring,
 	layoutSpring,

@@ -32,6 +32,8 @@ const motionDuration = {
 	assembleWireframe: 0.7,
 	/** A screen being built (Assemble): the time over which its real content replaces the wireframe, block by block. */
 	assembleFill: 1.2,
+	/** A long auto-scroll meant to be watched: after "Add Plan", the filled-in Plan going by on the way to the directions. */
+	glideScroll: 1.2,
 } as const;
 
 /** Pixels. */

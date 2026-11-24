@@ -4,7 +4,7 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 // Opened from Dana's Review panel ("See what the teams see"), it takes the version she published (`story-links` applies
 // the args the opening tab left).
 import "../../../story-links";
-import { directionPrototypes } from "../prototype/direction-prototypes";
+import { directionPrototypes, screenAudience } from "../prototype/direction-prototypes";
 import type { PrototypeComment } from "../prototype/prototype-comments";
 import { sampleFitCheck } from "../prototype/sample-fit-check";
 import { sampleMentionable } from "../shared/sample-share";
@@ -59,7 +59,8 @@ const meta = {
 			label: "1. Fit check before you buy",
 			audiences: fitCheck.audiences,
 			screens: fitCheck.screens.length,
-			render: (audience) => fitCheck.render({ data: sampleFitCheck, audience, changes: {} }),
+			screenList: fitCheck.screens.map((name, view) => ({ name, audience: screenAudience(fitCheck, view).id })),
+			render: (audience, screen) => fitCheck.render({ data: sampleFitCheck, audience, changes: {}, openOn: screen }),
 		},
 		prototypeComments: samplePublishedPrototypeComments,
 		mentionable: sampleMentionable,

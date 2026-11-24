@@ -381,7 +381,9 @@ function PrototypeComments({
 		if (!element) return null;
 		const rect = element.getBoundingClientRect();
 		const origin = wrapper.getBoundingClientRect();
-		return { x: Math.round(rect.left - origin.left + anchor.fx * rect.width), y: Math.round(rect.top - origin.top + anchor.fy * rect.height) };
+		// The phone can be scaled to fit (`FitPhone`): pins sit in its own, unscaled pixels.
+		const k = origin.width / (wrapper.offsetWidth || origin.width || 1) || 1;
+		return { x: Math.round((rect.left - origin.left + anchor.fx * rect.width) / k), y: Math.round((rect.top - origin.top + anchor.fy * rect.height) / k) };
 	}, []);
 
 	const measure = React.useCallback(() => {

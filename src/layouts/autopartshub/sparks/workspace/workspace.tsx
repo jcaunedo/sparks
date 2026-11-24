@@ -1,5 +1,5 @@
 import * as React from "react";
-import { ArrowLeft, Bell, ChevronDown, FlaskConical, Folder, ListChecks, MessageCircle, MousePointerClick, Paperclip, Pencil, Users, X, Zap } from "lucide-react";
+import { ArrowLeft, Bell, ChevronDown, FlaskConical, Folder, ListChecks, MessageCircle, MousePointerClick, Paperclip, Pencil, RotateCcw, Users, X, Zap } from "lucide-react";
 import { animate as animateElement, AnimatePresence, motion } from "motion/react";
 
 import { ActivityFeed } from "@/components/chat/activity-feed";
@@ -27,10 +27,13 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/overlays/t
 import { cn } from "@/lib/utils";
 import {
 	easeOutTransition,
+	glideScrollTransition,
+	fadeVariants,
 	motionDuration,
 	overlayVariants,
 	panelVariants,
 	revealVariants,
+	rollVariants,
 	scrollContainerOf,
 	scrollIntoViewSmoothly,
 	scrollMetrics,
@@ -295,6 +298,17 @@ function SparksReplyView({
 		if (!thinking && current && current.kind !== "text" && current.kind !== "section" && prefersReducedMotion) setStep((s) => s + 1);
 	}, [thinking, current, prefersReducedMotion]);
 
+	// Done, a new reply's actions (its card's replies, or the quick replies under it) come into view if they ended up
+	// below it: the conversation moves once, only as far as needed, so she sees what to do next (prds/sparks.md, "The
+	// concept workspace"). Interrupted by her own scrolling; nothing moves if they're already in view.
+	const endRef = React.useRef<HTMLDivElement>(null);
+	const hasActions = Boolean(showQuickReplies && reply.quickReplies?.length);
+	React.useEffect(() => {
+		if (!animate || !done || !hasActions || !endRef.current) return;
+		return scrollIntoViewSmoothly(endRef.current, { reducedMotion: Boolean(prefersReducedMotion) });
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [done, hasActions]);
+
 	if (thinking) return <ThinkingIndicator steps={reply.thinking ?? []} />;
 
 	return (
@@ -381,6 +395,8 @@ function SparksReplyView({
 					<QuickReplies replies={reply.quickReplies} onReply={onQuickReply} />
 				</motion.div>
 			) : null}
+			{/* The reply's end, for bringing its actions into view, with 32px below them. */}
+			<div ref={endRef} aria-hidden className='-mt-4 h-px scroll-mb-8' />
 		</div>
 	);
 }
@@ -420,6 +436,11 @@ type SparksWorkspaceProps = {
 	 * she'd answered every question, so the demo can start at the choice. Without it, the menu has no "Add Plan".
 	 */
 	onAddPlan?: () => void;
+	/**
+	 * Opens at the introduction and scrolls smoothly down to where the conversation's history ends (its latest section),
+	 * instead of starting there: right after "Add Plan", so the filled-in Plan goes by. Reduced motion: it starts there.
+	 */
+	glideToLatest?: boolean;
 	/** The "+" menu's "Add from library": opens the AutoPartsHUB home on "My library". */
 	onAddFromLibrary?: () => void;
 	/**
@@ -454,6 +475,12 @@ type SparksWorkspaceProps = {
 	 */
 	preview?: React.ReactNode;
 	/**
+	 * Whether the step has a conversation (default `true`). Evaluate has none: the preview takes the whole width, the
+	 * prototype and the evaluation side by side (prds/sparks-validate.md, "Evaluate's screen"; Figma Sparks "Evaluate",
+	 * 72:660). The conversation is kept, hidden, so going back to a step finds it where it was.
+	 */
+	conversation?: boolean;
+	/**
 	 * What her next message is about, shown above the message box with a way to clear it: the element she pointed at in
 	 * the prototype ("Pointing at the "Save vehicle" button"). The box takes focus, with `placeholder` as its hint.
 	 */
@@ -486,6 +513,12 @@ type SparksWorkspaceProps = {
 	onClose?: () => void;
 	/** "Rename" in the menu on the concept's name: she saved a new name (the header shows it right away). */
 	onRename?: (name: string) => void;
+	/**
+	 * The name Sparks gave the concept ("New idea" before it does). When `conceptName` isn't it (she renamed it), the
+	 * menu on the name offers "Use default name", which calls `onUseDefaultName` (prds/sparks.md, "The start page").
+	 */
+	defaultConceptName?: string;
+	onUseDefaultName?: () => void;
 };
 
 /** The icon on a step's empty state, before Dana gets there. Product artwork. */
@@ -503,20 +536,36 @@ const headerButtonClasses = "rounded-button-lg px-3.5 text-sm font-semibold text
  * "Rename" turns the name into a field (Enter or leaving it saves, Esc cancels), "All ideas" goes back to the start
  * page.
  */
-function ConceptName({ name, onRename, onClose }: { name: string; onRename?: (name: string) => void; onClose?: () => void }) {
+function ConceptName({
+	name,
+	defaultName,
+	onRename,
+	onUseDefaultName,
+	onClose,
+}: {
+	name: string;
+	defaultName?: string;
+	onRename?: (name: string) => void;
+	onUseDefaultName?: () => void;
+	onClose?: () => void;
+}) {
 	const [shown, setShown] = React.useState(name);
 	const [editing, setEditing] = React.useState(false);
 	const triggerRef = React.useRef<HTMLButtonElement>(null);
+	const { prefersReducedMotion } = useMotionPreference();
 	React.useEffect(() => setShown(name), [name]);
 
 	const finish = (value?: string) => {
 		const next = value?.trim();
-		if (next && next !== shown) {
-			setShown(next);
-			onRename?.(next);
-		}
 		setEditing(false);
-		requestAnimationFrame(() => triggerRef.current?.focus());
+		// The field closes on the old name, then it rolls to the new one (MOTION.md → Roll), as when Sparks names it.
+		requestAnimationFrame(() => {
+			if (next && next !== shown) {
+				setShown(next);
+				onRename?.(next);
+			}
+			triggerRef.current?.focus();
+		});
 	};
 
 	if (editing) {
@@ -544,7 +593,23 @@ function ConceptName({ name, onRename, onClose }: { name: string; onRename?: (na
 						type='button'
 						className='flex max-w-full items-center gap-1 rounded-md outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50'
 					>
-						<span className='truncate'>{shown}</span>
+						{/* Roll (MOTION.md): when the name changes ("New idea" named by Sparks, or renamed), the old one moves up
+						    and out and the new one comes up from below, clipped to the line. Not on the first render. */}
+						{/* `text-start`: a button centers its text, which would center the shorter name while both share the cell. */}
+						<span className='-my-1 inline-grid min-w-0 overflow-hidden py-1 text-start'>
+							<AnimatePresence initial={false}>
+								<motion.span
+									key={shown}
+									variants={prefersReducedMotion ? fadeVariants : rollVariants}
+									initial='initial'
+									animate='animate'
+									exit='exit'
+									className='col-start-1 row-start-1 truncate'
+								>
+									{shown}
+								</motion.span>
+							</AnimatePresence>
+						</span>
 						<ChevronDown aria-hidden className='size-[22px] shrink-0 text-icon' />
 					</button>
 				</DropdownMenuTrigger>
@@ -553,6 +618,13 @@ function ConceptName({ name, onRename, onClose }: { name: string; onRename?: (na
 						<Pencil aria-hidden />
 						Rename
 					</DropdownMenuItem>
+					{/* Only once she's renamed it: back to the name Sparks gave it (it rolls, as any change of name). */}
+					{defaultName && onUseDefaultName && defaultName !== shown ? (
+						<DropdownMenuItem onSelect={onUseDefaultName}>
+							<RotateCcw aria-hidden />
+							Use default name
+						</DropdownMenuItem>
+					) : null}
 					<DropdownMenuItem onSelect={onClose}>
 						<ArrowLeft aria-hidden />
 						All ideas
@@ -593,11 +665,13 @@ function SparksWorkspace({
 	onAnswerChange,
 	initialPrompt,
 	onAddPlan,
+	glideToLatest = false,
 	onAddFromLibrary,
 	comments,
 	notifications,
 	onStepSelect,
 	preview: previewProp,
+	conversation = true,
 	composerContext,
 	share,
 	paths,
@@ -605,6 +679,8 @@ function SparksWorkspace({
 	publish,
 	onClose,
 	onRename,
+	defaultConceptName,
+	onUseDefaultName,
 }: SparksWorkspaceProps) {
 	const reachedIndex = sparksSteps.findIndex((step) => step.id === reachedStep);
 	// A concept that opens with no messages is new: its introduction streams in. Reopened, it's history and shows whole.
@@ -669,10 +745,20 @@ function SparksWorkspace({
 	}, [threadStep, threadLast]);
 
 	// A conversation that opens with history (a concept reopened, or "Add Plan") starts at its latest reply, where she
-	// left off, not at the introduction.
+	// left off, not at the introduction. A reply that goes on after a section divider starts at its last section (after
+	// "Add Plan": "Next, pick the path to prototype first.", not the success summary before it). Right after "Add Plan"
+	// (`glideToLatest`), it glides there from the introduction over 1.2s (`glideScrollTransition`), slow enough to see the
+	// Plan go by; any wheel, touch, click or key stops it.
 	React.useLayoutEffect(() => {
 		const latest = threadLast ? itemRefs.current.get(threadLast.id) : undefined;
-		if (latest) scrollIntoViewSmoothly(latest, { reducedMotion: true, align: "start" });
+		if (!latest) return;
+		const dividers = latest.querySelectorAll<HTMLElement>("[data-slot=section-divider]");
+		const lastSection = dividers[dividers.length - 1]?.nextElementSibling;
+		return scrollIntoViewSmoothly(lastSection instanceof HTMLElement ? lastSection : latest, {
+			reducedMotion: !glideToLatest || Boolean(prefersReducedMotion),
+			align: "start",
+			transition: glideScrollTransition,
+		});
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, []);
 
@@ -694,6 +780,17 @@ function SparksWorkspace({
 			align: lastIsNewReply ? "start" : "nearest",
 		});
 	}, [last, sent, lastIsNewReply, initialIds, prefersReducedMotion]);
+	// Her message's height can change after it's sent: from Plan to Prototype the column narrows to 480px and it wraps to
+	// more lines. Measured once, the reply's `minHeight` went 24px past the view, so the conversation scrolled and the
+	// scrollbar flashed (DESIGN.md → "Sparks Project background and column").
+	const sentId = sent?.id;
+	React.useEffect(() => {
+		const target = sentId ? itemRefs.current.get(sentId) : undefined;
+		if (!target) return;
+		const observer = new ResizeObserver(() => setSentHeight(target.offsetHeight + 32));
+		observer.observe(target);
+		return () => observer.disconnect();
+	}, [sentId]);
 	const itemRef = (id: string) => (element: HTMLLIElement | null) => {
 		if (element) itemRefs.current.set(id, element);
 		else itemRefs.current.delete(id);
@@ -796,8 +893,8 @@ function SparksWorkspace({
 	React.useEffect(() => setPeekStep(undefined), [currentStep]);
 	const peeked = sparksSteps.find((step) => step.id === peekStep);
 	const currentLabel = sparksSteps.find((step) => step.id === currentStep)?.label ?? "";
-	// A step not reached yet (its empty state): no conversation, no message box.
-	const conversationHidden = Boolean(peeked?.upcoming);
+	// A step not reached yet (its empty state), or a step with no conversation (Evaluate): no conversation, no message box.
+	const conversationHidden = Boolean(peeked?.upcoming) || !conversation;
 	const preview = peeked?.upcoming ? (
 		<section aria-label={peeked.label} className='flex min-h-0 flex-1 flex-col rounded-card bg-background-subtle p-4'>
 			<EmptyState
@@ -882,7 +979,7 @@ function SparksWorkspace({
 			<AppHeader
 				logo={
 					// Figma "Left": the concept's name with its menu; "All ideas" there goes back to the start page.
-					<ConceptName name={conceptName} onRename={onRename} onClose={onClose} />
+					<ConceptName name={conceptName} defaultName={defaultConceptName} onRename={onRename} onUseDefaultName={onUseDefaultName} onClose={onClose} />
 				}
 				nav={
 					<StepNav aria-label='Steps'>
@@ -983,7 +1080,8 @@ function SparksWorkspace({
 					conversationHidden && "hidden",
 				)}
 			>
-				<div ref={scrollRef} className='scrollbar-subtle min-h-0 flex-1 overflow-y-auto px-8'>
+				{/* No scrollbar while the layout shifts: the text rewraps as the column narrows. */}
+				<div ref={scrollRef} className={cn("scrollbar-subtle min-h-0 flex-1 overflow-y-auto px-8", shift && "[scrollbar-width:none]")}>
 					<div className='mx-auto w-full max-w-[728px]'>
 						<ol aria-label='Conversation' aria-live='polite' className='flex flex-col gap-4'>
 							{/* The introduction: first in every concept, in Plan's conversation, 32px above what follows it. */}
@@ -1170,7 +1268,8 @@ function SparksWorkspace({
 					animate={{ opacity: 1 }}
 					transition={easeOutTransition}
 					style={shift && split ? { width: shift.mainWidth - conversationWidth, flex: "none" } : undefined}
-					className={cn("flex min-h-0 min-w-0 flex-1 flex-col pr-8 pb-6", conversationHidden && "ps-8")}
+					// Without a conversation (Evaluate, Figma 72:660), 24px on each side and below; a step's empty state keeps 32px.
+					className={cn("flex min-h-0 min-w-0 flex-1 flex-col pb-6", !conversation && !peeked?.upcoming ? "px-6" : cn("pr-8", conversationHidden && "ps-8"))}
 				>
 					{preview}
 				</motion.div>

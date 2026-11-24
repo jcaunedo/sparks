@@ -1,7 +1,7 @@
 import type { SparksReply } from "../workspace/workspace";
 import type { FitCheckChanges } from "../prototype/fit-check-prototype";
 import { otherEvaluations } from "./sample-evaluations";
-import type { Evaluation, EvaluationFinding, EvaluationScenario } from "./validate-panel";
+import type { Evaluation, EvaluationExpert, EvaluationFinding, EvaluationScenario, PrototypeStop } from "./validate-panel";
 
 /*
  * Evaluate for "Wrong-part returns" (prds/sparks-validate.md): the run and its results, which
@@ -14,6 +14,7 @@ function scenariosFor(changes: FitCheckChanges): EvaluationScenario[] {
 	return [
 		{
 			id: "brake-pads",
+			label: "Brake pads · 2015 F-150",
 			audience: "Customer",
 			situation: "A do-it-yourself customer buys front brake pads for a 2015 Ford F-150 on a phone.",
 			task: "Find brake pads that fit, on the first try.",
@@ -26,6 +27,7 @@ function scenariosFor(changes: FitCheckChanges): EvaluationScenario[] {
 		},
 		{
 			id: "oil-filter",
+			label: "Wrong oil filter",
 			audience: "Customer",
 			situation: "A customer picks an oil filter that doesn't fit and needs the one that does.",
 			task: "End up with a filter that fits.",
@@ -38,6 +40,7 @@ function scenariosFor(changes: FitCheckChanges): EvaluationScenario[] {
 		},
 		{
 			id: "hurry",
+			label: "In a hurry",
 			audience: "Customer",
 			situation: "A customer in a hurry adds a part to the cart without reading much, on a phone.",
 			task: "Buy the right part without slowing down.",
@@ -45,6 +48,7 @@ function scenariosFor(changes: FitCheckChanges): EvaluationScenario[] {
 			summary: changes.fitAbovePrice
 				? "Saw the fit message right under the name, before the price."
 				: "Got the right part, but the fit message sits below the price and is easy to miss when moving fast.",
+			findings: ["fit-below-price"],
 			steps: [
 				{
 					screen: "Product page",
@@ -56,6 +60,7 @@ function scenariosFor(changes: FitCheckChanges): EvaluationScenario[] {
 		},
 		{
 			id: "no-fit-data",
+			label: "Spark plugs · older truck",
 			audience: "Customer",
 			situation: "A customer with an older truck looks at spark plugs that have no fit data.",
 			task: "Find out whether the spark plugs fit.",
@@ -63,6 +68,7 @@ function scenariosFor(changes: FitCheckChanges): EvaluationScenario[] {
 			summary: changes.unsureHelp
 				? 'Saw "We\'re not sure this fits" and went to the fit list.'
 				: 'Saw "We\'re not sure this fits" but had nowhere to go next, so left the page.',
+			findings: ["unsure-dead-end"],
 			steps: [
 				{
 					screen: "Product page, a part with no fit data",
@@ -74,6 +80,7 @@ function scenariosFor(changes: FitCheckChanges): EvaluationScenario[] {
 		},
 		{
 			id: "mechanic",
+			label: "Pro mechanic",
 			audience: "Customer",
 			situation: "A professional mechanic orders two parts for a customer's car on a desktop.",
 			task: "Check both parts fit the customer's car, not their own.",
@@ -85,6 +92,7 @@ function scenariosFor(changes: FitCheckChanges): EvaluationScenario[] {
 		},
 		{
 			id: "first-time",
+			label: "First-time buyer",
 			audience: "Customer",
 			situation: "A first-time buyer with no saved vehicle shops on a laptop.",
 			task: "Buy a part that fits, starting from nothing.",
@@ -94,6 +102,7 @@ function scenariosFor(changes: FitCheckChanges): EvaluationScenario[] {
 		},
 		{
 			id: "store-call",
+			label: "Call at the counter",
 			audience: "Store staff",
 			situation: 'A store associate answers a call asking "will this fit?" during a busy hour.',
 			task: "Tell the customer whether the part fits.",
@@ -103,6 +112,7 @@ function scenariosFor(changes: FitCheckChanges): EvaluationScenario[] {
 		},
 		{
 			id: "screen-reader",
+			label: "Screen reader",
 			audience: "Customer",
 			access: "Screen reader",
 			situation: "A customer using a screen reader checks whether brake pads fit.",
@@ -113,6 +123,7 @@ function scenariosFor(changes: FitCheckChanges): EvaluationScenario[] {
 		},
 		{
 			id: "keyboard",
+			label: "Keyboard only",
 			audience: "Customer",
 			access: "Keyboard only",
 			situation: "A customer using only a keyboard saves a vehicle and adds a part.",
@@ -120,6 +131,65 @@ function scenariosFor(changes: FitCheckChanges): EvaluationScenario[] {
 			outcome: "done",
 			summary: "Every step works with Tab and Enter.",
 			steps: [{ screen: "Vehicle picker and product page", evaluation: "Every field and button is reachable in order, with a visible focus." }],
+		},
+	];
+}
+
+/** The experts on "Fit check before you buy": AI agents in a role, each with a note where it looked. */
+function expertsFor(changes: FitCheckChanges): EvaluationExpert[] {
+	return [
+		{
+			id: "ux",
+			label: "UX expert",
+			focus: "Usability and the design system",
+			notes: [
+				{ screen: "Vehicle picker heading", note: "Five choices on a phone, but each is a familiar tile, and it's done once." },
+				{
+					screen: "Product page",
+					note: changes.fitAbovePrice
+						? "Under the name, the fit is seen before the price."
+						: "The fit sits under the price. People decide at the price, so it's easy to miss.",
+				},
+				{ screen: "The cart", note: "The cart repeats the fit: reassuring at the last step." },
+			],
+			summary: changes.fitAbovePrice ? "Clear from start to finish." : "Clear, except the fit message's place on the product page.",
+		},
+		{
+			id: "copy",
+			label: "Copywriter",
+			focus: "The words on each screen",
+			notes: [
+				{ screen: "Vehicle picker heading", note: '"Add your vehicle" says what; the line under it says why. Keep both.' },
+				{ screen: "Product page, a part that doesn't fit", note: '"Doesn\'t fit your 2015 Ford F-150" names the vehicle. No doubt left.' },
+				{
+					screen: "Product page, a part with no fit data",
+					note: changes.unsureHelp
+						? '"See the fit list" and "Ask a store" say what to do next.'
+						: '"We\'re not sure this fits" is honest, but doesn\'t say what to do next.',
+				},
+			],
+			summary: changes.unsureHelp ? "Every message says what it means and what to do." : '"We\'re not sure this fits" needs a next step.',
+		},
+		{
+			id: "engineer",
+			label: "Engineer",
+			focus: "What it needs to be built",
+			notes: [
+				{ screen: "Vehicle chip", note: "Saved vehicles come from Sales' customer accounts. Available." },
+				{ screen: "Product page", note: "The fit reads the catalog's fit data, missing for about 1 in 8 parts on older vehicles." },
+				{ screen: "Customer lookup", note: "Lookup by phone uses the store system's accounts. Available." },
+			],
+			summary: "Buildable with what AutoParts Co. has; the fit data gaps stay.",
+		},
+		{
+			id: "data",
+			label: "Data analyst",
+			focus: "Business data and the measures",
+			notes: [
+				{ screen: "Product page", note: 'Where last year\'s vehicle selector was used, "doesn\'t fit" returns dropped the most.' },
+				{ screen: "The cart", note: "This changes orders with a saved vehicle: about 6 in 10 online orders." },
+			],
+			summary: 'Likely to reach the 25% target on "doesn\'t fit" returns.',
 		},
 	];
 }
@@ -182,10 +252,92 @@ export const sampleFixes: Record<string, { changes: FitCheckChanges; summary: st
 };
 
 /**
+ * Where each direction's scenarios go on its prototype, for their agents (prds/sparks-validate.md, "Running it"): a
+ * step's screen, by name, is a screen of the prototype (its place in the direction's screens), the part it opens on
+ * and the element (a `data-point` or `data-agent` id). And where each finding happens, for its marker; a finding about
+ * the data or every screen has none. What the AI would supply along with the steps.
+ */
+const sampleStops: Record<string, { screens: Record<string, PrototypeStop>; findings: Record<string, PrototypeStop> }> = {
+	"fit-check": {
+		screens: {
+			"Vehicle picker": { view: 0, element: "save-vehicle" },
+			"Vehicle picker and product page": { view: 0, element: "save-vehicle" },
+			"Product page": { view: 1, element: "fit-message" },
+			"Product page, a part that doesn't fit": { view: 2, element: "fit-message" },
+			"Parts that fit": { view: 2, element: "fits-instead" },
+			"Product page, a part with no fit data": { view: 1, part: "spark-plugs", element: "fit-message" },
+			"Vehicle chip": { view: 1, element: "vehicle-chip" },
+			"Customer lookup": { view: 4, element: "look-up" },
+			"Vehicle picker heading": { view: 0, element: "vehicle-title" },
+			"The cart": { view: 3, element: "place-order" },
+		},
+		findings: {
+			"fit-below-price": { view: 1, element: "fit-message" },
+			"unsure-dead-end": { view: 1, part: "spark-plugs", element: "fit-message" },
+		},
+	},
+	"flag-returns": {
+		screens: {
+			"Search results": { view: 0, element: "return-flag" },
+			"The search results and a flagged part": { view: 0, element: "return-flag" },
+			"The part page": { view: 1, element: "fit-list" },
+			"Search results count": { view: 0, element: "results-title" },
+			"The cart": { view: 2, element: "cart-title" },
+		},
+		findings: {
+			"flag-no-answer": { view: 1, element: "fit-list" },
+			"flag-quality": { view: 0, element: "return-flag" },
+		},
+	},
+	"checkout-check": {
+		screens: {
+			Checkout: { view: 2, element: "fit-message" },
+			"The cart": { view: 1, element: "go-to-checkout" },
+			"Order lookup": { view: 3, element: "look-up" },
+			"The shop": { view: 0, element: "shop-title" },
+			"Place order": { view: 2, element: "place-order" },
+		},
+		findings: {
+			"checkout-late": { view: 2, element: "fit-message" },
+			"checkout-one-vehicle": { view: 2, element: "checkout-title" },
+		},
+	},
+	"fit-data": {
+		screens: {
+			"The return screen": { view: 1, element: "note-vehicle" },
+			"The weekly list": { view: 2, element: "weekly-title" },
+			"The fit list": { view: 3, element: "fit-list-title" },
+			"The walkthrough": { view: 0, element: "walkthrough-title" },
+		},
+		findings: {
+			"counter-slow": { view: 1, element: "note-vehicle" },
+			"no-vehicle": { view: 1, element: "return-title" },
+			"monthly-feed": { view: 3, element: "fit-list-title" },
+		},
+	},
+};
+
+/** The evaluation with where its agents go and where its findings' markers sit. */
+function withStops(evaluation: Evaluation, directionId: string): Evaluation {
+	const stops = sampleStops[directionId];
+	if (!stops) return evaluation;
+	return {
+		...evaluation,
+		scenarios: evaluation.scenarios.map((s) => ({ ...s, steps: s.steps.map((step) => ({ ...step, at: step.at ?? stops.screens[step.screen] })) })),
+		findings: evaluation.findings.map((f) => ({ ...f, at: f.at ?? stops.findings[f.id] })),
+		experts: evaluation.experts?.map((e) => ({ ...e, notes: e.notes.map((n) => ({ ...n, at: n.at ?? stops.screens[n.screen] })) })),
+	};
+}
+
+/**
  * The evaluation of a prototype version: its changes decide the scenarios' outcomes, the findings, the estimate and the
  * read. `previous` (the last finished run) gives "Since the last run".
  */
 export function sampleEvaluation(changes: FitCheckChanges, version: number, previous?: Evaluation, directionId = "fit-check"): Evaluation {
+	return withStops(evaluationFor(changes, version, previous, directionId), directionId);
+}
+
+function evaluationFor(changes: FitCheckChanges, version: number, previous: Evaluation | undefined, directionId: string): Evaluation {
 	const other = otherEvaluations[directionId];
 	if (other) {
 		// Another direction: its own evaluation, plus what every run adds.
@@ -245,6 +397,7 @@ export function sampleEvaluation(changes: FitCheckChanges, version: number, prev
 		],
 		findings,
 		scenarios,
+		experts: expertsFor(changes),
 		assumptions: [
 			{
 				text: "Customers will save their vehicle.",
@@ -328,197 +481,76 @@ export function sampleRunResults(evaluation: Evaluation, step: number) {
 /** How long a step takes in the demo, in milliseconds, a little more or less each time. */
 export const sampleRunStepMs = () => Math.round(1000 * (1 + Math.random() * 0.3));
 
-/** Sparks's progress while it runs (`step`: how many steps are done), with one status for each stage; then done (or stopped). */
-export function sampleRunProgress(evaluation: Evaluation, step: number, { stopped = false, seconds = 22 } = {}) {
-	const steps = runSteps(evaluation);
+/**
+ * Sparks's progress while it runs (`step`: how many steps are done), with one status for each stage; then done (or
+ * stopped). While the agents work, all at once (prds/sparks-validate.md, "The agents"): each agent as it finishes
+ * (`finished`, in that order), then the screen they're on now (`screen`), in progress, until `agentsDone`.
+ */
+export function sampleRunProgress(
+	evaluation: Evaluation,
+	step: number,
+	{
+		stopped = false,
+		seconds = 22,
+		finished = [],
+		agentsDone = false,
+		screen,
+	}: { stopped?: boolean; seconds?: number; finished?: string[]; agentsDone?: boolean; screen?: { label: string; agents: number } } = {},
+) {
+	const start = runStart(evaluation);
 	const { begun, done } = sampleRunResults(evaluation, step);
 	const scenarios = evaluation.scenarios.length;
 	const checks = evaluation.checks.length;
+	const agents = scenarios + (evaluation.experts?.length ?? 0);
+	const finishedLines = finished.flatMap((id) => {
+		const scenario = evaluation.scenarios.find((s) => s.id === id);
+		if (scenario) return [`${scenario.label}: ${scenario.outcome === "done" ? "got it done" : "struggled"}`];
+		const expert = evaluation.experts?.find((e) => e.id === id);
+		return expert ? [`${expert.label}: ${expert.notes.length} ${expert.notes.length === 1 ? "note" : "notes"}`] : [];
+	});
+	const working = begun && !agentsDone;
+	const checksDone = Math.max(0, done - scenarios);
+	const ended = step >= runSteps(evaluation).length;
+	const steps = !begun
+		? start.slice(0, stopped ? step : step + 1)
+		: [
+				...start,
+				...finishedLines,
+				...(working && screen && !stopped ? [`On ${screen.label}: ${screen.agents} ${screen.agents === 1 ? "agent" : "agents"} at work`] : []),
+				...(working ? [] : evaluation.checks.slice(0, Math.min(checks, checksDone + (stopped ? 0 : 1))).map((check) => check.replace(/…$/, ""))),
+				...(checksDone >= checks ? runEnd.slice(0, Math.min(runEnd.length, step - start.length - scenarios - checks + (stopped || ended ? 0 : 1))) : []),
+			];
 	return {
 		status: !begun
 			? "Planning the test drive…"
-			: done < scenarios
-				? `Test-driving it through ${scenarios} scenarios…`
-				: done < scenarios + checks
+			: working
+				? `Test-driving it with ${agents} agents…`
+				: checksDone < checks
 					? `Running ${checks} checks…`
 					: "Reading the results off the dyno…",
-		steps: steps.slice(0, stopped ? step : step + 1),
-		done: stopped || step >= steps.length,
+		steps,
+		done: stopped || ended,
 		stopped,
-		doneLabel: stopped ? `Stopped before finishing: ${done} of ${scenarios + checks} parts done.` : `Evaluated in ${seconds}s`,
+		doneLabel: stopped ? `Stopped before finishing: ${finished.length} of ${agents} agents done.` : `Evaluated in ${seconds}s`,
 	};
 }
 
 /**
- * "Yes, evaluate it": the run starts right away (prds/sparks-validate.md, "Running it"). Only its progress until it's
- * done; then the same reply says what it did and what it concluded (`sampleValidateResultsReply`).
+ * "Yes, evaluate it" (or "Evaluate it" in Review): Evaluate opens and the run starts there, beside the prototype, with
+ * no conversation (prds/sparks-validate.md, "Running it"). Sparks's answer stays in the step she asked from.
  */
-export function sampleValidateRunningReply(evaluation: Evaluation, step = 0): SparksReply {
-	return {
-		id: "validate-running",
-		from: "sparks",
-		parts: [{ kind: "progress", ...sampleRunProgress(evaluation, step), startedAt: Date.now() }],
-	};
-}
-
-/** A scenario she asks for, after a run: taken, for the next one. */
-export const sampleScenarioAsk = /\b(add|include|try)\b.*\b(scenario|situation|case)\b|^add (a|an)\b/i;
-export const sampleScenarioAddedReply = (text: string): SparksReply => ({
-	id: "validate-scenario",
+export const sampleValidateStartedReply: SparksReply = {
+	id: "validate-started",
 	from: "sparks",
-	parts: [{ kind: "text", text: `Got it, I've noted it for the next run: "${text.replace(/\.$/, "")}". In this demo, the run doesn't include it yet.` }],
-	quickReplies: ["Run it again"],
-});
-
-/** The answers once the results are in. */
-export const sampleValidateResultsReplies = ["Go ahead to Review", "Keep improving"];
+	parts: [{ kind: "text", text: "On it. I'm trying it in Evaluate: the scenarios work the prototype there, and the results come in beside it." }],
+};
 
 /** Going back to the choice in Plan: offered when the read is "Needs another look". */
 export const sampleBackToChoice = "Go back to the choice";
 
-/** The answers for this evaluation: going back to the choice first when Sparks's read says so. */
-export const sampleValidateResultsRepliesFor = (evaluation?: Evaluation) =>
-	evaluation?.read === "Needs another look" ? [sampleBackToChoice, ...sampleValidateResultsReplies] : sampleValidateResultsReplies;
-
-/** "a, b and c". */
-const inWords = (items: string[]) => (items.length < 2 ? items.join("") : `${items.slice(0, -1).join(", ")} and ${items[items.length - 1]}`);
-
-/**
- * The run is done: what Sparks did (the scenarios, by audience, and the checks), then what it found (its read, the
- * evidence status by method), and the question. `first`: the first run, which also puts the prototype in the plan.
- */
-export function sampleValidateResultsReply(evaluation: Evaluation, first = true): SparksReply {
-	const { scenarios } = evaluation;
-	const audiences = [...new Set(scenarios.map((s) => s.audience))].map(
-		(audience) => `${scenarios.filter((s) => s.audience === audience).length} as ${audience === "Customer" ? "customers" : "staff"}`,
-	);
-	const withAccess = (kind: string, how: string) => {
-		const count = scenarios.filter((s) => s.access === kind).length;
-		return count ? [`${count === 1 ? "one" : count} with ${how}`] : [];
-	};
-	const access = [...withAccess("Screen reader", "a screen reader"), ...withAccess("Keyboard only", "only a keyboard")];
-	const accessText = access.length ? `, including ${inWords(access)}` : "";
-	const got = scenarios.filter((s) => s.outcome === "done").length;
-	const checks = evaluation.checks.map((check) => check.replace(/^Checking /, "").replace(/…$/, ""));
-	const back = evaluation.read === "Needs another look";
-	return {
-		id: "validate-results",
-		from: "sparks",
-		parts: [
-			{
-				kind: "text",
-				text: [
-					first ? `Done. The prototype is in your plan, and I've evaluated it (version ${evaluation.version}).` : `Done. I've evaluated version ${evaluation.version}.`,
-					"**Here's what I did:**",
-					[
-						`- **${scenarios.length} scenarios:** ${inWords(audiences)}${accessText}. The task got done in ${got} of them.`,
-						`- **${evaluation.checks.length} checks:** ${inWords(checks)}.`,
-					].join("\n"),
-					"It's an AI evaluation: it shows what could go wrong, not what real people will do. Each scenario is built from what AutoParts Co. knows about its customers and stores, never a real person.",
-					"**Here's what I found:**",
-					`**${evaluation.read}.** ${evaluation.readText}`,
-					evaluation.sinceLast ? `Since the last run: ${evaluation.sinceLast}` : "",
-					`**${evaluation.hypothesis.outcome}.** ${evaluation.hypothesis.note}`,
-					"Every scenario and finding is on the right.",
-					`**${back ? "Do you want to go back to the choice, take this to review as it is, or keep improving it?" : "Do you want to take this to review, or keep improving it?"}**`,
-				]
-					.filter(Boolean)
-					.join("\n\n"),
-			},
-		],
-		quickReplies: sampleValidateResultsRepliesFor(evaluation),
-	};
-}
-
-export const sampleValidateStoppedReply: SparksReply = {
-	id: "validate-stopped",
-	from: "sparks",
-	parts: [{ kind: "text", text: 'Stopped. Any results so far are on the right, marked "Stopped before finishing". Run it again when you\'re ready.' }],
-	quickReplies: ["Run it again"],
-};
-
-/** "Keep improving": a fix Sparks can make, or a change she describes, then run it again. */
-export const sampleValidateKeepImprovingReply = (evaluation?: Evaluation): SparksReply => ({
-	id: "validate-improving",
-	from: "sparks",
-	parts: [
-		{
-			kind: "text",
-			text: evaluation?.findings.some((f) => f.fixable && f.status === "open")
-				? 'Okay. Select "Fix this in the prototype" on a finding, or change the prototype yourself, then run it again.'
-				: "Okay. The suggested fixes need a decision before they go in the prototype. Tell me a change in Prototype, or point at what to change, then run it again.",
-		},
-	],
-	quickReplies: ["Run it again", "Go ahead to Review"],
-});
-
-/** "Go ahead to Review": open findings go as known issues, said once. Review isn't built yet. */
+/** "Add to Review": open findings go as known issues, said once, at the top of what Sparks says in Review. */
 export function sampleValidateGoAheadOpening(open: number) {
 	const issues =
 		open > 0 ? `${open === 1 ? "One finding is" : `${["", "", "Two", "Three", "Four"][open] ?? open} findings are`} still open. ${open === 1 ? "It goes" : "They'll go"} to review as known issues.\n\n` : "";
 	return `${issues}Done. Evaluate is finished, and the evaluation is in your plan.\n\n`;
-}
-
-export function sampleValidateGoAheadReply(open: number): SparksReply {
-	const issues =
-		open > 0 ? `${open === 1 ? "One finding is" : `${["", "", "Two", "Three", "Four"][open] ?? open} findings are`} still open. ${open === 1 ? "It goes" : "They'll go"} to review as known issues.\n\n` : "";
-	return {
-		id: "validate-done",
-		from: "sparks",
-		parts: [
-			{
-				kind: "text",
-				text: `${issues}Done. Evaluate is finished, and the evaluation is in your plan.\n\n**Next, Review.**\n\nI'll put the idea together for others to see.`,
-			},
-		],
-	};
-}
-
-export const sampleValidateRerunReply: SparksReply = {
-	id: "validate-rerun",
-	from: "sparks",
-	parts: [{ kind: "text", text: "The prototype changed after the last run. Run it again to evaluate the current version." }],
-	quickReplies: ["Run it again"],
-};
-
-/** "Fix this in the prototype": Prototype opens with the fix offered, hers to accept. */
-export const sampleFixOfferReply = (finding: EvaluationFinding): SparksReply => ({
-	id: "prototype-fix",
-	from: "sparks",
-	parts: [{ kind: "text", text: `Here's the fix for "${finding.title}": ${finding.fix?.charAt(0).toLowerCase()}${finding.fix?.slice(1)} Want me to make it?` }],
-	quickReplies: ["Make the change", "Not now"],
-});
-
-export const sampleFixDoneReply = (summary: string, version: number): SparksReply => ({
-	id: "prototype-fix-done",
-	from: "sparks",
-	parts: [{ kind: "text", text: `Done: ${summary}. I've saved it as version ${version}.\n\n**Want me to run the evaluation again?**` }],
-	quickReplies: ["Run it again", "Not now"],
-});
-
-export const sampleFixNotNowReply: SparksReply = {
-	id: "prototype-change",
-	from: "sparks",
-	parts: [{ kind: "text", text: "Okay. It's still under Findings when you want it." }],
-};
-
-/** What she might ask in Evaluate (prds/sparks-validate.md, "Checks"), and how Sparks answers. */
-export function sampleValidateQuestionReply(text: string, evaluation?: Evaluation): SparksReply {
-	const t = text.toLowerCase();
-	const say = (answer: string): SparksReply => ({ id: "validate-answer", from: "sparks", parts: [{ kind: "text", text: answer }], quickReplies: sampleValidateResultsRepliesFor(evaluation) });
-	if (/love|like it|happy|trust/.test(t))
-		return say(
-			`${evaluation ? `${evaluation.hypothesis.text.split(". ").slice(-1)[0].replace(/\.$/, "")}. ` : ""}It's an AI evaluation, though: how people feel about it is under "What only real people can tell us", with how to find out.`,
-		);
-	if (/neighbou?r|friend|real (person|customer)|named|my (mom|dad|wife|husband)/.test(t))
-		return say("Scenarios come from patterns across AutoParts Co.'s customers, never a real person, so the evaluation is safe to share. Tell me what's typical about her, like how often she orders and for which car, and I'll add a scenario like that.");
-	if (/exact|precise|how many returns|number of returns/.test(t))
-		return say(
-			`It can't be exact: it rests on business data and simulated scenarios, not on real use. The best estimate is a range: ${(evaluation?.measures[0].estimate ?? "likely 30–50% fewer").toLowerCase().replace(" fewer", ' fewer "doesn\'t fit" returns')}, with ${(evaluation?.measures[0].confidence ?? "medium").toLowerCase()} confidence.`,
-		);
-	if (/validated|proven|prove/.test(t))
-		return say(
-			`I'd keep it as the evidence says: ${(evaluation?.hypothesis.outcome ?? "simulation supports hypothesis").toLowerCase()}. That isn't validated: no real people have used it. ${evaluation?.realPeople[0] ? `The first thing to check with real people: ${evaluation.realPeople[0].question.charAt(0).toLowerCase()}${evaluation.realPeople[0].question.slice(1)}` : "A short test with real customers would be the real check."}`,
-		);
-	return say("I can't do that in this demo yet. You can read the results on the right, step through a scenario, fix a finding in the prototype, or run it again.");
 }

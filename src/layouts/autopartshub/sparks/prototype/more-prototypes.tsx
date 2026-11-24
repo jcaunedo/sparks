@@ -52,6 +52,8 @@ type PrototypeProps = PrototypeViewProps & {
 	audience: string;
 	/** The screen it opens on, by its place in the direction's screens, as it's being built; without it, where the journey starts. */
 	openOn?: number;
+	/** The part a product page opens on, by id (Evaluate's agents); only "Fit check before you buy" uses it. */
+	openPart?: string;
 };
 
 /**
@@ -60,13 +62,14 @@ type PrototypeProps = PrototypeViewProps & {
  */
 function ReturnFlag() {
 	const { flagReminder } = useChanges();
+	// `data-agent`: where Evaluate's scenarios can go (prds/sparks-validate.md, "Running it").
 	return flagReminder ? (
-		<Badge variant='flat' tone='blue' size='sm' className='w-fit'>
+		<Badge data-agent='return-flag' variant='flat' tone='blue' size='sm' className='w-fit'>
 			<Car aria-hidden />
 			Check the fit first
 		</Badge>
 	) : (
-		<Badge variant='flat' tone='amber' size='sm' className='w-fit'>
+		<Badge data-agent='return-flag' variant='flat' tone='amber' size='sm' className='w-fit'>
 			<TriangleAlert aria-hidden />
 			Often returned
 		</Badge>
@@ -97,7 +100,7 @@ function fitForVehicle(part: FitPart, vehicle: Pick<FitVehicle, "year" | "make" 
 const flagScreens = ["the search results", "a flagged part", "the cart"];
 
 /** Search results mark parts that come back a lot; the part page says how often, with the fit list to check. */
-function FlagReturnsPrototype({ data, openOn, ...view }: PrototypeProps) {
+function FlagReturnsPrototype({ data, openOn, openPart: _openPart, ...view }: PrototypeProps) {
 	const flagged = openOn ? data.parts.find((p) => p.oftenReturned)?.id : undefined;
 	const [partId, setPartId] = React.useState<string | undefined>(flagged);
 	const [cart, setCart] = React.useState<string[]>(openOn === 2 && flagged ? [flagged] : []);
@@ -183,6 +186,7 @@ function FlagReturnsPrototype({ data, openOn, ...view }: PrototypeProps) {
 					<section className='flex flex-col border-y border-border'>
 						<button
 							type='button'
+							data-agent='fit-list'
 							aria-expanded={fitListOpen}
 							onClick={() => setFitListOpen(!fitListOpen)}
 							className='flex h-14 w-full items-center justify-between gap-3 text-left text-base font-medium text-foreground outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50'
@@ -520,7 +524,7 @@ function CheckoutStaff({ data, openOn }: { data: FitCheckData; openOn?: number }
 	);
 }
 
-function CheckoutCheckPrototype({ data, audience, openOn, ...view }: PrototypeProps) {
+function CheckoutCheckPrototype({ data, audience, openOn, openPart: _openPart, ...view }: PrototypeProps) {
 	return (
 		<PrototypeFrame {...view}>
 			{audience === "staff" ? <CheckoutStaff data={data} openOn={openOn} /> : <CheckoutCustomer data={data} openOn={openOn} />}
@@ -874,7 +878,7 @@ function FitDataFitList({ data }: { data: FitCheckData }) {
 }
 
 // Each of its screens is its own audience's, so there's nothing to open on (`openOn`).
-function FitDataPrototype({ data, audience, openOn: _openOn, ...view }: PrototypeProps) {
+function FitDataPrototype({ data, audience, openOn: _openOn, openPart: _openPart, ...view }: PrototypeProps) {
 	return (
 		<PrototypeFrame {...view}>
 			{audience === "walkthrough" ? (

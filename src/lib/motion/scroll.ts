@@ -1,4 +1,4 @@
-import { animate } from "motion/react";
+import { animate, type Transition } from "motion/react";
 
 import { scrollTransition } from "./transitions";
 
@@ -67,12 +67,17 @@ function scrollTargetFor(element: HTMLElement, container: HTMLElement, align: Sc
  * movement instead of waiting for the layout first. Interruptible: any wheel, touch, pointer or key
  * input from the user stops it, and so does `element` leaving the page.
  * `align: "start"` puts its top at the top of the view instead (e.g. a new chat reply).
+ * `transition` replaces `scrollTransition` (e.g. `glideScrollTransition`, a slower scroll meant to be watched).
  * Reduced motion: jumps straight to the target.
  * Returns a function that stops the scroll.
  */
 function scrollIntoViewSmoothly(
 	element: HTMLElement,
-	{ reducedMotion = false, align = "nearest" }: { reducedMotion?: boolean; align?: ScrollAlign } = {},
+	{
+		reducedMotion = false,
+		align = "nearest",
+		transition = scrollTransition,
+	}: { reducedMotion?: boolean; align?: ScrollAlign; transition?: Transition } = {},
 ) {
 	const container = scrollContainerOf(element);
 	if (reducedMotion) {
@@ -82,7 +87,7 @@ function scrollIntoViewSmoothly(
 
 	const start = scrollMetrics(container).scrollTop;
 	const controls = animate(0, 1, {
-		...scrollTransition,
+		...transition,
 		onUpdate: (progress) => {
 			if (!element.isConnected) return stop();
 			scrollContainerTo(container, start + (scrollTargetFor(element, container, align) - start) * progress);

@@ -1,10 +1,10 @@
 import * as React from "react";
-import { Maximize2, TriangleAlert, MessageCirclePlus, Monitor, MousePointerClick, RotateCcw, Smartphone } from "lucide-react";
-import { motion } from "motion/react";
+import { ChevronLeft, ChevronRight, Maximize2, TriangleAlert, MessageCirclePlus, Monitor, MousePointerClick, Smartphone } from "lucide-react";
+import { AnimatePresence, motion } from "motion/react";
 
 import { Button } from "@/components/buttons/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/overlays/tooltip";
-import { fadeVariants, revealVariants, useMotionPreference } from "@/lib/motion";
+import { carouselVariants, fadeVariants, revealVariants, useMotionPreference } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 
 import { BuildingScreen } from "./building-screen";
@@ -30,8 +30,16 @@ type PrototypePanelProps = {
 	 * the first), there's no device, only the empty panel (prds/sparks-prototype.md, "Building it").
 	 */
 	building?: PrototypeBuild;
-	/** The prototype for an audience. A new `key` from "Start over" resets its sample data. */
-	children: (audience: string) => React.ReactNode;
+	/**
+	 * The prototype for an audience, opened on a screen (its place in `screens`) when she goes to one with the arrows;
+	 * without it, where the journey starts.
+	 */
+	children: (audience: string, screen?: number) => React.ReactNode;
+	/**
+	 * Every screen Sparks built, in the order it built them, with the audience each is for: the arrows on either side of
+	 * the device go through them (prds/sparks-prototype.md, "Trying it").
+	 */
+	screens?: { name: string; audience: string }[];
 	/** "Edit element" is on: Dana selects an element in the prototype instead of using it. */
 	pointing?: boolean;
 	onPointingChange?: (pointing: boolean) => void;
@@ -66,6 +74,87 @@ type PrototypePanelProps = {
 	onOpenCommentChange?: (id: string | undefined) => void;
 	className?: string;
 };
+
+/**
+ * The device the prototype sits in, the same in Prototype, Evaluate and the reviewers' page: a phone with a 10px dark
+ * bezel (375px of screen, at most 760px tall) or a monitor with an 8px one, the panel's full width. The bezel stays
+ * dark in dark mode: it's the device, not the page (DESIGN.md → "The prototype's device has a dark bezel").
+ */
+const prototypeDeviceClasses = (device: PrototypeDevice) =>
+	cn(
+		"border-[color:var(--gray-800)] bg-background shadow-xl",
+		device === "phone" ? "h-[832px] w-[395px] shrink-0 rounded-[44px] border-[10px]" : "min-h-0 w-full flex-1 rounded-[18px] border-[8px]",
+	);
+
+/** A real phone: a 375 × 812 screen (an iPhone's proportions) in its 10px bezel. */
+const phoneSize = { width: 395, height: 832 };
+
+/**
+ * Fits the real-size phone into the room there is, scaled as a whole (never squashed), so it keeps a phone's
+ * proportions and its screen stays 375px wide for the layouts built for it (DESIGN.md → "The prototype's device has a
+ * dark bezel"). Fills its parent; the phone sits at the top, centered.
+ */
+function FitPhone({ children, after, className }: { children: React.ReactNode; /** Right under the phone, e.g. `PrototypeNote`. */ after?: React.ReactNode; className?: string }) {
+	const ref = React.useRef<HTMLDivElement>(null);
+	const [scale, setScale] = React.useState(1);
+	React.useLayoutEffect(() => {
+		const node = ref.current;
+		if (!node) return;
+		const observer = new ResizeObserver(() =>
+			// Room for what's under it (about one line).
+			setScale(Math.max(0.4, Math.min(1, (node.clientHeight - (after ? 28 : 0)) / phoneSize.height, node.clientWidth / phoneSize.width))),
+		);
+		observer.observe(node);
+		return () => observer.disconnect();
+	}, []);
+	return (
+		<div ref={ref} className={cn("flex min-h-0 w-full flex-1 flex-col items-center", className)}>
+			<div className='shrink-0' style={{ width: phoneSize.width * scale, height: phoneSize.height * scale }}>
+				<div style={{ width: phoneSize.width, height: phoneSize.height, transform: `scale(${scale})`, transformOrigin: "0 0" }}>{children}</div>
+			</div>
+			{after}
+		</div>
+	);
+}
+
+/** Under the device, outside it: nothing in the prototype is real (without taking room in its screens). Shared with Evaluate. */
+function PrototypeNote() {
+	return (
+		<p className='flex shrink-0 items-center gap-1.5 pt-2 text-xs text-muted-foreground'>
+			<TriangleAlert aria-hidden className='size-3.5 shrink-0' />
+			Prototype: made-up data, nothing is real.
+		</p>
+	);
+}
+
+/**
+ * An arrow beside the prototype that goes to the screen before or after it (Prototype, Evaluate's strip): a 40px round
+ * outlined icon button, named in its tooltip with the screen it goes to.
+ */
+function ScreenArrow({ direction, to, disabled, onClick }: { direction: -1 | 1; to?: string; disabled?: boolean; onClick: () => void }) {
+	const label = direction < 0 ? "Screen before" : "Next screen";
+	const button = (
+		<Button
+			variant='outline'
+			size='icon'
+			aria-label={to ? `${label}: ${to}` : label}
+			disabled={disabled}
+			onClick={onClick}
+			className='size-10 shrink-0 rounded-full bg-background shadow-xs [&_svg]:size-5'
+		>
+			{direction < 0 ? <ChevronLeft aria-hidden /> : <ChevronRight aria-hidden />}
+		</Button>
+	);
+	if (disabled) return button;
+	return (
+		<Tooltip>
+			<TooltipTrigger asChild>{button}</TooltipTrigger>
+			<TooltipContent side='bottom' sideOffset={6}>
+				<span className='block first-letter:uppercase'>{to ?? label}</span>
+			</TooltipContent>
+		</Tooltip>
+	);
+}
 
 /** A toolbar button that turns a mode on and off ("Edit element", "Add comment"): filled with the brand color while on. */
 const toggleClasses =
@@ -120,13 +209,14 @@ function Switcher<T extends string>({
 /**
  * The prototype beside the conversation in the Prototype step (prds/sparks-prototype.md, "Trying it"): the audience and
  * device switchers (the device as icons), then icon buttons named in tooltips: "Edit element", "Add comment", the
- * versions, "Start over" (fresh sample data) and "Try it full screen" (Esc or "Back to Sparks" returns, focus back on the
+ * versions and "Try it full screen" (Esc or "Back to Sparks" returns, focus back on the
  * button), with the prototype in a phone or desktop frame. Not in Figma yet.
  */
 function PrototypePanel({
 	audiences,
 	building: build,
 	children,
+	screens = [],
 	pointing = false,
 	onPointingChange,
 	versions = [],
@@ -145,7 +235,23 @@ function PrototypePanel({
 }: PrototypePanelProps) {
 	const [audience, setAudience] = React.useState(audiences[0]?.id ?? "");
 	const [device, setDevice] = React.useState<PrototypeDevice>(audiences[0]?.device ?? "phone");
-	const [run, setRun] = React.useState(0);
+	// The screen she went to with the arrows; none: where the audience's journey starts (and after she switches audience
+	// or starts over). The arrows go on from the first screen of the audience shown.
+	const [screen, setScreen] = React.useState<number>();
+	const screenAt = screen ?? Math.max(0, screens.findIndex((s) => s.audience === audience));
+	// Each move with the arrows: the screen slides in from the side it's on (Carousel), the one shown slides out the other
+	// way. Switching audience or device changes the screen in place.
+	const [slide, setSlide] = React.useState<{ key: number; direction: 1 | -1 }>({ key: 0, direction: 1 });
+	const goToScreen = (index: number) => {
+		const next = screens[index];
+		if (!next) return;
+		setSlide((current) => ({ key: current.key + 1, direction: index > screenAt ? 1 : -1 }));
+		setScreen(index);
+		if (next.audience !== audience) {
+			setAudience(next.audience);
+			setDevice(audiences.find((a) => a.id === next.audience)?.device ?? device);
+		}
+	};
 	const [fullScreen, setFullScreen] = React.useState(false);
 	const openerRef = React.useRef<HTMLButtonElement>(null);
 	const backRef = React.useRef<HTMLButtonElement>(null);
@@ -199,32 +305,32 @@ function PrototypePanel({
 		return () => window.removeEventListener("keydown", onKey);
 	}, [fullScreen, closeFullScreen]);
 
-	const note = (
-		<p className='flex shrink-0 items-center gap-1.5 pt-2 text-xs text-muted-foreground'>
-			<TriangleAlert aria-hidden className='size-3.5 shrink-0' />
-			Prototype: made-up data, nothing is real.
-		</p>
-	);
-	const deviceClasses = (shown: PrototypeDevice) =>
-		cn(
-			"min-h-0 flex-1 border border-border bg-background shadow-sm",
-			shown === "phone" ? "max-h-[760px] w-[375px] rounded-[32px]" : "w-full rounded-card",
-		);
+	const note = <PrototypeNote />;
+	const deviceClasses = prototypeDeviceClasses;
 
 	// Being built: blank until the first screen, then the device it's for, with the screen assembled in it. Nothing in it
 	// can be used yet (`inert`): what it shows changes with each screen.
 	const buildingFrame = build?.screen ? (
 		<div inert className={cn("flex min-h-0 flex-1 flex-col items-center overflow-hidden", build.screen.device === "phone" && "pt-4")}>
-			<motion.div
-				key={build.screen.device}
-				variants={prefersReducedMotion ? fadeVariants : revealVariants}
-				initial='initial'
-				animate='animate'
-				className={cn(deviceClasses(build.screen.device), "overflow-hidden")}
-			>
-				<BuildingScreen key={build.screen.key}>{build.screen.content}</BuildingScreen>
-			</motion.div>
-			{note}
+			{(() => {
+				const assembling = (
+					<motion.div
+						key={build.screen.device}
+						variants={prefersReducedMotion ? fadeVariants : revealVariants}
+						initial='initial'
+						animate='animate'
+						className={cn(deviceClasses(build.screen.device), "overflow-hidden")}
+					>
+						<BuildingScreen key={build.screen.key}>{build.screen.content}</BuildingScreen>
+					</motion.div>
+				);
+				return build.screen.device === "phone" ? <FitPhone after={note}>{assembling}</FitPhone> : (
+					<>
+						{assembling}
+						{note}
+					</>
+				);
+			})()}
 		</div>
 	) : (
 		<div className='min-h-0 flex-1' />
@@ -234,9 +340,9 @@ function PrototypePanel({
 		// The device, then under it, outside it, a small note that nothing is real (so nothing in the prototype reads as
 		// real, without taking room in its screens).
 		<div className={cn("flex min-h-0 flex-1 flex-col items-center overflow-hidden", device === "phone" && "pt-4")}>
-			<div
-				className={cn(deviceClasses(device), "scrollbar-subtle overflow-y-auto")}
-			>
+			{(() => {
+				const deviceView = (
+					<div className={cn(deviceClasses(device), "scrollbar-subtle overflow-y-auto")}>
 				{commentAuthor ? (
 					<PrototypeComments
 						active={commenting}
@@ -250,13 +356,55 @@ function PrototypePanel({
 						openId={onOpenCommentChange ? openComment : undefined}
 						onOpenChange={onOpenCommentChange}
 					>
-						<React.Fragment key={`${audience}-${run}`}>{children(audience)}</React.Fragment>
+						<React.Fragment key={`${audience}-${screen ?? "start"}`}>{children(audience, screen)}</React.Fragment>
 					</PrototypeComments>
 				) : (
-					<React.Fragment key={`${audience}-${run}`}>{children(audience)}</React.Fragment>
+					<React.Fragment key={`${audience}-${screen ?? "start"}`}>{children(audience, screen)}</React.Fragment>
 				)}
-			</div>
-			{note}
+					</div>
+				);
+				const shown = device === "phone" ? <FitPhone after={note}>{deviceView}</FitPhone> : (
+					<>
+						{deviceView}
+						{note}
+					</>
+				);
+				if (screens.length < 2) return shown;
+				// The arrows on either side: every screen Sparks built, in order, the audience following the screen. The screens
+				// slide between them as a carousel across the panel's full width (the frame clips them), behind the arrows: each
+				// slide spans the arrows' room too (`px-14`: a 40px arrow + 16px gap), so it leaves the panel entirely.
+				return (
+					<div className='relative flex min-h-0 w-full flex-1'>
+						<AnimatePresence initial={false} custom={slide.direction} mode='popLayout'>
+							<motion.div
+								key={slide.key}
+								custom={slide.direction}
+								variants={prefersReducedMotion ? fadeVariants : carouselVariants}
+								initial='initial'
+								animate='animate'
+								exit='exit'
+								className='flex min-h-0 w-full min-w-0 flex-1 flex-col items-center px-14'
+							>
+								{shown}
+							</motion.div>
+						</AnimatePresence>
+						<div className='absolute inset-y-0 left-0 z-10 flex items-center'>
+							<ScreenArrow direction={-1} to={screens[screenAt - 1]?.name} disabled={screenAt === 0} onClick={() => goToScreen(screenAt - 1)} />
+						</div>
+						<div className='absolute inset-y-0 right-0 z-10 flex items-center'>
+							<ScreenArrow
+								direction={1}
+								to={screens[screenAt + 1]?.name}
+								disabled={screenAt === screens.length - 1}
+								onClick={() => goToScreen(screenAt + 1)}
+							/>
+						</div>
+						<span aria-live='polite' className='sr-only'>
+							{screen !== undefined ? `${screens[screenAt]?.name}, ${screenAt + 1} of ${screens.length}` : ""}
+						</span>
+					</div>
+				);
+			})()}
 		</div>
 	);
 
@@ -291,8 +439,11 @@ function PrototypePanel({
 							label='Audience'
 							value={audience}
 							options={audiences}
-							// Switching who it's for keeps the device she's on.
-							onChange={setAudience}
+							// Switching who it's for keeps the device she's on, and starts at that audience's first screen.
+							onChange={(id) => {
+								setAudience(id);
+								setScreen(undefined);
+							}}
 						/>
 					) : null}
 					<Switcher
@@ -330,9 +481,6 @@ function PrototypePanel({
 							<MessageCirclePlus aria-hidden />
 						</HeaderIconButton>
 					) : null}
-					<HeaderIconButton label='Start over' onClick={() => setRun((r) => r + 1)}>
-						<RotateCcw aria-hidden />
-					</HeaderIconButton>
 					<HeaderIconButton ref={openerRef} label='Try it full screen' onClick={() => setFullScreen(true)}>
 						<Maximize2 aria-hidden />
 					</HeaderIconButton>
@@ -370,4 +518,4 @@ function PrototypePanel({
 	);
 }
 
-export { PrototypePanel, type PrototypeBuild, type PrototypeAudience, type PrototypeDevice, type PrototypePanelProps };
+export { FitPhone, phoneSize, PrototypeNote, PrototypePanel, ScreenArrow, prototypeDeviceClasses, type PrototypeBuild, type PrototypeAudience, type PrototypeDevice, type PrototypePanelProps };

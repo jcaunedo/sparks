@@ -45,7 +45,14 @@ type PublishedIdeaProps = {
 	/** The idea, as published: every part of "What's reviewed". */
 	concept: ConceptForReview;
 	/** The prototype at the published version: its name ("1. Fit check before you buy"), audiences, screens, and the prototype for an audience. */
-	prototype: { label: string; audiences: PrototypeAudience[]; screens: number; render: (audience: string) => React.ReactNode };
+	prototype: {
+		label: string;
+		audiences: PrototypeAudience[];
+		screens: number;
+		/** Every screen, with its audience: the arrows beside the device go through them (as in Prototype). */
+		screenList?: { name: string; audience: string }[];
+		render: (audience: string, screen?: number) => React.ReactNode;
+	};
 	/** Comments pinned on the prototype, everyone's, with their threads. */
 	prototypeComments: PrototypeComment[];
 	onPrototypeCommentsChange: (comments: PrototypeComment[]) => void;
@@ -442,6 +449,7 @@ function PublishedIdea({
 				<TabsContent value='prototype' className='mt-0 flex min-h-0 flex-1 flex-col'>
 					<PrototypePanel
 						audiences={prototype.audiences}
+						screens={prototype.screenList}
 						paths={[{ id: "published", label: prototype.label }]}
 						path='published'
 						commentAuthor={reviewer}

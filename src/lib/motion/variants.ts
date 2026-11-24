@@ -1,7 +1,7 @@
 import type { Variants } from "motion/react";
 
 import { motionDistance, motionDuration, motionScale, motionStagger } from "./tokens";
-import { enterTransition, exitTransition, standardTransition, swapEnterTransition } from "./transitions";
+import { carouselTransition, enterTransition, exitTransition, standardTransition, swapEnterTransition } from "./transitions";
 import { reducedMotionTransition } from "./reduced-motion";
 
 /**
@@ -126,6 +126,24 @@ const slideVariants: Variants = {
 };
 
 /**
+ * Carousel: one screen replaced by the next or the one before, moving horizontally like a strip (the prototype's
+ * arrows). Pass `custom={1}` going forward (the next comes in from the right, the current leaves to the left) or
+ * `custom={-1}` going back. Each travels its own full width, so put it in an element that spans the area to clip, inside
+ * a container that clips it (`overflow-hidden`), under `AnimatePresence initial={false} mode="popLayout"` (the two
+ * slide side by side) with the same `custom` on `AnimatePresence`, so a screen already leaving follows a later click.
+ * The one leaving can't be clicked. Reduced motion: `fadeVariants` (a crossfade).
+ */
+const carouselVariants: Variants = {
+  initial: (direction: 1 | -1 = 1) => ({ x: `${direction * 100}%` }),
+  animate: { x: 0, pointerEvents: "auto", transition: carouselTransition },
+  exit: (direction: 1 | -1 = 1) => ({
+    x: `${-direction * 100}%`,
+    pointerEvents: "none",
+    transition: carouselTransition,
+  }),
+};
+
+/**
  * Stagger container for the Flow pattern — small groups of related items
  * entering together. Apply to the parent; children should use
  * `revealVariants` (or similar) and inherit timing via variant propagation.
@@ -196,6 +214,20 @@ const feedItemVariants: Variants = {
 };
 
 /**
+ * Roll: one line of text replaced by another in place, like a counter rolling over: the old one moves up and out, the
+ * new one comes up from below. Put both in a container that clips them (`overflow-hidden`), in the same grid cell, with
+ * `AnimatePresence initial={false}` and the text as the `key`. E.g. the concept's name when Sparks names it.
+ * Reduced motion: `fadeVariants`.
+ */
+const rollVariants: Variants = {
+  initial: { opacity: 0, y: "100%" },
+  // Slow enough to be seen: the old text leaves over `normal`, the new one starts a beat later and settles over
+  // `deliberate` (about 0.75s in all), on the same curves as Reveal.
+  animate: { opacity: 1, y: 0, transition: { ...enterTransition, duration: motionDuration.deliberate, delay: motionDuration.fast } },
+  exit: { opacity: 0, y: "-100%", transition: { ...exitTransition, duration: motionDuration.normal } },
+};
+
+/**
  * Draw: a stroked mark drawn on as it appears, e.g. a step's check when the step finishes (ActivityFeed). Put it on a
  * `motion.path` whose path starts where the stroke should start (a check: the short stroke first). Under reduced motion,
  * use `iconSwapReducedVariants` (the same states): the mark appears at once.
@@ -222,6 +254,7 @@ export {
   lineDrawVariants,
   fadeVariants,
   feedItemVariants,
+  rollVariants,
   drawVariants,
   rowRemoveVariants,
   revealVariants,
@@ -230,6 +263,7 @@ export {
   overlayVariants,
   panelVariants,
   slideVariants,
+  carouselVariants,
   staggerContainerVariants,
   iconSwapVariants,
   iconSwapReducedVariants,

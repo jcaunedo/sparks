@@ -1,5 +1,5 @@
 import type { FitCheckChanges } from "../prototype/fit-check-prototype";
-import type { Evaluation } from "./validate-panel";
+import type { Evaluation, EvaluationExpert } from "./validate-panel";
 
 /** "1 in 6", written as words in a sentence ("3 of 6"). */
 const ofSix = (n: number) => `${n} of 6`;
@@ -40,6 +40,7 @@ const repeatAssumption = {
 const accessibility = (audience: "Customer" | "Store staff", where: string) => [
 	{
 		id: "screen-reader",
+		label: "Screen reader",
 		audience,
 		access: "Screen reader",
 		situation: `Someone using a screen reader goes through ${where}.`,
@@ -50,6 +51,7 @@ const accessibility = (audience: "Customer" | "Store staff", where: string) => [
 	},
 	{
 		id: "keyboard",
+		label: "Keyboard only",
 		audience,
 		access: "Keyboard only",
 		situation: `Someone using only a keyboard goes through ${where}.`,
@@ -59,6 +61,15 @@ const accessibility = (audience: "Customer" | "Store staff", where: string) => [
 		steps: [{ screen: where.charAt(0).toUpperCase() + where.slice(1), evaluation: "Every field and button is reachable in order, with a visible focus." }],
 	},
 ];
+
+/** An expert's look: its role, focus, notes by screen, and what it concludes (AI agents in a role, never people). */
+const expert = (id: string, label: string, focus: string, notes: [string, string][], summary: string): EvaluationExpert => ({
+	id,
+	label,
+	focus,
+	notes: notes.map(([screen, note]) => ({ screen, note })),
+	summary,
+});
 
 /** "Flag often-returned parts": it raises the fit question without answering it, and falls short of the target. */
 function flagReturns(changes: FitCheckChanges): EvaluationBody {
@@ -108,7 +119,8 @@ function flagReturns(changes: FitCheckChanges): EvaluationBody {
 				where: "Search results and the part page",
 				severity: "Hurts",
 				method: "AI simulation, 2 of 6 customer scenarios",
-				fix: "Show whether it fits the saved vehicle instead, which is the fit check.",
+				fix: 'Show whether it fits the saved vehicle instead. That\'s another direction, "Fit check before you buy": try it as another path, beside this one.',
+				direction: { id: "fit-check", name: "Fit check before you buy" },
 				status: "open",
 			},
 			{
@@ -132,11 +144,13 @@ function flagReturns(changes: FitCheckChanges): EvaluationBody {
 		scenarios: [
 			{
 				id: "oil-filter",
+				label: "Oil filter · 2015 F-150",
 				audience: "Customer",
 				situation: "A do-it-yourself customer searches for an oil filter for a 2015 Ford F-150 on a phone.",
 				task: "Buy a filter that fits.",
 				outcome: "struggled",
 				summary: "Saw the flag on the FL-400S, but still couldn't tell whether it fits a 2015 F-150, and bought it anyway.",
+				findings: ["flag-no-answer"],
 				steps: [
 					{ screen: "Search results", evaluation: "The flag says the part comes back a lot; it doesn't say for which vehicles." },
 					{ screen: "The part page", evaluation: "The fit list is one tap away, but nothing asks her to check it against her truck." },
@@ -144,6 +158,7 @@ function flagReturns(changes: FitCheckChanges): EvaluationBody {
 			},
 			{
 				id: "brake-pads",
+				label: "Brake pads, not flagged",
 				audience: "Customer",
 				situation: "A customer buys brake pads, which aren't flagged.",
 				task: "Buy pads that fit.",
@@ -153,6 +168,7 @@ function flagReturns(changes: FitCheckChanges): EvaluationBody {
 			},
 			{
 				id: "spark-plugs",
+				label: "Flagged spark plugs",
 				audience: "Customer",
 				situation: "A customer looks at spark plugs, which are flagged.",
 				task: "Avoid buying plugs that don't fit.",
@@ -162,15 +178,18 @@ function flagReturns(changes: FitCheckChanges): EvaluationBody {
 			},
 			{
 				id: "hurry",
+				label: "In a hurry",
 				audience: "Customer",
 				situation: "A customer in a hurry adds a part to the cart without reading much, on a phone.",
 				task: "Buy the right part without slowing down.",
 				outcome: "struggled",
 				summary: "Didn't read the flag and bought the wrong filter.",
+				findings: ["flag-no-answer"],
 				steps: [{ screen: "Search results", evaluation: "A label that asks for a check is easy to skip when moving fast." }],
 			},
 			{
 				id: "mechanic",
+				label: "Pro mechanic",
 				audience: "Customer",
 				situation: "A professional mechanic orders parts for a customer's car on a desktop.",
 				task: "Order the right parts quickly.",
@@ -180,6 +199,7 @@ function flagReturns(changes: FitCheckChanges): EvaluationBody {
 			},
 			{
 				id: "first-time",
+				label: "First-time buyer",
 				audience: "Customer",
 				situation: "A first-time buyer shops for a part on a laptop.",
 				task: "Buy a part that fits, starting from nothing.",
@@ -187,6 +207,7 @@ function flagReturns(changes: FitCheckChanges): EvaluationBody {
 				summary: reminder
 					? 'Read "Check the fit first", opened the fit list and bought the filter that fits.'
 					: "Took the flag to mean the part is bad, and left to buy elsewhere.",
+				findings: ["flag-quality"],
 				steps: [
 					{
 						screen: "Search results",
@@ -197,6 +218,23 @@ function flagReturns(changes: FitCheckChanges): EvaluationBody {
 				],
 			},
 			...accessibility("Customer", "the search results and a flagged part"),
+		],
+		experts: [
+			expert("ux", "UX expert", "Usability and the design system", [
+				["Search results", "The flag stands out, but it asks for a check without saying how to do it."],
+				["The part page", "The fit list is folded away; people who need it may not open it."],
+				["The cart", "The cart doesn't mention fit: the last chance to check goes by."],
+			], "The flag is seen; what to do about it isn't."),
+			expert("copy", "Copywriter", "The words on each screen", [
+				["Search results", reminder ? '"Check the fit first" tells people what to do.' : '"Often returned" can read as "bad part".'],
+				["Search results count", "The count and the search say what you're looking at. Clear."],
+			], reminder ? "The flag reads as a reminder." : 'Reword the flag as a reminder: "Check the fit first".'),
+			expert("engineer", "Engineer", "What it needs to be built", [
+				["Search results", 'Return counts mix "doesn\'t fit" with damaged and changed-mind returns.'],
+			], "Buildable, but the counts need return reasons first."),
+			expert("data", "Data analyst", "Business data and the measures", [
+				["The part page", 'Flagged parts are about 1 in 12 of what\'s sold; most "doesn\'t fit" returns aren\'t flagged.'],
+			], `Likely ${range} fewer "doesn't fit" returns, below the 25% target.`),
 		],
 		assumptions: [
 			{ text: "Customers check the fit list when they see the flag.", status: "Not supported", evidence: "In 3 of 6 scenarios they didn't (AI simulation)." },
@@ -302,6 +340,7 @@ function checkoutCheck(changes: FitCheckChanges): EvaluationBody {
 		scenarios: [
 			{
 				id: "swap",
+				label: "Swap at checkout",
 				audience: "Customer",
 				situation: "A customer adds brake pads and the FL-400S oil filter, then checks out on a phone.",
 				task: "End up with parts that fit.",
@@ -313,11 +352,13 @@ function checkoutCheck(changes: FitCheckChanges): EvaluationBody {
 			},
 			{
 				id: "hurry",
+				label: "In a hurry",
 				audience: "Customer",
 				situation: "A customer in a hurry checks out on a phone.",
 				task: "Buy the right parts without slowing down.",
 				outcome: early ? "done" : "struggled",
 				summary: early ? 'Saw "Doesn\'t fit" as the filter went in the cart, swapped it, and checked out.' : 'Saw "Doesn\'t fit" at the last step and gave up the order.',
+				findings: ["checkout-late"],
 				steps: [
 					early
 						? { screen: "The cart", evaluation: "Flagged while still choosing, the swap feels like help, not a reason to stop." }
@@ -326,6 +367,7 @@ function checkoutCheck(changes: FitCheckChanges): EvaluationBody {
 			},
 			{
 				id: "other-car",
+				label: "Another car",
 				audience: "Customer",
 				situation: "A customer buys a part for another car in the household.",
 				task: "Buy the part for the other car.",
@@ -333,6 +375,7 @@ function checkoutCheck(changes: FitCheckChanges): EvaluationBody {
 				summary: another
 					? 'Picked "Another vehicle", a 2014 Ford Escape, and the check confirmed the filter fits it.'
 					: "Checkout only offered the saved vehicle, so the right part looked wrong.",
+				findings: ["checkout-one-vehicle"],
 				steps: [
 					{
 						screen: "Checkout",
@@ -342,6 +385,7 @@ function checkoutCheck(changes: FitCheckChanges): EvaluationBody {
 			},
 			{
 				id: "no-fit-data",
+				label: "Spark plugs · older truck",
 				audience: "Customer",
 				situation: "A customer with an older truck checks out with spark plugs that have no fit data.",
 				task: "Find out whether they fit before paying.",
@@ -351,6 +395,7 @@ function checkoutCheck(changes: FitCheckChanges): EvaluationBody {
 			},
 			{
 				id: "mechanic",
+				label: "Pro mechanic",
 				audience: "Customer",
 				situation: "A professional mechanic checks out two parts on a desktop.",
 				task: "Confirm both parts fit.",
@@ -360,6 +405,7 @@ function checkoutCheck(changes: FitCheckChanges): EvaluationBody {
 			},
 			{
 				id: "first-time",
+				label: "First-time buyer",
 				audience: "Customer",
 				situation: "A first-time buyer with no saved vehicle checks out on a laptop.",
 				task: "Buy a part that fits, starting from nothing.",
@@ -369,6 +415,7 @@ function checkoutCheck(changes: FitCheckChanges): EvaluationBody {
 			},
 			{
 				id: "store-order",
+				label: "Order at the counter",
 				audience: "Store staff",
 				situation: "A store associate looks up an order whose part was swapped at checkout.",
 				task: "See what was flagged and what the customer did.",
@@ -377,6 +424,25 @@ function checkoutCheck(changes: FitCheckChanges): EvaluationBody {
 				steps: [{ screen: "Order lookup", evaluation: "The order shows the check and the swap, so the associate can explain it." }],
 			},
 			...accessibility("Customer", "checkout"),
+		],
+		experts: [
+			expert("ux", "UX expert", "Usability and the design system", [
+				["Checkout", early ? "Nothing new at checkout: the fit was checked in the cart." : "A warning at the last step lands after people have decided."],
+				["The shop", 'Big cards with "Add to cart" make adding quick; nothing about fit yet.'],
+				["The cart", "The cart is the place to check, while people still choose."],
+			], early ? "The check comes early enough to help." : "Move the check earlier, into the cart."),
+			expert("copy", "Copywriter", "The words on each screen", [
+				["The shop", '"Popular parts" says what the grid is. Clear.'],
+				["Checkout", '"Swap for the one that fits" says what happens. Clear.'],
+				["Place order", "The order button says what it does."],
+			], "Clear, plain wording."),
+			expert("engineer", "Engineer", "What it needs to be built", [
+				["Checkout", "The check reads the catalog's fit data, missing for about 1 in 8 older parts."],
+				["Order lookup", "Orders keep the swap: stores can see it. Available."],
+			], "Buildable; checkout changes need the payments team."),
+			expert("data", "Data analyst", "Business data and the measures", [
+				["Checkout", 'Most "doesn\'t fit" returns are caught here, if people swap.'],
+			], `Likely ${range} fewer "doesn't fit" returns.`),
 		],
 		assumptions: [
 			{
@@ -479,6 +545,7 @@ function fitData(changes: FitCheckChanges): EvaluationBody {
 		scenarios: [
 			{
 				id: "busy-return",
+				label: "Busy Saturday return",
 				audience: "Store staff",
 				situation: "A store associate takes back a filter that doesn't fit, during a busy Saturday.",
 				task: "Note the vehicle without slowing the line.",
@@ -486,6 +553,7 @@ function fitData(changes: FitCheckChanges): EvaluationBody {
 				summary: prefill
 					? "The vehicle was filled in from the account; noting it took one tap, even with a line."
 					: "Found the account and noted it, but it took about 20 seconds more; on a busy day, it gets skipped.",
+				findings: ["counter-slow"],
 				steps: [
 					{
 						screen: "The return screen",
@@ -497,11 +565,13 @@ function fitData(changes: FitCheckChanges): EvaluationBody {
 			},
 			{
 				id: "no-vehicle",
+				label: "No saved vehicle",
 				audience: "Store staff",
 				situation: "An associate takes back a part from a customer with no saved vehicle.",
 				task: "Note which vehicle it didn't fit.",
 				outcome: ask ? "done" : "struggled",
 				summary: ask ? "No saved vehicle, so the associate asked and picked it: year, make and model." : "No vehicle in the account, so nothing to note.",
+				findings: ["no-vehicle"],
 				steps: [
 					{
 						screen: "The return screen",
@@ -511,6 +581,7 @@ function fitData(changes: FitCheckChanges): EvaluationBody {
 			},
 			{
 				id: "weekly-list",
+				label: "Monday's list",
 				audience: "Store staff",
 				situation: "The returns team sends the week's notes to the catalog team on Monday.",
 				task: "Get one clean list to the catalog team.",
@@ -520,6 +591,7 @@ function fitData(changes: FitCheckChanges): EvaluationBody {
 			},
 			{
 				id: "catalog-fix",
+				label: "Catalog fixes",
 				audience: "Store staff",
 				situation: "The catalog team works through the week's list.",
 				task: "Fix the fit data, oldest vehicles first.",
@@ -529,6 +601,7 @@ function fitData(changes: FitCheckChanges): EvaluationBody {
 			},
 			{
 				id: "fit-list",
+				label: "Fit list · 2014 F-150",
 				audience: "Customer",
 				situation: "A customer checks the fit list for spark plugs for a 2014 F-150 on a phone.",
 				task: "See whether they fit.",
@@ -538,14 +611,32 @@ function fitData(changes: FitCheckChanges): EvaluationBody {
 			},
 			{
 				id: "still-missing",
+				label: "Still missing",
 				audience: "Customer",
 				situation: "A customer looks for a part whose fit data is still missing.",
 				task: "See whether it fits.",
 				outcome: "struggled",
 				summary: "The fit list didn't name the truck yet; the fix comes with next month's supplier feed.",
+				findings: ["monthly-feed"],
 				steps: [{ screen: "The fit list", evaluation: "Until the feed updates, the customer sees the same gap as today." }],
 			},
 			...accessibility("Store staff", "the return screen"),
+		],
+		experts: [
+			expert("ux", "UX expert", "Usability and the design system", [
+				["The return screen", prefill ? "One tap to confirm fits a busy counter." : "Finding the account is one step too many at a busy counter."],
+				["The weekly list", "One list, oldest vehicles first, is easy to work through."],
+			], prefill ? "Quick enough for the counter." : "The counter step needs to be faster."),
+			expert("copy", "Copywriter", "The words on each screen", [
+				["The walkthrough", "The routine reads as four plain steps."],
+				["The fit list", '"Fits these vehicles" says exactly what the list is.'],
+			], "Clear for each team."),
+			expert("engineer", "Engineer", "What it needs to be built", [
+				["The fit list", "Fixes wait for the monthly supplier feed."],
+			], "Buildable; the feed sets the pace."),
+			expert("data", "Data analyst", "Business data and the measures", [
+				["The weekly list", "About 1 in 8 parts on vehicles over 15 years old lack fit data."],
+			], `Likely ${range} fewer "doesn't fit" returns, below the 25% target.`),
 		],
 		assumptions: [
 			{

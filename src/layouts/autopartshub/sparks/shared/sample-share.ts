@@ -1,5 +1,6 @@
 import type { CommentMention } from "../prototype/prototype-comments";
 import type { ShareMember, ShareRole } from "../workspace/share-popover";
+import { samplePersonPhoto } from "../../sample-data/sample-people";
 
 /*
  * Who can be added from "Share" (prds/sparks.md, "Sharing a concept"): people and departments at AutoParts Co. Made up;
@@ -59,7 +60,13 @@ const directory = [
 	{ id: "rachel-moore", name: "Rachel Moore", email: "rachel.moore@autopartsco.example", team: "Supply chain" },
 ];
 
-const people: Omit<ShareMember, "role">[] = directory.map(({ id, name, email }) => ({ id, kind: "person", name, detail: email }));
+const people: Omit<ShareMember, "role">[] = directory.map(({ id, name, email }) => ({
+	id,
+	kind: "person",
+	name,
+	detail: email,
+	avatarSrc: samplePersonPhoto(name),
+}));
 
 const departments: Omit<ShareMember, "role">[] = [
 	{ id: "ux", kind: "department", name: "UX team", detail: "8 people" },
@@ -100,7 +107,7 @@ export const sampleShareLink = "https://autopartshub.example/sparks/wrong-part-r
  * Made up; the real list comes from the company directory.
  */
 export const sampleDirectory: CommentMention[] = [
-	...directory.map(({ id, name, team }): CommentMention => ({ id, kind: "person", name, detail: team })),
+	...directory.map(({ id, name, team }): CommentMention => ({ id, kind: "person", name, detail: team, avatarSrc: samplePersonPhoto(name) })),
 	...departments.map(({ id, name, detail }): CommentMention => ({ id, kind: "department", name, detail })),
 ];
 

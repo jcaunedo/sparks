@@ -120,6 +120,8 @@ type FitCheckPrototypeProps = {
 	audience: FitCheckAudience;
 	/** The screen it opens on, by its place in `fitCheckScreens`, as it's being built; without it, where the journey starts. */
 	openOn?: number;
+	/** The part a product page opens on, by id, when it isn't the screen's own (Evaluate's agents: a part with no fit data). */
+	openPart?: string;
 	changes?: FitCheckChanges;
 	/** "Edit element": a click (or Enter) on an element selects it instead of using it. */
 	pointing?: boolean;
@@ -356,7 +358,8 @@ function ShopHeader({
 				</button>
 			</header>
 			{vehicle ? (
-				<div className='flex items-center justify-between gap-3 bg-background-subtle px-4 py-2.5 text-sm @3xl:px-10'>
+				// `data-agent`: where Evaluate's scenarios can go that she can't point at (prds/sparks-validate.md, "Running it").
+				<div data-agent='vehicle-chip' className='flex items-center justify-between gap-3 bg-background-subtle px-4 py-2.5 text-sm @3xl:px-10'>
 					<span className='flex min-w-0 items-center gap-2 text-foreground'>
 						<Car className='size-4 shrink-0 text-icon' aria-hidden />
 						<span className='truncate'>
@@ -649,11 +652,11 @@ function VehiclePicker({
 }
 
 /** The customer's shop: add a vehicle, open parts and see whether they fit, the cart and a pretend order. */
-function CustomerShop({ data, openOn }: { data: FitCheckData; openOn?: number }) {
+function CustomerShop({ data, openOn, openPart }: { data: FitCheckData; openOn?: number; openPart?: string }) {
 	const [vehicle, setVehicle] = React.useState<Partial<FitVehicle>>({});
-	const [saved, setSaved] = React.useState<FitVehicle | null>(openOn ? data.vehicle : null);
+	const [saved, setSaved] = React.useState<FitVehicle | null>(openOn || openPart ? data.vehicle : null);
 	const [partId, setPartId] = React.useState(
-		() => (openOn === 2 ? data.parts.find((p) => p.fit === "doesnt")?.id : undefined) ?? data.firstPartId,
+		() => openPart ?? (openOn === 2 ? data.parts.find((p) => p.fit === "doesnt")?.id : undefined) ?? data.firstPartId,
 	);
 	const [cart, setCart] = React.useState<string[]>(openOn === 3 ? [data.firstPartId] : []);
 	const [view, setView] = React.useState<"part" | "cart" | "ordered">(openOn === 3 ? "cart" : "part");
@@ -925,10 +928,10 @@ function PrototypeFrame({ changes, pointing, pointedAt, onPoint, onTextChange, c
 }
 
 /** The prototype for "Fit check before you buy", for the audience shown. */
-function FitCheckPrototype({ data, audience, openOn, ...view }: FitCheckPrototypeProps) {
+function FitCheckPrototype({ data, audience, openOn, openPart, ...view }: FitCheckPrototypeProps) {
 	return (
 		<PrototypeFrame {...view}>
-			{audience === "customer" ? <CustomerShop data={data} openOn={openOn} /> : <StaffLookup data={data} openOn={openOn} />}
+			{audience === "customer" ? <CustomerShop data={data} openOn={openOn} openPart={openPart} /> : <StaffLookup data={data} openOn={openOn} />}
 		</PrototypeFrame>
 	);
 }

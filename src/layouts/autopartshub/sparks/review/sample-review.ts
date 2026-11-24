@@ -6,6 +6,7 @@ import type { DirectionDraft } from "../plan/direction-card";
 import type { ConceptForReview, IdeaComment, Reviewer } from "./review-panel";
 import type { CommentScope, PrototypeComment, PrototypeCommentAuthor } from "../prototype/prototype-comments";
 import { reviewProfileFor, type ReviewDecision } from "./sample-review-directions";
+import { samplePersonPhoto } from "../../sample-data/sample-people";
 
 /*
  * Review for "Wrong-part returns" (prds/sparks-review.md): the concept for review, put together from what was decided
@@ -132,10 +133,10 @@ export const sampleReviewStepMs = 700;
 
 /** Who comments for each team (made-up people): their name and team on what they pin on the prototype. */
 export const sampleReviewerPeople: Record<string, PrototypeCommentAuthor> = {
-	ux: { name: "Priya Shah", role: "UX team" },
-	eng: { name: "Marcus Lee", role: "Engineering" },
-	stores: { name: "Tom Becker", role: "Stores" },
-	catalog: { name: "Ana Silva", role: "Catalog team" },
+	ux: { name: "Priya Shah", role: "UX team", avatarSrc: samplePersonPhoto("Priya Shah") },
+	eng: { name: "Marcus Lee", role: "Engineering", avatarSrc: samplePersonPhoto("Marcus Lee") },
+	stores: { name: "Tom Becker", role: "Stores", avatarSrc: samplePersonPhoto("Tom Becker") },
+	catalog: { name: "Ana Silva", role: "Catalog team", avatarSrc: samplePersonPhoto("Ana Silva") },
 };
 
 const onPhone: CommentScope = { key: "customer-phone", audience: "customer", audienceLabel: "Customer", device: "phone" };

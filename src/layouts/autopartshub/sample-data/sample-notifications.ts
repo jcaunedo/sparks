@@ -1,4 +1,5 @@
 import type { AppNotification } from "../notifications-popover";
+import { samplePersonPhoto } from "./sample-people";
 
 /*
  * Dana's notifications, the same in every AutoPartsHUB header: comments, reviews and shares from Sparks, and a data
@@ -16,6 +17,7 @@ export const sampleNotifications: AppNotification[] = [
 		id: "n1",
 		kind: "person",
 		name: "Priya Shah",
+		avatarSrc: samplePersonPhoto("Priya Shah"),
 		title: "Priya Shah commented on Fit check before checkout",
 		href: "#fit-check",
 		description: "The fit message on the product page reads well. Could it name the trim too?",

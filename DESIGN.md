@@ -264,7 +264,7 @@ The scroller is the whole conversation area, edge to edge (`px-8`, ~~`pt-14`~~ n
 
 **Why:** her message at the top keeps what she said next to its answer (prds/sparks.md; it was the answer's start until the user changed it). Without the `minHeight`, her message can't reach the top while the reply is short (the checking line): the container can't scroll that far. Subtracting her message's height leaves no empty space to scroll past. Adding the listeners in the same event that sends (Enter's keydown, which React handles before it reaches `window`) stopped the scroll before it began. A "stick to bottom" follower, as before, scrolls the answer's start out of view while Dana reads it.
 
-**How to apply:** check against `sent`, `lastIsNewReply`, `scrollPadding` (must equal the scroller's top padding, now 0), the `minHeight` and `paddingBottom` styles on the reply `li` and the `requestAnimationFrame` around the listeners in `scroll.ts`. Don't add back a ResizeObserver that pins the scroll to the bottom, or one that follows the reply: the only automatic scroll brings her message to the top (a follower to the middle was tried and dropped). `paddingBottom` must stay half the scroller's height: less and the end stops below the middle, more and she can scroll it past.
+**How to apply:** check against `sent`, `lastIsNewReply`, `scrollPadding` (must equal the scroller's top padding, now 0), the `minHeight` and `paddingBottom` styles on the reply `li` and the `requestAnimationFrame` around the listeners in `scroll.ts`. Don't add back a ResizeObserver that pins the scroll to the bottom, or one that follows the reply while it streams (a follower to the middle was tried and dropped). The automatic scrolls are three, each once: her message to the top when she sends; a section's divider when it ends just below the view (`SectionBreak`); and, once a new reply is done, its end (`endRef` in `SparksReplyView`, `scroll-mb-8`, `align: "nearest"`) when it has quick replies, so its answers are in view (prds/sparks.md: a long reply left the next question's answers out of sight). `paddingBottom` must stay half the scroller's height: less and the end stops below the middle, more and she can scroll it past.
 
 ---
 
@@ -320,7 +320,7 @@ The scroller is the whole conversation area, edge to edge (`px-8`, ~~`pt-14`~~ n
 
 ## Icon buttons have a tooltip (`overlays/tooltip`, `autopartshub/header-icon-button.tsx`)
 
-**Rule:** every icon-only button names itself in a `Tooltip` below it (`<TooltipContent side='bottom' sideOffset={6}>`), on hover and keyboard focus, and keeps the same words as its `aria-label`. Never the `title` attribute. `HeaderIconButton` has it built in (`label`, or `tooltip` when the words differ), and it's the icon button for the headers and the prototype's toolbar ("Edit element", "Add comment", "Versions ({n})", "Start over", "Try it full screen"); the side panels' buttons ("Jump to a section", "Close"), the device switcher (`Smartphone` "Phone", `Monitor` "Desktop") wrap theirs. A toggle in the toolbar ("Edit element", "Add comment") is `aria-pressed` and fills with `bg-primary` while on (`toggleClasses` in `prototype-panel.tsx`).
+**Rule:** every icon-only button names itself in a `Tooltip` below it (`<TooltipContent side='bottom' sideOffset={6}>`), on hover and keyboard focus, and keeps the same words as its `aria-label`. Never the `title` attribute. `HeaderIconButton` has it built in (`label`, or `tooltip` when the words differ), and it's the icon button for the headers and the prototype's toolbar ("Edit element", "Add comment", "Versions ({n})", "Try it full screen"); the side panels' buttons ("Jump to a section", "Close"), the device switcher (`Smartphone` "Phone", `Monitor` "Desktop") wrap theirs. A toggle in the toolbar ("Edit element", "Add comment") is `aria-pressed` and fills with `bg-primary` while on (`toggleClasses` in `prototype-panel.tsx`).
 
 Exception: the pencil on Dana's answers in Sparks opens its tooltip above ("Changing an answer").
 
@@ -405,13 +405,73 @@ Exception: the pencil on Dana's answers in Sparks opens its tooltip above ("Chan
 **Rule:** there's no side panel for the plan, no "Blueprint" button in the concept's header and no plan document: on Plan, before and after it's done, `SparksWorkspace` shows Plan's conversation, centered, with the message box (prds/sparks.md, "The finished plan"). Plan gets no `preview`; the conversation column hides only for a step not reached yet:
 
 ```tsx
-const conversationHidden = Boolean(peeked?.upcoming);
+const conversationHidden = Boolean(peeked?.upcoming) || !conversation; // `conversation={false}`: Evaluate only
 const preview = peeked?.upcoming ? <EmptyState … /> : previewProp;
 ```
 
 **Why:** a view that changed format after "Generate prototype" (the former `PlanDocument`, with "Edit plan", versions and "Where it stands") was more to learn and more moving parts for the demo; Dana changes the plan by changing her answers instead ("Changing an answer" below). sparks.ds "Sparks Project" (32:1145) and Sparks → "Sparks Project" (55:7660) still draw the "Blueprint" button and the side panel, so a resync from them would bring them back.
 
 **How to apply:** a resync of the concept's header keeps Comments, notifications, Share and Publish only. Don't add a plan panel to `sidePanelColumn` or pass Plan a `preview`. In the stories, set the step before adding the reply that starts it (`setStep` then `setMessages`): `WorkspacePrototype` stamps new replies with `stepRef`, and React may compute the new messages at once.
+
+---
+
+## Evaluate: no conversation, agents on the real prototype, all at once (`sparks/validate/evaluation-prototype.tsx`, `validate-panel.tsx`, `sample-validate.ts`)
+
+**Rule:** Evaluate is the one step without a conversation (prds/sparks-validate.md, "Evaluate's screen"; Figma Sparks "Evaluate", 72:660): the story passes `conversation={step !== "validate"}`, and the preview is `EvaluationPrototype` and `ValidatePanel` side by side (`flex gap-4`, each `min-w-0 basis-0`), 24px around them (`px-6 pb-6` in `SparksWorkspace`). The agents find their places by the prototype's own ids: each step's `at.element` in `sampleStops` is a `data-point` (what "Edit element" uses) or a `data-agent` (only for agents):
+
+```tsx
+const targetIn = (root, element) => root?.querySelector(`[data-point="${element}"], [data-agent="${element}"]`);
+// fit-check-prototype.tsx, ShopHeader: <div data-agent='vehicle-chip' …>
+// more-prototypes.tsx: <Badge data-agent='return-flag' …> (ReturnFlag, both wordings), <button data-agent='fit-list' …>
+```
+
+Replies asked for in a conversation that starts a run come from `evaluateFrom(step)`, which returns `{ ...sampleValidateStartedReply, step }`: the step she asked from, since `startRun` has already set the step to Evaluate.
+
+**Why:** an element id renamed or a `data-agent` dropped doesn't break anything visible: the agent goes to the whole device instead, and the finding's marker disappears. And without the explicit `step`, "Yes, evaluate it" and Sparks's answer would be stamped Evaluate and vanish from Prototype's conversation.
+
+**How to apply:** renaming a `pointable(...)`/`useButton(...)`/`EditableText` id, or a prototype edit that drops a `data-agent`, updates `sampleStops` in the same change. A new direction's prototype gets its `sampleStops` entry. A Figma resync of Evaluate doesn't bring back a conversation column or quick replies. ~~Agent colors are the logo's (`var(--sapphire)` …), never avatar colors; screen-reader and keyboard agents stay dark and dashed.~~ Customer agents' colors are the logo's (`var(--sapphire)` …), never avatar colors; expert agents are `var(--gray-800)` with their role's icon (`expertIcons`, by expert id: `ux`, `copy`, `engineer`, `data`). The phone is the shared device ("The prototype's device has a dark bezel" below).
+
+**The strip and the agents** (`EvaluationPrototype`): every screen in `screens` is a live prototype opened on its place (`children(audience, at)`), so markers and agents can sit on any of them; positions come from `getBoundingClientRect` every frame, which includes the strip's slide and the side screens' scale. A marker needs its screen in `screens`: the story adds every `at.part` that a stop or a finding names. Agents work all at once, screen by screen in `screens` order, so a scenario's steps must follow that order (a step on an earlier screen than the one before it would be skipped).
+
+---
+
+## The prototype's device has a dark bezel (`sparks/prototype/prototype-panel.tsx`: `prototypeDeviceClasses`)
+
+**Rule:** the prototype sits in one device everywhere it's shown (Prototype, Evaluate's strip, the reviewers' page): a phone with a 10px dark bezel around a 375 × 812 screen (an iPhone's proportions; 395 × 832 with the bezel), or a monitor with an 8px one. The phone is always that size inside: where there's less room, `FitPhone` (Prototype) or the strip (Evaluate) scales it as a whole with `transform: scale()`; it's never squashed or narrowed.
+
+```tsx
+const prototypeDeviceClasses = (device: PrototypeDevice) =>
+	cn(
+		"min-h-0 flex-1 border-[color:var(--gray-800)] bg-background shadow-xl",
+		device === "phone" ? "h-[832px] w-[395px] shrink-0 rounded-[44px] border-[10px]" : "min-h-0 w-full flex-1 rounded-[18px] border-[8px]",
+	);
+```
+
+**Why:** the bezel makes the prototype read as a device, as in Figma Sparks "Evaluate" (72:660). A fixed width with a capped height made it look too wide; scaling keeps a phone's proportions and the 375px the shop's screens are built for. Anything that measures inside a scaled phone in screen pixels divides by the scale: comment pins (`prototype-comments.tsx`: `k`) and Evaluate's scrolling to an element. `--gray-800` is a palette token on purpose: `border-neutral` and `border-foreground-prominent` turn light in dark mode, and a device stays dark.
+
+**How to apply:** a new place that shows the prototype uses `prototypeDeviceClasses` (and `FitPhone` for a phone), never its own border or a `max-h`. Changing the bezel's width changes `phoneSize` and the phone's `w-[…]`/`h-[…]` with it, so the screen stays 375 × 812.
+
+---
+
+## The prototype's arrows slide the screens (`sparks/prototype/prototype-panel.tsx`: `frame`, `carouselVariants`)
+
+**Rule:** in the Prototype step, the arrows beside the device move the screens like a carousel (MOTION.md → Carousel): each slide spans the panel's full width, the arrows sit over it, and the frame clips it. Only the arrows slide (`slide.key` changes in `goToScreen`); switching audience or device changes the screen in place.
+
+```tsx
+<div className='relative flex min-h-0 w-full flex-1'>
+	<AnimatePresence initial={false} custom={slide.direction} mode='popLayout'>
+		<motion.div key={slide.key} custom={slide.direction} variants={prefersReducedMotion ? fadeVariants : carouselVariants} initial='initial' animate='animate' exit='exit' className='flex min-h-0 w-full min-w-0 flex-1 flex-col items-center px-14'>
+			{shown}
+		</motion.div>
+	</AnimatePresence>
+	<div className='absolute inset-y-0 left-0 z-10 flex items-center'><ScreenArrow direction={-1} … /></div>
+	<div className='absolute inset-y-0 right-0 z-10 flex items-center'><ScreenArrow direction={1} … /></div>
+</div>
+```
+
+**Why:** `carouselVariants` moves each screen by its own width (`x: ±100%`), so the slide has to be as wide as the area that clips it, or a sliver of the device stays in view at the start and end. The arrows are therefore `absolute` over the slide instead of flex siblings, and `px-14` (40px arrow + 16px gap) keeps the device where it was between them. `relative` on the parent is what `mode='popLayout'` positions the leaving screen against; `custom` on `AnimatePresence` makes a screen already leaving follow a quick second click the other way.
+
+**How to apply:** don't put the arrows back as flex siblings of the slide, and don't key the slide by the audience or screen (that would slide on every switch). Evaluate's strip has its own motion (all screens side by side, MOTION.md → "Agents on the prototype").
 
 ---
 
@@ -474,6 +534,7 @@ const preview = peeked?.upcoming ? <EmptyState … /> : previewProp;
 - **Column insets:** with no preview beside it (the conversation centered in its 728px column), Sparks's replies, the introduction included, keep ~~144px clear on the right (`pe-36`)~~ 64px clear on the right (`pe-16`, 664px wide, as Figma's "Sparks Project" 27:1932 draws the reply's text and its card), and Dana's messages ~~144px clear on the left (`ps-36`)~~ 64px clear on the left (`ps-16`, with `UserMessage` at `max-w-full` instead of its 80%, at most 664px), the same inset as the replies'. Beside a preview (Prototype, Evaluate, Review) the column is 480px and has no insets.
 - **The conversation beside a preview is 15px:** in the 480px column, every `text-base` inside it reads at 15px (`[&_.text-base]:text-[15px]` on the column, not on each component; ~~14px, `text-sm`~~). 15px has no type token: it's a size between `sm` and `base` chosen for the narrow column, and only the font size changes (the line height stays `text-base`'s 1.5): Sparks's messages, Dana's, the cards and the message box. Centered (no preview), it stays 16px. Larger text (a card's `text-lg` title) keeps its size. One class on the column, so a new part in the conversation follows without its own rule.
 - **Plan → Prototype eases (MOTION.md → "Step change"):** at rest the classes size the conversation column (`min-w-0 flex-1` centered in Plan, `w-[480px] shrink-0` beside a preview). Only while it shifts (`shift`, set when the two-column layout starts or ends) does a layout effect set its width inline, from `<main>`'s width to 480px (or back), and ease it with `animateElement` (Motion's `animate`) on `easeOutTransition`, then clear the inline width. Meanwhile `<main>` is `overflow-hidden` and the preview keeps its final width (`shift.mainWidth - conversationWidth`, `flex: none`) and fades in, so it's pushed in from the right edge instead of being squeezed. Not for a step's empty state (the conversation is hidden there), and instant under reduced motion. ✗ Don't drive the width with Motion's `animate` prop at rest: it left the column at its content's width in Plan, on the left instead of centered. ✗ Don't use Motion's `layout`: it scales the text while it moves.
+- **No scrollbar flash on the way to Prototype:** the new reply's `minHeight` is the view less her message (`sentHeight`), and her message is measured with a `ResizeObserver` (`sentId` effect), not once when it's sent: "Generate a prototype…" fits one line in Plan's wide column and wraps to two at 480px, and a height measured once left the conversation 24px taller than the view, so it scrolled and the scrollbar showed, then faded. While `shift` is on, the scroller also hides its scrollbar (`[scrollbar-width:none]`). Check: during the shift, the scroller's `scrollHeight` equals its `clientHeight` (688 at 1720 × 940).
 
 - **Space below Dana's messages:** 32px between her message and Sparks's reply (the list's `gap-4` plus `mb-4` on her `li`), the same as below Sparks's replies. Figma's "Sparks Project" frame (27:1932) shows 16px there; 32px was chosen over it, so each exchange reads as its own block.
 
