@@ -59,7 +59,7 @@ const meta = {
 			label: "1. Fit check before you buy",
 			audiences: fitCheck.audiences,
 			screens: fitCheck.screens.length,
-			render: (audience) => fitCheck.render({ data: sampleFitCheck, audience, readyScreens: fitCheck.screens.length, changes: {} }),
+			render: (audience) => fitCheck.render({ data: sampleFitCheck, audience, changes: {} }),
 		},
 		prototypeComments: samplePublishedPrototypeComments,
 		mentionable: sampleMentionable,

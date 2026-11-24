@@ -184,8 +184,45 @@ const pendingSurfaceVariants: Variants = {
   pending: { opacity: [1, 0.5, 1], transition: pendingLoop },
 };
 
+/**
+ * Feed: a live list where each new item slides up into place at the bottom and the oldest slides up and out at the top
+ * (the assistant's activity feed). Use with `AnimatePresence mode="popLayout"`, a stable key per item and `layout` (on
+ * `layoutSpring`) on each item, so the others move up together. Under reduced motion, use `fadeVariants` without `layout`.
+ */
+const feedItemVariants: Variants = {
+  initial: { opacity: 0, y: motionDistance.subtle },
+  animate: { opacity: 1, y: 0, transition: enterTransition },
+  exit: { opacity: 0, y: -motionDistance.subtle, transition: exitTransition },
+};
+
+/**
+ * Draw: a stroked mark drawn on as it appears, e.g. a step's check when the step finishes (ActivityFeed). Put it on a
+ * `motion.path` whose path starts where the stroke should start (a check: the short stroke first). Under reduced motion,
+ * use `iconSwapReducedVariants` (the same states): the mark appears at once.
+ */
+const drawVariants: Variants = {
+  hidden: { pathLength: 0, opacity: 0 },
+  shown: {
+    pathLength: 1,
+    opacity: 1,
+    transition: { pathLength: standardTransition, opacity: { duration: motionDuration.instant } },
+  },
+};
+
+/**
+ * Draw, for a whole line (SectionDivider): it's uncovered from left to right, on the standard curve. Under reduced motion,
+ * don't animate it: the line is just there.
+ */
+const lineDrawVariants: Variants = {
+  hidden: { clipPath: "inset(0 100% 0 0)" },
+  shown: { clipPath: "inset(0 0% 0 0)", transition: { ...standardTransition, duration: motionDuration.deliberate } },
+};
+
 export {
+  lineDrawVariants,
   fadeVariants,
+  feedItemVariants,
+  drawVariants,
   rowRemoveVariants,
   revealVariants,
   expandVariants,

@@ -28,6 +28,10 @@ const motionDuration = {
 	thinkingHop: 0.6,
 	/** The assistant thinking: the gradient across its line going once through the six logo colors (about 1.2s per color). */
 	thinkingShimmer: 7.2,
+	/** A screen being built (Assemble): the time over which its wireframe's blocks appear, one after another. */
+	assembleWireframe: 0.7,
+	/** A screen being built (Assemble): the time over which its real content replaces the wireframe, block by block. */
+	assembleFill: 1.2,
 } as const;
 
 /** Pixels. */

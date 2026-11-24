@@ -442,8 +442,6 @@ function PublishedIdea({
 				<TabsContent value='prototype' className='mt-0 flex min-h-0 flex-1 flex-col'>
 					<PrototypePanel
 						audiences={prototype.audiences}
-						readyScreens={prototype.screens}
-						totalScreens={prototype.screens}
 						paths={[{ id: "published", label: prototype.label }]}
 						path='published'
 						commentAuthor={reviewer}

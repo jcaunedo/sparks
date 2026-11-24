@@ -30,6 +30,8 @@ Calm, refined, natural, responsive. Never bouncy, cartoonish, mechanical or dist
 | `motionDuration.thinkingStep` | 1500 ms | AI thinking: each line before the next; a reply waits about this long per line |
 | `motionDuration.thinkingHop`  | 600 ms | AI thinking: one hop of the dot (it changes color as it lands) |
 | `motionDuration.thinkingShimmer` | 7200 ms | AI thinking: the line's gradient once through the six logo colors |
+| `motionDuration.assembleWireframe` | 700 ms | Assemble: the wireframe's blocks, one after another |
+| `motionDuration.assembleFill` | 1200 ms | Assemble: the real pieces replacing them |
 | `motionDistance.hover`        | 3 px   | Lift                                   |
 | `motionDistance.subtle`       | 8 px   | Reveal                                 |
 | `motionDistance.small`        | 12 px  | Component transitions                  |
@@ -62,6 +64,8 @@ Use these named patterns before inventing new motion. Gesture patterns live in `
 | Glide    | Directional navigation                 | `slideVariants` (`custom={1 \| -1}`), `glidePattern` |
 | Dismiss  | Content removed or closed              | `dismissVariants`; table/list rows: `rowRemoveVariants` |
 | Confirm  | Lightweight success feedback           | `confirmPattern`                                |
+| Feed     | A live list that keeps growing (the assistant's activity feed) | `feedItemVariants` with `AnimatePresence mode="popLayout"` and `layout` (`layoutSpring`) |
+| Draw     | A stroked mark drawn on as it appears (a feed step's check) | `drawVariants` on a `motion.path`; reduced motion: `iconSwapReducedVariants`. A whole line (`SectionDivider`): `lineDrawVariants`, uncovered left to right over `deliberate`; reduced motion: it's just there |
 | Pending  | Work in progress on an element's behalf | `pendingIconVariants`, `pendingSurfaceVariants` |
 
 Plus `fadeVariants`, `overlayVariants` (scrims), `panelVariants` (drawers) and `iconSwapVariants` (one small element replacing another in place).
@@ -78,7 +82,9 @@ Plus `fadeVariants`, `overlayVariants` (scrims), `panelVariants` (drawers) and `
 - **Loading:** subtle opacity pulse. No aggressive or high-contrast loaders.
 - **AI messages:** a new message from Sparks streams in like a reply being written (`AssistantMessage`'s `stream`, `useStreamedText` in `src/lib/motion/stream.ts`): bursts of one to three words around `streamStep`, `streamPause` after a sentence, paragraph or list item, and a soft blinking caret (Pending, `pendingSurfaceVariants`) at its end. Bold and lists never show half-written: it streams the plain text and cuts the formatted blocks to it. A message already in the conversation (a reopened concept) shows whole, and sending while one streams shows the rest at once. Under reduced motion it appears whole, with no caret. The same timing as intercept-ucl's AI answers.
 - **AI thinking** (`ThinkingIndicator`, `chat/thinking-indicator`): a 10px dot hops `motionDistance.thinkingHop` (6px) per `thinkingHop`, squashing to `motionScale.thinkingSquash` as it lands (from its bottom), and takes the next Sparks logo color (sapphire, tangerine, amethyst, clover, citrine, cerulean) on each landing: one hop per mount, `onAnimationComplete` advances the color. The line's gradient of the six logo colors (a tile six lines wide, one line per color, starting and ending sapphire) moves left to right, one tile per `thinkingShimmer`, linear, so the text's colors rotate in the logo's order, like the dot. Each line shows for `thinkingStep`, then the next slides up `motionDistance.subtle` (`fast`); the last stays. Reduced motion: the dot still and sapphire, the gradient in place, lines fade.
-- **Sparks's replies** (`SparksReplyView` in the workspace): first Sparks thinking (`ThinkingIndicator` with the reply's `thinking` lines) for about `thinkingStep` per line, then the parts in order: text streams, a card Reveals (`revealVariants`), and each waits for the one before it to finish. Quick replies Reveal once it's done. Under reduced motion everything appears at once after the thinking.
+- **AI work, step by step** (`ActivityFeed`, `chat/activity-feed`): the status is `ThinkingIndicator`; under it the latest five steps (Feed), a check drawn on as each finishes (Draw), the thinking dot at 6px on the one in progress. Done, it folds to one line that opens the steps (Expand). The same as archie-ucl's. Reduced motion: steps fade, no `layout`.
+- **Assemble** (`BuildingScreen`, `sparks/prototype/building-screen.tsx`): a prototype screen being built, from blank: a gray block where each piece goes, one after another over `assembleWireframe`, then each replaced by the real piece, top to bottom, over `assembleFill` (Reveal). Reduced motion: the screen shows whole.
+- **Sparks's replies** (`SparksReplyView` in the workspace): where a section of Plan ends inside one, the divider draws (Draw), Sparks thinks below it, then the next section comes in; first Sparks thinking (`ThinkingIndicator` with the reply's `thinking` lines) for about `thinkingStep` per line, then the parts in order: text streams, a card Reveals (`revealVariants`), and each waits for the one before it to finish. Quick replies Reveal once it's done. Under reduced motion everything appears at once after the thinking.
 - **Scrolling to a new reply:** when Dana sends, the conversation scrolls (`scrollIntoViewSmoothly`, `align: "start"`, on `scrollTransition`) so her message sits at the top of the view, and the reply comes in below it without the view following it. Any wheel, touch, click or key stops the scroll, from the frame after it starts (the Enter that sent the message mustn't stop it). Reduced motion: it jumps.
 
 ## Layout and presence

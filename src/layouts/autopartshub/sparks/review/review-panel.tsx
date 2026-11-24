@@ -5,7 +5,7 @@ import { motion } from "motion/react";
 import { Badge } from "@/components/data-display/badge";
 import { Button } from "@/components/buttons/button";
 import { Typography } from "@/components/typography/typography";
-import { revealVariants, scrollIntoViewSmoothly, useMotionPreference } from "@/lib/motion";
+import { fadeVariants, revealVariants, scrollIntoViewSmoothly, useMotionPreference } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 
 /*
@@ -76,10 +76,11 @@ type ReviewPanelProps = {
 	/** Dana's recommendation, once drafted. */
 	recommendation?: string;
 	/**
-	 * While Sparks writes it (prds/sparks-review.md, "Putting it together"): how many parts are written so far, in the
-	 * order of `reviewPartTitles`. The next one shows as being written. Without it, the whole idea shows.
+	 * While Sparks puts it together (prds/sparks-review.md, "Putting it together"): whether the writing has begun (before
+	 * that, the panel is blank), and how many parts are written so far, in the order of `reviewPartTitles`. The next one
+	 * shows as being written. Without it, the whole idea shows.
 	 */
-	built?: number;
+	building?: { begun: boolean; written: number };
 	/** The prototype version the teams see, once she's published it. */
 	published?: number;
 	/** Once published: opens the page the teams see (`PublishedIdea`), in its own tab. */
@@ -337,8 +338,8 @@ function ReviewDocument({
  * waiting for a decision, advanced), the reviewers' status and views, then every part of "What's reviewed", one
  * heading each, in order. Not in Figma yet.
  */
-function ReviewPanel({ concept, status, reviewers, recommendation, built, published, onOpenPublished, focusPart, className }: ReviewPanelProps) {
-	const building = built !== undefined && built < reviewPartTitles.length;
+function ReviewPanel({ concept, status, reviewers, recommendation, building: build, published, onOpenPublished, focusPart, className }: ReviewPanelProps) {
+	const building = Boolean(build);
 	// A comment on a part was opened: that part comes into view, at the top, and is marked for a moment.
 	const documentRef = React.useRef<HTMLDivElement>(null);
 	const [marked, setMarked] = React.useState<string>();
@@ -355,20 +356,29 @@ function ReviewPanel({ concept, status, reviewers, recommendation, built, publis
 			stop();
 		};
 	}, [focusPart, reducedFocus]);
-	const shown = building ? built : reviewPartTitles.length;
+	const shown = build ? build.written : reviewPartTitles.length;
+	const blank = build ? !build.begun : false;
 	// While it's written, the view follows the newest part, unless she has scrolled up to read.
 	const writingRef = React.useRef<HTMLDivElement>(null);
 	const following = React.useRef(true);
 	const { prefersReducedMotion } = useMotionPreference();
+	// It opened while being put together: its surface comes in with the first part.
+	const [openedBuilding] = React.useState(building);
 	React.useEffect(() => {
 		if (!building || !following.current || !writingRef.current) return;
 		return scrollIntoViewSmoothly(writingRef.current, { reducedMotion: Boolean(prefersReducedMotion), align: "nearest" });
-	}, [building, shown, prefersReducedMotion]);
-	const banner = building ? (
-		<Badge variant='flat' tone='neutral' size='sm' className='w-fit'>
-			<LoaderCircle aria-hidden className='animate-spin motion-reduce:animate-none' /> Putting it together…
-		</Badge>
-	) : status.kind === "advanced" ? (
+	}, [building, blank, shown, prefersReducedMotion]);
+	// Put together: the summary comes first, so it goes back to the top, unless she has scrolled up to read.
+	const wasBuilding = React.useRef(building);
+	React.useEffect(() => {
+		if (wasBuilding.current && !building && following.current && documentRef.current?.firstElementChild) {
+			wasBuilding.current = building;
+			return scrollIntoViewSmoothly(documentRef.current.firstElementChild as HTMLElement, { reducedMotion: Boolean(prefersReducedMotion), align: "start" });
+		}
+		wasBuilding.current = building;
+	}, [building, prefersReducedMotion]);
+	// While it's put together, the conversation shows the progress: no badge.
+	const banner = building ? null : status.kind === "advanced" ? (
 			<Badge variant='flat' tone='green' size='sm' className='w-fit'>
 				Advanced · {status.date}
 			</Badge>
@@ -391,9 +401,9 @@ function ReviewPanel({ concept, status, reviewers, recommendation, built, publis
 				<Typography as='h2' size='lg' weight='semibold' className='text-foreground-prominent'>
 					Idea for review
 				</Typography>
-				<div className='flex flex-wrap items-center gap-2'>
+				<div className='flex min-h-8 flex-wrap items-center gap-2'>
 					{banner}
-{building ? null : <span className='text-xs text-muted-foreground'>{concept.evidenceStatus.split(".")[0]}</span>}
+					{building ? null : <span className='text-xs text-muted-foreground'>{concept.evidenceStatus.split(".")[0]}</span>}
 					{/* What the teams see: the published version's page, in its own tab, as a link would open it. */}
 					{published && onOpenPublished ? (
 						<Button variant='link' className='ms-auto h-auto gap-1 p-0 text-sm font-medium' onClick={onOpenPublished}>
@@ -404,14 +414,21 @@ function ReviewPanel({ concept, status, reviewers, recommendation, built, publis
 					) : null}
 				</div>
 			</div>
-			<div
+			{/* Blank until the first part: the steps are in the conversation. */}
+			{blank ? (
+				<div className='min-h-0 flex-1' />
+			) : (
+			<motion.div
+				variants={prefersReducedMotion ? fadeVariants : revealVariants}
+				initial={openedBuilding ? "initial" : false}
+				animate='animate'
 				onScroll={(event) => {
 					const el = event.currentTarget;
 					following.current = el.scrollHeight - el.scrollTop - el.clientHeight < 96;
 				}}
 				ref={documentRef}
 				aria-busy={building || undefined}
-				className='scrollbar-subtle flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto rounded-md bg-background p-4'
+				className='scrollbar-subtle flex min-h-0 flex-1 flex-col gap-4 scroll-pt-4 overflow-y-auto rounded-md bg-background p-4'
 			>
 				{status.kind === "advanced" ? (
 					<div className='flex flex-col gap-1 rounded-md bg-background-subtle p-3 text-sm'>
@@ -432,9 +449,11 @@ function ReviewPanel({ concept, status, reviewers, recommendation, built, publis
 				) : null}
 
 				{/* The parts written so far, each coming in as it's written; then the one being written. */}
-				<ReviewDocument concept={concept} recommendation={recommendation} shown={shown} reveal={built !== undefined} marked={marked} />
-				{building ? <PartInProgress ref={writingRef} title={reviewPartTitles[shown]} /> : null}
-			</div>
+				<ReviewDocument concept={concept} recommendation={recommendation} shown={shown} reveal={building} marked={marked} />
+				{building && shown < reviewPartTitles.length ? <PartInProgress ref={writingRef} title={reviewPartTitles[shown]} /> : null}
+				{building && shown >= reviewPartTitles.length ? <div ref={writingRef} aria-hidden className='-mt-4 h-px shrink-0' /> : null}
+			</motion.div>
+			)}
 		</section>
 	);
 }

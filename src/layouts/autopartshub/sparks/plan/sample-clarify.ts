@@ -1,14 +1,12 @@
 import type { SparksReply, SparksSuggestion } from "../workspace/workspace";
 import type { BriefDraft, BriefPartDraft } from "./brief-card";
-import { sampleSuccessGoalSuggestion, sampleSuccessReplies, sampleSummaryReplies } from "./sample-success";
-import { sampleWithCorrection } from "./sample-correction";
+import { sampleSuccessGoalSuggestion, sampleSuccessReplies } from "./sample-success";
+import { sampleIntoNext } from "./sample-section";
 
 /*
  * Plan's Clarify part for "Wrong-part returns", one question at a time (prds/sparks-plan-clarify.md). What the AI and
  * company knowledge would supply.
  */
-
-export { sampleSummaryReplies };
 
 /** The answers to a Clarify question: "I'm not sure" is a good answer too. */
 export const sampleClarifyReplies = ["Yes, that's right", "Not quite", "I'm not sure"];
@@ -158,18 +156,18 @@ export function sampleBriefFrom(
 	return { summary: briefBase.summary, parts, assumptions };
 }
 
-/** The end of Clarify: how Sparks took the last answer, the brief, its biggest assumption, and the approval question. */
+/** The end of Clarify: how Sparks took the last answer, the brief, its biggest assumption, then on to Success. */
 export function sampleBriefReply(answer: ClarifyAnswer, brief: BriefDraft): SparksReply {
 	const whyAssumed = brief.parts.why.source === "assumption";
-	return {
+	const summary: SparksReply = {
 		id: "brief-summary",
 		from: "sparks",
 		thinking: ["Lining up what we know with what we're assuming…"],
 		parts: [
 			{ kind: "text", text: `${acknowledge(answer, "brief-limits")}That's all I need to ask.\n\n**Here's what we know so far:**` },
 			{ kind: "brief", brief },
-			// With more than one assumption, Sparks says which matters most; with one, the summary already says it. No
-			// question after it: the buttons say what they do ("Looks right, continue").
+			// With more than one assumption, Sparks says which matters most; with one, the summary already says it.
+			// No question after it: she confirmed what's in it, so Sparks goes on.
 			...(brief.assumptions.length < 2
 				? []
 				: [
@@ -180,34 +178,14 @@ export function sampleBriefReply(answer: ClarifyAnswer, brief: BriefDraft): Spar
 								: "The biggest thing we're assuming is that customers who return a part that doesn't fit buy less from us afterwards.",
 						},
 					]),
+			{ kind: "text", text: "Done. What we know is in your plan." },
 		],
-		quickReplies: sampleSummaryReplies,
 	};
+	return sampleIntoNext(summary, briefNextReply);
 }
 
-/** After "Not quite" on the brief: the brief can't be edited on its card, so Sparks asks what's off. */
-export const sampleBriefNotQuiteReply: SparksReply = {
-	id: "brief-not-quite",
-	from: "sparks",
-	parts: [{ kind: "text", text: "What's off? Tell me in your own words, and I'll update it." }],
-};
-
-/** After her correction: Sparks updates the brief, shows it again with her words worked in, and asks again. */
-export const sampleBriefAgainReply = (brief: BriefDraft, words: string): SparksReply => ({
-	id: "brief-again",
-	from: "sparks",
-	parts: [
-		{ kind: "text", text: "Thanks, I've updated it.\n\n**Here's what we know now:**" },
-		{ kind: "brief", brief: { ...brief, summary: sampleWithCorrection(brief.summary, words), approved: false } },
-	],
-	quickReplies: sampleSummaryReplies,
-});
-
-/**
- * "Looks right": the brief is in the concept, and Sparks goes straight into Success's first question, the goal, with no
- * button in between (prds/sparks-plan-define-success.md, "Starting this part").
- */
-export const sampleBriefApprovedReply: SparksReply = {
+/** The next section, after what we know: Success's first question, the goal (prds/sparks-plan-define-success.md, "Starting this part"). */
+const briefNextReply: SparksReply = {
 	id: "brief-approved",
 	from: "sparks",
 	thinking: ["Reading the gauges: what we know so far…", "Lining up the next question…"],

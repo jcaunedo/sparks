@@ -189,7 +189,7 @@ export function sampleSuccessApprovedReply(measure: "returns" | "repeat" | "own"
 			{
 				kind: "text",
 				text: [
-					`Done. What success looks like is in your plan.\n\n**Next, pick the path to prototype first.**\n\nI found four ways to get there, from a quick fix to a bigger change, and your idea is one of them. ${weighing} Each one can become its own prototype: we'll start with one, and you can try the others later from your plan.`,
+					`**Next, pick the path to prototype first.**\n\nI found four ways to get there, from a quick fix to a bigger change, and your idea is one of them. ${weighing} Each one can become its own prototype: we'll start with one, and you can try the others later from your plan.`,
 					`I'd go with "${pick.name}". ${recommendations[pick.id]}`,
 					hers
 						? `Your idea, "${hers.name}", is the quickest to build. But it says a part comes back a lot, not whether it fits, so it would cut fewer of these returns. It could work alongside "${pick.name}" later.`

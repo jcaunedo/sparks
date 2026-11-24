@@ -38,7 +38,7 @@ type ThinkingIndicatorProps = Omit<React.ComponentProps<"div">, "children"> & {
 };
 
 /** The hopping dot: one hop per mount; landing hands over to the next color, which remounts it for the next hop. */
-function ThinkingDot({ still }: { still: boolean }) {
+function ThinkingDot({ still, className }: { still: boolean; className?: string }) {
 	const [color, setColor] = React.useState(0);
 	const squash = motionScale.thinkingSquash;
 	return (
@@ -46,7 +46,7 @@ function ThinkingDot({ still }: { still: boolean }) {
 			key={color}
 			aria-hidden
 			data-slot='thinking-indicator-dot'
-			className='size-2.5 shrink-0 rounded-full'
+			className={cn("size-2.5 shrink-0 rounded-full", className)}
 			style={{ backgroundColor: logoColors[still ? 0 : color], originY: 1 }}
 			animate={
 				still
@@ -92,7 +92,7 @@ function ThinkingIndicator({ steps, className, ...props }: ThinkingIndicatorProp
 			<span className='relative min-w-0 overflow-hidden'>
 				<AnimatePresence mode='wait'>
 					<motion.span
-						key={index}
+						key={line}
 						className='block truncate bg-clip-text bg-repeat-x text-transparent [background-size:600%_100%]'
 						style={{ backgroundImage: shimmerGradient }}
 						initial={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, y: motionDistance.subtle }}
@@ -117,4 +117,4 @@ function ThinkingIndicator({ steps, className, ...props }: ThinkingIndicatorProp
 	);
 }
 
-export { ThinkingIndicator, type ThinkingIndicatorProps };
+export { ThinkingDot, ThinkingIndicator, type ThinkingIndicatorProps };

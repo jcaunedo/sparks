@@ -278,6 +278,26 @@ The scroller is the whole conversation area, edge to edge (`px-8`, ~~`pt-14`~~ n
 
 ---
 
+## Section divider (`chat/section-divider/section-divider.tsx`, `sparks/workspace/workspace.tsx`)
+
+**Rule:** the zigzag is a 12×6px mask tile repeated across, over a `bg-border-defined` background; the tile's path runs past both edges (`-6` to `18`). It has no name on it. It's a reply part, `section`, between a summary and what follows it in the same reply (`sampleIntoNext`), with 32px above and below (`my-4` plus the parts' gap). `SectionBreak` draws it, then shows `thinking`, then lets the next part in. When it appears less than 240px below the view, the view moves once, only enough to show it and 96px under it (`scroll-mb-24`); otherwise it stays put.
+
+**Why:** a mask takes the color from a token and fits any width without measuring; a path that stops at the tile's edges leaves a notch at every seam. `border` is too faint for a 1px diagonal. One reply, not two: a second reply scrolls the conversation to its own start, taking the summary away while she reads it. Without the nudge, the divider lands just under the view on a laptop, and Sparks seems to have stopped.
+
+**How to apply:** keep it to finished sections of Plan; another use makes it decoration. The nudge isn't a follower: don't scroll on as the next section streams in. `SparksReplyView`'s reduced-motion skip leaves `section` out, or its thinking never shows. A summary whose button is a decision ("Build it") keeps her message and has no divider.
+
+---
+
+## Sparks at work: progress first, one feed (`chat/activity-feed`, `sparks/prototype/building-screen.tsx`)
+
+**Rule:** a long piece of work (a prototype being built, a run in Evaluate, the idea written for Review) is a reply part of kind `progress`, shown by `ActivityFeed`: never a spinner line. A build's, a run's or the idea for review's reply starts with it and nothing else (`samplePrototypeBuildingReply`, `sampleValidateRunningReply` and `sampleReviewBuildingReply` have one part); what was built, done and found, or put together is appended to the same reply (`goOn`/`withMore` in the workspace story). A status stays the same through a stage, with no counter in it. The prototype panel takes `building` until every step is done, the checks included: no device before the first screen, the controls `invisible` (they keep their place), the screen `inert`. `BuildingScreen` is keyed by screen and animates each piece to its own computed opacity. `ValidatePanel` is blank until `begun`, then shows only what's done, in the order it's done, and the full results (the read first) once `finished`. `ReviewPanel` is blank until `building.begun`, then shows the parts as they're written, and goes back to the top once it's done.
+
+**Why:** the reply used to open with "Here's what we'll build:" while the panel already showed the finished prototype. Appending to the same reply keeps Dana's message at the top: a second reply would scroll the conversation past her message and the progress. Hiding the controls with `invisible` keeps the toolbar's height when they come in. A fixed opacity of 1 would show a disabled button as enabled until the screen changes. A counter in the status ("scenario 3 of 9") swaps the line every second, so it blinks out each time. Showing every section with a "waiting" line from the start reads as results that failed to load.
+
+**How to apply:** a new long task uses `progress`, not its own indicator. In `SparksReplyView`, keep `step` at the whole reply when it isn't animated, or what's appended after she leaves and comes back never finishes (and its quick replies never show). The reply keeps its id as it goes on, so a check on the reply waiting for an answer accepts the progress's id too (`isReviewOpenReply`: `review-building` as well as `review-open`); without it, "Looks right, publish it" does nothing. A new prototype takes `openOn` and lists its screens in `contents` in the order of `screens` (`screenAudience` reads the audience from it).
+
+---
+
 ## Menus and select lists share one panel (`forms/select/select.tsx`, `overlays/dropdown-menu/dropdown-menu.tsx`)
 
 **Rule:** sparks.ds "Select / Content" (77:6365), "Select / Item" (77:6335) and "Select / Section Title" (77:6352) draw both `SelectContent` and `DropdownMenuContent`: `rounded-input` (radius/input, 10px) `border border-border bg-popover shadow-xl p-1`, at least `min-w-[200px]`, children `flex flex-col gap-[2px]` (the groups too); items `h-8 rounded-md px-2 py-1.5 text-sm font-medium text-foreground`, `focus:bg-accent` (colors/states/hover; Figma's Hover is the pointer or keyboard highlight), `data-[disabled]:opacity-50`, a 16px check in `text-icon` when chosen (Active), and item icons in `text-icon` too (Figma #31373f; shadcn's muted default replaced); labels `h-7 px-2 py-1.5 text-xs text-muted-foreground` (xs regular). ~~DropdownMenu's `rounded-menu` (16px) and `rounded-menu-item` (8px)~~.
@@ -338,7 +358,7 @@ Exception: the pencil on Dana's answers in Sparks opens its tooltip above ("Chan
 
 ## Quick replies and the Enter key (`chat/quick-replies/quick-replies.tsx`, `lib/hooks/use-enter-shortcut.ts`)
 
-**Rule:** the first reply (the "continue") is last on screen, with `<CornerDownLeft aria-hidden />` after its label, `pe-2.5` (10px on the key's side, Figma's 8px padding plus the icon's 2px; 14px on the label's), `aria-keyshortcuts='Enter'`. Enter picks it only when focus is on the page (`body`) or in the empty message box (`data-slot='prompt-composer-input'`), with no modifier, not repeating, not while an IME composes. ClarificationCard and the workspace's own replies both render `QuickReplies`, never their own buttons.
+**Rule:** the first reply (the "continue") is last on screen, with `<CornerDownLeft aria-hidden />` after its label, `pe-2.5` (10px on the key's side, Figma's 8px padding plus the icon's 2px; 14px on the label's), `aria-keyshortcuts='Enter'`. Enter picks it only when focus is on the page (`body`) or in the empty message box (`data-slot='prompt-composer-input'`), with no modifier, not repeating, not while an IME composes. ClarificationCard and the workspace's own replies both render `QuickReplies`, never their own buttons. While the replies are out of view, Enter scrolls to them instead of picking (`scrollMetrics` in `quick-replies.tsx`): the next question can come in below the view.
 
 **Why:** Enter already means something on a button (press it), in a field (save, send) and in the message box with text (send); the shortcut takes only the Enter no one else uses. The message box swallows an empty Enter (`preventDefault`), so the hook recognizes the empty box by its slot instead of trusting `defaultPrevented` there. Two copies of the buttons would drift, as the card's and the workspace's did before.
 

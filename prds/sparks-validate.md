@@ -1,7 +1,7 @@
 <!--
 Created: Nov 21, 2026
 Created by: Julio Caunedo
-Last updated: Nov 23, 2026 (the plan has no "Where it stands" line for Evaluate: Plan stays the conversation; the step "Validate" renamed "Evaluate"; back at the choice, she picks on the direction cards, not quick replies; the finished plan, no longer "Blueprint"; the Blueprint no longer repeats the evaluation: one line in "Where it stands", with "Open"; each path in the prototype has its own runs; the spec panel is "Blueprint"; the Evaluation section in the Concept panel built; fixes built for every direction; the evaluation follows the chosen direction; "Go back to the choice" when the read is "Needs another look"; "Fix this in the prototype" only for fixes the prototype can make; "Go ahead to Review" opens Review; built as a reference layout: the plan, the run beside the conversation, the results, fixing in the prototype and running again, and the go-ahead; Evaluate starts from "Yes, evaluate it", not a button; Example range reaches the target (35–50%); what "reaches" means; counts aligned; "Needs a check")
+Last updated: Nov 23, 2026 ("Yes, evaluate it" starts the run right away, with no plan to approve; progress first, then what Sparks did and what it found; the panel starts blank; a scenario can be added after a run; the run's progress is the same feed as while a prototype is built; the plan has no "Where it stands" line for Evaluate: Plan stays the conversation; the step "Validate" renamed "Evaluate"; back at the choice, she picks on the direction cards, not quick replies; the finished plan, no longer "Blueprint"; the Blueprint no longer repeats the evaluation: one line in "Where it stands", with "Open"; each path in the prototype has its own runs; the spec panel is "Blueprint"; the Evaluation section in the Concept panel built; fixes built for every direction; the evaluation follows the chosen direction; "Go back to the choice" when the read is "Needs another look"; "Fix this in the prototype" only for fixes the prototype can make; "Go ahead to Review" opens Review; built as a reference layout: the plan, the run beside the conversation, the results, fixing in the prototype and running again, and the go-ahead; Evaluate starts from "Yes, evaluate it", not a button; Example range reaches the target (35–50%); what "reaches" means; counts aligned; "Needs a check")
 Scope: the Evaluate step of a Sparks concept, the third of four (Plan, Prototype, Evaluate, Review): the scenario-based AI evaluation (scenarios worked through the prototype, and checks against business data, previous experiments, engineering context and the design system), the findings, the evidence status of the hypothesis, Dana's go-ahead, and the Evaluation section of the concept.
 Purpose: defines how Dana learns, on her own and in minutes, what could go wrong with her concept and whether it can be built, before anyone else sees it, and how the evaluation stays honest about what an AI evaluation can and can't show.
 -->
@@ -11,7 +11,7 @@ Purpose: defines how Dana learns, on her own and in minutes, what could go wrong
 **Location:** the third of a Sparks concept's four steps. It opens when Dana ~~selects "Continue to Evaluate"~~ answers "Yes, evaluate it" to "Ready for me to put it through its paces?" at the end of Prototype ([sparks-prototype.md](sparks-prototype.md), "Finishing the step"), and whenever she selects Evaluate in the steps. It's optional, the only step that can be skipped ([sparks.md](sparks.md), "Moving through the steps").
 **Audience:** experienced AutoParts Co. employees who know the business but aren't designers or engineers. The reference user is Dana, a Senior Product Manager.
 **Description:** the step where Sparks works the prototype through realistic scenarios and checks the concept against AutoParts Co.'s data and resources, to surface potential risks, assumptions and usability concerns before Dana brings anyone in.
-**Status:** defined. Built as a reference layout from this PRD (not in Figma yet): "Yes, evaluate it" opens Evaluate with the plan in the conversation; "Looks right, continue" runs it, with progress in place and the results filling in beside the conversation (`ValidatePanel`); Sparks's read, the evidence status and "Do you want to take this to review, or keep improving it?" follow. "Fix this in the prototype", "Run it again" (with what changed since the last run), Stop, and the go-ahead (which needs a run on the current prototype version, and opens Review) work. Each direction gets its own evaluation: its scenarios (for "Complete fit data", the people in the routine: stores, the returns team, the catalog team, customers), findings, assumptions, build needs and estimate, honest about what it can and can't do. "Go back to the choice" reopens the choice in Plan. Every direction has fixes the prototype can make, and the results follow them. Not built: adding a scenario to the run itself, deep links from a finding to its screen, "A run failed" and "A source can't be reached".
+**Status:** defined. Built as a reference layout from this PRD (not in Figma yet): "Yes, evaluate it" opens Evaluate and runs it, with progress in place and the results coming in beside the conversation, blank at first (`ValidatePanel`); then what Sparks did, what it found and "Do you want to take this to review, or keep improving it?" follow. "Fix this in the prototype", "Run it again" (with what changed since the last run), Stop, and the go-ahead (which needs a run on the current prototype version, and opens Review) work. Each direction gets its own evaluation: its scenarios (for "Complete fit data", the people in the routine: stores, the returns team, the catalog team, customers), findings, assumptions, build needs and estimate, honest about what it can and can't do. "Go back to the choice" reopens the choice in Plan. Every direction has fixes the prototype can make, and the results follow them. Not built: adding a scenario to the run itself, deep links from a finding to its screen, "A run failed" and "A source can't be reached".
 
 ---
 
@@ -47,16 +47,16 @@ Every result says which method it comes from.
 
 ## The evaluation plan
 
-When Evaluate opens, Sparks drafts a plan and shows it before running anything:
+~~When Evaluate opens, Sparks drafts a plan and shows it before running anything:~~ When Evaluate opens, Sparks drafts the plan and runs it; Dana doesn't approve it first. What the plan holds:
 
 - **Scenarios:** realistic situations for each audience in the prototype, built from the segments in the brief's "Who's involved" and from customer intelligence. Each is described as a situation, not a person: "A do-it-yourself customer buys brake pads for a 2012 Honda Civic on a phone." "A store associate helps a customer whose part showed 'We're not sure this fits', during a busy hour."
 - **Accessibility scenarios:** at least one with a screen reader and one with only a keyboard, for each audience.
 - **What happens in each:** the task, from the direction's "How it works" and the prototype's other paths: "Find brake pads that fit, on the first try." "Tell the customer which version of the part fits."
 - **The other checks:** the rows in "What gets evaluated".
 
-Dana can add a scenario ("A first-time buyer on a laptop with two saved vehicles"), change one, or remove it. ~~Then she selects "Run the evaluation".~~ The plan is a summary in Sparks's reply, approved like the others: "Looks right, continue" runs it; "Not quite" asks what to add, change or remove (sparks.md, "Talking with Sparks").
+~~Dana can add a scenario ("A first-time buyer on a laptop with two saved vehicles"), change one, or remove it. Then she selects "Run the evaluation". The plan is a summary in Sparks's reply, approved like the others: "Looks right, continue" runs it; "Not quite" asks what to add, change or remove (sparks.md, "Talking with Sparks").~~ Once there are results, she can ask for another scenario in words ("Add a scenario with two saved vehicles"): Sparks notes it for the next run and offers "Run it again".
 
-✅ **Resolved:** the plan is approved with "Looks right, continue", not a "Run the evaluation" button. Why: it's a summary like Plan's, and the same answer works everywhere.
+~~✅ **Resolved:** the plan is approved with "Looks right, continue", not a "Run the evaluation" button. Why: it's a summary like Plan's, and the same answer works everywhere.~~ ✅ **Resolved:** there's no plan to approve: "Yes, evaluate it" starts the run, and what was tested comes with the results, as in Prototype. Why: she has just said yes; reading nine scenarios before anything has run asked her to say it twice.
 
 - **Six to ten scenarios** across audiences: enough to show patterns, few enough to read every one.
 - **Built from patterns, never from a real person.** Scenarios come from what's typical across AutoParts Co.'s customers and teams, not from any one customer's or employee's record.
@@ -65,10 +65,15 @@ Dana can add a scenario ("A first-time buyer on a laptop with two saved vehicles
 
 ## Running it
 
-- Sparks shows progress in the conversation as each part finishes: "Scenario 3 of 6: brake pads for a 2012 Civic on a phone." "Checking engineering context…" The line updates in place, and ends "Finished: 9 scenarios and 4 checks, on prototype version 2." The results are beside the conversation ("Evaluation"), each section filling in when its part is done; Stop is there while it runs.
+- Sparks shows progress in the conversation as each part finishes: "Scenario 3 of 6: brake pads for a 2012 Civic on a phone." "Checking engineering context…" ~~The line updates in place, and ends~~ The same progress as while a prototype is built ([sparks-prototype.md](sparks-prototype.md), "Building it"): a status for each stage ("Planning the test drive…", "Test-driving it through 9 scenarios…", "Running 4 checks…", "Reading the results off the dyno…") over the latest five steps, folding to ~~"Finished: 9 scenarios and 4 checks, on prototype version 2."~~ "Evaluated in 22s", which opens to show every step. Sparks's reply starts with it and nothing else.
+- **Beside the conversation, "Evaluation" starts blank,** with Stop. Each scenario comes in as Sparks starts on it, then each check's results, in the order they're done; the newest stays in view until Dana scrolls. ~~Each section fills in when its part is done.~~ Once it's finished, the full results show, the read first.
+- **Done, the same reply goes on:** "**Here's what I did:**" (how many scenarios, as whom, how many got the task done; the checks; that it's an AI evaluation), then "**Here's what I found:**" (the read, what changed since the last run, the evidence status), and the question. If Dana has said something since, it comes as a new reply. "Run it again" works the same way.
 - Results appear as they come; Dana doesn't have to wait for the whole run to start reading.
-- Dana can keep talking to Sparks while it runs, and can stop the run. A stopped run keeps the results it has, marked "Stopped before finishing".
+- Dana can keep talking to Sparks while it runs, and can stop the run. A stopped run keeps the results it has, marked "Stopped before finishing", and only those: findings come from a finished run.
 - A run evaluates the prototype version that's current when it starts, and says which.
+- **A path with no run yet** shows "This prototype hasn't been evaluated yet" in Evaluate, with "Evaluate the prototype".
+
+✅ **Resolved:** Evaluate works as Prototype does: progress first, a blank panel that fills in as it goes, then what was done and the conclusions.
 
 ## The results
 
@@ -228,10 +233,11 @@ Evaluate is Done when there's a complete run on the current prototype version an
 
 | State | What shows | What Dana can do |
 | --- | --- | --- |
-| Plan ready | The scenarios, tasks and checks | Add, change or remove scenarios and tasks; "Run the evaluation" |
+| ~~Plan ready~~ | ~~The scenarios, tasks and checks~~ | ~~Add, change or remove scenarios and tasks; "Run the evaluation"~~ |
+| Getting ready | Progress in the conversation; a blank panel | Wait, stop it |
 | Running | Progress by part; results as they arrive | Read results so far, step through a scenario, stop it |
 | Stopped | The results so far, marked "Stopped before finishing" | Run again |
-| Results ready | Sparks's read, the evidence status, then each part of the results | Step through scenarios, fix in the prototype, go back to Plan, decide |
+| Results ready | What Sparks did and found; Sparks's read, the evidence status, then each part of the results | Step through scenarios, fix in the prototype, go back to Plan, decide |
 | A run failed | "I couldn't finish the evaluation. Your prototype and earlier runs are unchanged." and "Try again" | Try again |
 | A source can't be reached | The check that depends on it says "Couldn't check {source}" and its confidence drops | Run again later, go on |
 | Prototype changed since the last run | "The prototype changed after the last run…" | Run again |
@@ -243,7 +249,7 @@ What Dana says → what Sparks must do:
 
 | Dana | Sparks must |
 | --- | --- |
-| Opens Evaluate | Show the plan as scenarios, including screen-reader and keyboard scenarios, and run nothing until she starts it |
+| ~~Opens Evaluate~~ Says "Yes, evaluate it" | ~~Show the plan as scenarios, including screen-reader and keyboard scenarios, and run nothing until she starts it~~ Run scenarios, including screen-reader and keyboard ones, then say what it did and what it found |
 | "So customers will love it?" | Say what the evaluation suggests, that it's an AI evaluation, and that how people feel is under "What only real people can tell us" |
 | "Add my neighbor as a test customer, she orders a lot." | Explain that scenarios come from patterns, not real people, and offer a scenario like the one she describes |
 | "Give me the exact number of returns we'll save." | Give the range, method and confidence, and explain why it can't be exact |
@@ -263,7 +269,7 @@ What Dana says → what Sparks must do:
 
 ## Acceptance Criteria
 
-- Given a finished prototype, when Evaluate opens, then Sparks shows a plan of six to ten scenarios across audiences, including screen-reader and keyboard scenarios, and runs nothing until Dana selects "Run the evaluation".
+- Given a finished prototype, when Dana says "Yes, evaluate it", then Sparks runs six to ten scenarios across audiences, including screen-reader and keyboard scenarios~~, and runs nothing until Dana selects "Run the evaluation"~~, showing only its progress until it's done, then what it did and what it found.
 - Scenarios are described as situations; none is presented as a research participant or based on a real customer's or employee's record.
 - Sparks's reasoning in a scenario is labeled "AI evaluation" and never written as a customer's words.
 - The hypothesis shows an outcome (Supports, Inconclusive or Does not support) with its method, and "Simulation supports hypothesis" shows "Based on simulated scenarios. Real-user testing is recommended before implementation."

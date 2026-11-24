@@ -202,36 +202,63 @@ export function sampleReviewerPin(reviewerId: string, directionId?: string): Pro
 	return pin && author ? { ...pin, id: `pin-${reviewerId}`, author, createdAt: new Date().toISOString() } : undefined;
 }
 
-/** How long Sparks takes to write each part of the idea for review, one after the other. */
-export const sampleReviewBuildStepMs = 650;
+/** Before writing, and after: with Evaluate skipped, there's no evaluation to read. */
+const reviewStart = (skipped: boolean) => [
+	"Gathering what you decided in Plan",
+	"Reading the prototype and what's pretend in it",
+	...(skipped ? [] : ["Reading the evaluation and its findings"]),
+];
+const reviewEnd = ["Checking what's still open", "Finding the right teams to look it over", "Drafting the invitation"];
 
-/** Sparks's progress while it writes the idea for review (`titles`, in order): the part it's on, or done. */
-export function sampleReviewBuildProgress(titles: readonly string[], built: number) {
-	const total = titles.length;
-	return built >= total
-		? { text: `Wrote all ${total} parts.`, done: true }
-		: { text: `Writing "${titles[built]}", ${built + 1} of ${total} parts.`, done: false };
+/** Everything Sparks does to put the idea together, in order: getting ready, each part (`titles`), then what's open and who to ask. */
+const reviewSteps = (titles: readonly string[], skipped: boolean) => [
+	...reviewStart(skipped),
+	...titles.map((title) => `Writing "${title}"`),
+	...reviewEnd,
+];
+
+/** The idea is ready at this step (how many of its steps are done). */
+export const sampleReviewBuildFinished = (titles: readonly string[], skipped: boolean, step: number) => step >= reviewSteps(titles, skipped).length;
+
+/** How far the idea is at a step, for the panel: whether the writing has begun, and how many parts are written. */
+export function sampleReviewBuilt(titles: readonly string[], skipped: boolean, step: number) {
+	const written = step - reviewStart(skipped).length;
+	return { begun: written >= 0, written: Math.min(Math.max(written, 0), titles.length) };
+}
+
+/** How long a step takes in the demo, in milliseconds, a little more or less each time: a part is quicker to write. */
+export function sampleReviewBuildStepMs(titles: readonly string[], skipped: boolean, step: number) {
+	const start = reviewStart(skipped).length;
+	return Math.round((step >= start && step < start + titles.length ? 650 : 1000) * (1 + Math.random() * 0.3));
+}
+
+/** Sparks's progress as it puts the idea together (`step`: how many steps are done), with one status for each stage. */
+export function sampleReviewBuildProgress(titles: readonly string[], skipped: boolean, step: number, seconds = 18) {
+	const steps = reviewSteps(titles, skipped);
+	const { begun, written } = sampleReviewBuilt(titles, skipped, step);
+	return {
+		status: !begun ? "Laying out the parts of your idea…" : written < titles.length ? "Writing your idea for review…" : "Giving it a final polish…",
+		steps: steps.slice(0, step + 1),
+		done: step >= steps.length,
+		doneLabel: `Put together in ${seconds}s`,
+	};
 }
 
 /**
- * Going to Review: Sparks writes the idea for review on the right, part by part, with its progress in place
- * (prds/sparks-review.md, "Putting it together"); "Here's your idea, ready for review" follows once it's done.
- * `opening` says how she got here.
+ * Going to Review: Sparks writes the idea for review on the right, part by part (prds/sparks-review.md, "Putting it
+ * together"). Only its progress until it's done; then the same reply says what it put together, what's open and who to
+ * ask (`sampleReviewOpenReply`).
  */
-export function sampleReviewBuildingReply(opening: string, titles: readonly string[], built = 0): SparksReply {
+export function sampleReviewBuildingReply(titles: readonly string[], skipped: boolean, step = 0): SparksReply {
 	return {
 		id: "review-building",
 		from: "sparks",
-		thinking: ["Gathering what you decided, from Plan to Evaluate…"],
-		parts: [
-			{
-				kind: "text",
-				text: `${opening}**Now, let's put your idea together for review.**\n\nI'm writing it on the right, part by part, from what you decided, with nothing added.`,
-			},
-			{ kind: "progress", ...sampleReviewBuildProgress(titles, built) },
-		],
+		parts: [{ kind: "progress", ...sampleReviewBuildProgress(titles, skipped, step), startedAt: Date.now() }],
 	};
 }
+
+/** Sparks's reply that waits for her to publish: with its progress, or on its own when she's said something since. */
+export const isReviewOpenReply = (id: string) => id.startsWith("review-open") || id.startsWith("review-building");
 
 const bulletsFor = (lines: string[]) => lines.map((line) => `- ${line}`).join("\n");
 
@@ -239,9 +266,9 @@ const bulletsFor = (lines: string[]) => lines.map((line) => `- ${line}`).join("\
 export const samplePublishIt = "Looks right, publish it";
 
 /**
- * Review opens: the concept for review on the right, what's still open, who Sparks would invite and why, what
- * publishing gives them, and the invitation it drafted (prds/sparks-review.md, "Checking it's ready", "Publishing").
- * Publishing waits for her. `version`: the prototype's version they'd get.
+ * The idea is put together: what's in it, what's still open, who Sparks would invite and why, what publishing gives
+ * them, and the invitation it drafted (prds/sparks-review.md, "Checking it's ready", "Publishing"). `opening` says how
+ * she got here. Publishing waits for her. `version`: the prototype's version they'd get.
  */
 export function sampleReviewOpenReply(concept: ConceptForReview, opening: string, skipped: boolean, directionId?: string, version = 1): SparksReply {
 	const reviewers = sampleReviewersFor(directionId);
@@ -249,11 +276,29 @@ export function sampleReviewOpenReply(concept: ConceptForReview, opening: string
 	return {
 		id: "review-open",
 		from: "sparks",
-		thinking: ["Checking what's still open…", "Finding the right teams to look it over…"],
 		parts: [
 			{
 				kind: "text",
-				text: `${opening}**Here's your idea, ready for review.** It's all on the right.\n\nBefore you bring anyone in, here's what's still open. None of it stops you; it goes to review as known issues and gaps:\n\n${bulletsFor(open)}${skipped ? "\n\nRunning Evaluate takes a few minutes and would make your recommendation stronger." : ""}\n\nI'd ask four teams to review it:\n\n${bulletsFor(reviewers.map((r) => `**${r.department}:** ${r.evaluates}.`))}\n\n**Publishing gives them a fixed copy:** this idea and the prototype as it is now (version ${version}), to try and comment on. You keep working on yours; when you change it, publish an update. Asking for a decision comes later, when you're ready.\n\n${invitation(skipped, directionId)}`,
+				text: [
+					`${opening.trim()} Your idea is ready for review.`.trim(),
+					"**Here's what I put together:**",
+					"It's all on the right, from what you decided, with nothing added:",
+					bulletsFor([
+						`**The idea:** the summary, what we believe, why this direction, and ${concept.stories.length} user stories with how to know each one is done.`,
+						`**The evidence:** the success criteria, what the data says and ${skipped ? "that it hasn't been evaluated" : "what Evaluate found"}, with the gaps and known issues.`,
+						"**For the teams:** what it needs to be built, design notes, what it changes for each team, and what to test with real people.",
+					]),
+					"**Here's what's still open:**",
+					"None of it stops you; it goes to review as known issues and gaps.",
+					bulletsFor(open),
+					skipped ? "Running Evaluate takes a few minutes and would make your recommendation stronger." : "",
+					"**I'd ask four teams to review it:**",
+					bulletsFor(reviewers.map((r) => `**${r.department}:** ${r.evaluates}.`)),
+					`**Publishing gives them a fixed copy:** this idea and the prototype as it is now (version ${version}), to try and comment on. You keep working on yours; when you change it, publish an update. Asking for a decision comes later, when you're ready.`,
+					invitation(skipped, directionId),
+				]
+					.filter(Boolean)
+					.join("\n\n"),
 			},
 		],
 		quickReplies: skipped ? [samplePublishIt, "Evaluate it first", "Not quite"] : [samplePublishIt, "Not quite"],

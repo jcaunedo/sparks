@@ -1,11 +1,10 @@
 import type { SparksReply } from "../workspace/workspace";
-import { sampleSummaryReplies } from "../plan/sample-success";
 import type { FitCheckChanges } from "../prototype/fit-check-prototype";
 import { otherEvaluations } from "./sample-evaluations";
 import type { Evaluation, EvaluationFinding, EvaluationScenario } from "./validate-panel";
 
 /*
- * Evaluate for "Wrong-part returns" (prds/sparks-validate.md): the evaluation plan, the run and its results, which
+ * Evaluate for "Wrong-part returns" (prds/sparks-validate.md): the run and its results, which
  * depend on the prototype version evaluated (a fix changes the findings, the estimate and the read). What the AI would
  * supply: every number is illustrative, and nothing here is research with real people.
  */
@@ -301,75 +300,75 @@ function sinceLastFor(previous: Evaluation | undefined, findings: EvaluationFind
 	return `${nowFixed} of ${wasOpen.length} findings fixed. "Doesn't fit" returns: now ${estimate.charAt(0).toLowerCase()}${estimate.slice(1)}.`;
 }
 
-/** How many parts a run has: the scenarios, then the checks. */
-export const sampleRunParts = (evaluation: Evaluation) => evaluation.scenarios.length + evaluation.checks.length;
+/** Before the scenarios, and after the checks: the same for every run. */
+const runStart = (evaluation: Evaluation) => [
+	"Reading your prototype and your target",
+	"Picking the customers and stores to try it as",
+	`Writing ${evaluation.scenarios.length} scenarios`,
+];
+const runEnd = ["Reading the results", "Comparing them with your target"];
 
-/** How long each part takes in the demo, in milliseconds. */
-export const sampleRunStepMs = 600;
+/** Everything Sparks does in a run, in order: getting ready, each scenario, each check, then the conclusions. */
+const runSteps = (evaluation: Evaluation) => [
+	...runStart(evaluation),
+	...evaluation.scenarios.map((scenario) => scenario.situation.replace(/\.$/, "")),
+	...evaluation.checks.map((check) => check.replace(/…$/, "")),
+	...runEnd,
+];
 
-/** Sparks's progress while it runs: the scenario or check it's on, then done (or stopped). */
-export function sampleRunProgress(evaluation: Evaluation, done: number, stopped = false) {
-	const total = sampleRunParts(evaluation);
+/** A run has finished at this step (how many of its steps are done). */
+export const sampleRunFinished = (evaluation: Evaluation, step: number) => step >= runSteps(evaluation).length;
+
+/** How far the results are at a step, for the panel: whether the scenarios have begun, and how many parts (scenarios, then checks) are done. */
+export function sampleRunResults(evaluation: Evaluation, step: number) {
+	const done = step - runStart(evaluation).length;
+	return { begun: done >= 0, done: Math.min(Math.max(done, 0), evaluation.scenarios.length + evaluation.checks.length) };
+}
+
+/** How long a step takes in the demo, in milliseconds, a little more or less each time. */
+export const sampleRunStepMs = () => Math.round(1000 * (1 + Math.random() * 0.3));
+
+/** Sparks's progress while it runs (`step`: how many steps are done), with one status for each stage; then done (or stopped). */
+export function sampleRunProgress(evaluation: Evaluation, step: number, { stopped = false, seconds = 22 } = {}) {
+	const steps = runSteps(evaluation);
+	const { begun, done } = sampleRunResults(evaluation, step);
 	const scenarios = evaluation.scenarios.length;
-	if (stopped) return { text: `Stopped before finishing: ${done} of ${total} parts done.`, done: true };
-	if (done >= total)
-		return { text: `Finished: ${scenarios} scenarios and ${evaluation.checks.length} checks, on prototype version ${evaluation.version}.`, done: true };
-	if (done < scenarios) {
-		const situation = evaluation.scenarios[done].situation.replace(/\.$/, "");
-		return { text: `Scenario ${done + 1} of ${scenarios}: ${situation.charAt(0).toLowerCase()}${situation.slice(1)}.`, done: false };
-	}
-	return { text: evaluation.checks[done - scenarios], done: false };
+	const checks = evaluation.checks.length;
+	return {
+		status: !begun
+			? "Planning the test drive…"
+			: done < scenarios
+				? `Test-driving it through ${scenarios} scenarios…`
+				: done < scenarios + checks
+					? `Running ${checks} checks…`
+					: "Reading the results off the dyno…",
+		steps: steps.slice(0, stopped ? step : step + 1),
+		done: stopped || step >= steps.length,
+		stopped,
+		doneLabel: stopped ? `Stopped before finishing: ${done} of ${scenarios + checks} parts done.` : `Evaluated in ${seconds}s`,
+	};
 }
 
 /**
- * "Yes, evaluate it": the prototype is in the concept, and Sparks shows how it'll test it before running anything
- * (prds/sparks-validate.md, "The evaluation plan"), as a summary she approves.
+ * "Yes, evaluate it": the run starts right away (prds/sparks-validate.md, "Running it"). Only its progress until it's
+ * done; then the same reply says what it did and what it concluded (`sampleValidateResultsReply`).
  */
-export function sampleValidatePlanReply(scenarios: EvaluationScenario[]): SparksReply {
-	const lines = scenarios.map((s) => `- ${s.situation}${s.access ? ` (${s.access.toLowerCase()})` : ""}`).join("\n");
-	return {
-		id: "validate-plan",
-		from: "sparks",
-		thinking: [
-			"Picking the roads to test it on: customers and stores…",
-			"Building the scenarios…",
-		],
-		parts: [
-			{
-				kind: "text",
-				text: `Done. The prototype is in your plan.\n\n**Here's how I'll test it:**\n\n${scenarios.length} scenarios, worked through the prototype. Each is a realistic situation built from what AutoParts Co. knows about its customers and stores, never a real person:\n\n${lines}\n\nThen I'll check it against business data, engineering context, the design system and how the teams work. It's an AI evaluation: it shows what could go wrong, not what real people will do.`,
-			},
-		],
-		quickReplies: sampleSummaryReplies,
-	};
-}
-
-/** After "Not quite" on the plan. */
-export const sampleValidatePlanNotQuiteReply: SparksReply = {
-	id: "validate-plan-not-quite",
-	from: "sparks",
-	parts: [{ kind: "text", text: "What would you add, change or remove? Describe a situation, like \"a first-time buyer on a laptop with two saved vehicles\"." }],
-};
-
-/** Her change to the plan: taken as a scenario, and the plan's answers again. */
-export const sampleValidatePlanAddedReply = (text: string): SparksReply => ({
-	id: "validate-plan",
-	from: "sparks",
-	parts: [{ kind: "text", text: `Thanks, I've added it as a scenario: "${text.replace(/\.$/, "")}". In this demo, the run doesn't include it yet.` }],
-	quickReplies: sampleSummaryReplies,
-});
-
-/** The run starting: which version, and its progress in place. */
-export function sampleValidateRunningReply(evaluation: Evaluation): SparksReply {
+export function sampleValidateRunningReply(evaluation: Evaluation, step = 0): SparksReply {
 	return {
 		id: "validate-running",
 		from: "sparks",
-		parts: [
-			{ kind: "text", text: `Running it on prototype version ${evaluation.version}. Results show on the right as they come in; you can stop it any time.` },
-			{ kind: "progress", ...sampleRunProgress(evaluation, 0) },
-		],
+		parts: [{ kind: "progress", ...sampleRunProgress(evaluation, step), startedAt: Date.now() }],
 	};
 }
+
+/** A scenario she asks for, after a run: taken, for the next one. */
+export const sampleScenarioAsk = /\b(add|include|try)\b.*\b(scenario|situation|case)\b|^add (a|an)\b/i;
+export const sampleScenarioAddedReply = (text: string): SparksReply => ({
+	id: "validate-scenario",
+	from: "sparks",
+	parts: [{ kind: "text", text: `Got it, I've noted it for the next run: "${text.replace(/\.$/, "")}". In this demo, the run doesn't include it yet.` }],
+	quickReplies: ["Run it again"],
+});
 
 /** The answers once the results are in. */
 export const sampleValidateResultsReplies = ["Go ahead to Review", "Keep improving"];
@@ -381,19 +380,50 @@ export const sampleBackToChoice = "Go back to the choice";
 export const sampleValidateResultsRepliesFor = (evaluation?: Evaluation) =>
 	evaluation?.read === "Needs another look" ? [sampleBackToChoice, ...sampleValidateResultsReplies] : sampleValidateResultsReplies;
 
-/** The results: Sparks's read, the evidence status by method, and the question. */
-export function sampleValidateResultsReply(evaluation: Evaluation): SparksReply {
+/** "a, b and c". */
+const inWords = (items: string[]) => (items.length < 2 ? items.join("") : `${items.slice(0, -1).join(", ")} and ${items[items.length - 1]}`);
+
+/**
+ * The run is done: what Sparks did (the scenarios, by audience, and the checks), then what it found (its read, the
+ * evidence status by method), and the question. `first`: the first run, which also puts the prototype in the plan.
+ */
+export function sampleValidateResultsReply(evaluation: Evaluation, first = true): SparksReply {
+	const { scenarios } = evaluation;
+	const audiences = [...new Set(scenarios.map((s) => s.audience))].map(
+		(audience) => `${scenarios.filter((s) => s.audience === audience).length} as ${audience === "Customer" ? "customers" : "staff"}`,
+	);
+	const withAccess = (kind: string, how: string) => {
+		const count = scenarios.filter((s) => s.access === kind).length;
+		return count ? [`${count === 1 ? "one" : count} with ${how}`] : [];
+	};
+	const access = [...withAccess("Screen reader", "a screen reader"), ...withAccess("Keyboard only", "only a keyboard")];
+	const accessText = access.length ? `, including ${inWords(access)}` : "";
+	const got = scenarios.filter((s) => s.outcome === "done").length;
+	const checks = evaluation.checks.map((check) => check.replace(/^Checking /, "").replace(/…$/, ""));
+	const back = evaluation.read === "Needs another look";
 	return {
 		id: "validate-results",
 		from: "sparks",
-		thinking: [
-			"Reading the results off the dyno…",
-			"Comparing them with what you set out to prove…",
-		],
 		parts: [
 			{
 				kind: "text",
-				text: `**${evaluation.read}.** ${evaluation.readText}${evaluation.sinceLast ? `\n\nSince the last run: ${evaluation.sinceLast}` : ""}\n\n**${evaluation.hypothesis.outcome}.** ${evaluation.hypothesis.note}\n\n**${evaluation.read === "Needs another look" ? "Do you want to go back to the choice, take this to review as it is, or keep improving it?" : "Do you want to take this to review, or keep improving it?"}**`,
+				text: [
+					first ? `Done. The prototype is in your plan, and I've evaluated it (version ${evaluation.version}).` : `Done. I've evaluated version ${evaluation.version}.`,
+					"**Here's what I did:**",
+					[
+						`- **${scenarios.length} scenarios:** ${inWords(audiences)}${accessText}. The task got done in ${got} of them.`,
+						`- **${evaluation.checks.length} checks:** ${inWords(checks)}.`,
+					].join("\n"),
+					"It's an AI evaluation: it shows what could go wrong, not what real people will do. Each scenario is built from what AutoParts Co. knows about its customers and stores, never a real person.",
+					"**Here's what I found:**",
+					`**${evaluation.read}.** ${evaluation.readText}`,
+					evaluation.sinceLast ? `Since the last run: ${evaluation.sinceLast}` : "",
+					`**${evaluation.hypothesis.outcome}.** ${evaluation.hypothesis.note}`,
+					"Every scenario and finding is on the right.",
+					`**${back ? "Do you want to go back to the choice, take this to review as it is, or keep improving it?" : "Do you want to take this to review, or keep improving it?"}**`,
+				]
+					.filter(Boolean)
+					.join("\n\n"),
 			},
 		],
 		quickReplies: sampleValidateResultsRepliesFor(evaluation),
@@ -403,7 +433,7 @@ export function sampleValidateResultsReply(evaluation: Evaluation): SparksReply 
 export const sampleValidateStoppedReply: SparksReply = {
 	id: "validate-stopped",
 	from: "sparks",
-	parts: [{ kind: "text", text: 'Stopped. The results so far are on the right, marked "Stopped before finishing". Run it again when you\'re ready.' }],
+	parts: [{ kind: "text", text: 'Stopped. Any results so far are on the right, marked "Stopped before finishing". Run it again when you\'re ready.' }],
 	quickReplies: ["Run it again"],
 };
 

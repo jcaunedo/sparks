@@ -209,6 +209,9 @@ Mirror these names when a new component has the same concept. Keep this list cur
   - `AvatarFallback` `color`: `1`–`10` (Figma i1–i10, `bg-avatar-N`). Without it, `avatarColorFor()` picks one from the initials, so the same initials always get the same color
   - `AvatarBadge`: the online dot (success). Put `sr-only` text inside it
   - `AvatarAdd`: a round button with a plus icon; `aria-label` defaults to "Add person"
+- **ActivityFeed** (`chat/activity-feed`): the AI assistant doing a long piece of work, step by step (a prototype being built, a run, a document being written). A `div`'s props. Not in sparks.ds yet
+  - `status` (one live line, `ThinkingIndicator`), `steps` (oldest first, the last in progress; the latest five show), `startedAt` (ms; shows the time counting up)
+  - `done` + `doneLabel`: folds to one line ("Built in 18s", a check) that opens every step; `stopped`: a dash instead of the check
 - **AssistantMessage** (`chat/assistant-message`): a message from the AI assistant (Sparks): plain text on the page, no bubble, full width. Not in sparks.ds yet
   - `text`: the message. A blank line between paragraphs (12px apart); a line break starts a new line in the paragraph (4px below); lines starting "1. " or "- " make a list; `**bold**` inside a line. A paragraph that's one all-bold line reads as a heading and gets 24px above it (a new section)
   - `stream`: streams the text in with a blinking caret (MOTION.md → AI messages); turning it off shows the rest at once. Reduced motion shows it whole. `onStreamEnd`: called once it's all shown
@@ -223,6 +226,8 @@ Mirror these names when a new component has the same concept. Keep this list cur
 - **QuickReplies** (`chat/quick-replies`): the answers under an assistant's question (sparks.ds "ctas"), Button Outlined 36px, on the right, the first reply last
   - `replies` (the main, "continue" one first) + `onReply(reply)`. `enter` (default `true`): the first reply shows the ↵ key (`CornerDownLeft`) and Enter picks it (`useEnterShortcut`, `lib/hooks`), while focus is on the page or in the empty message box. Only one set on the screen should have it
   - `selected` (optional): the reply picked before, while the user changes an answer: a 16px check (`text-icon-muted`) after its label and `aria-pressed` (every reply gets `aria-pressed` then)
+- **SectionDivider** (`chat/section-divider`): a zigzag line where a section of the conversation ends (`role='separator'`), its container's full width, `border-defined`. Not in sparks.ds yet
+  - `draw`: it has just ended, so the line draws left to right (decided as it appears; reduced motion: just there); `onDrawn`: called once it's there
 - **ThinkingIndicator** (`chat/thinking-indicator`): the AI assistant thinking before it replies (Figma: Sparks 27:1932, not in sparks.ds yet). A `div`'s props, `role='status'`
   - `steps`: what it's working through, one line at a time (`motionDuration.thinkingStep` each, sliding up; the last stays). Never a bare "Thinking…"
   - A 10px dot hopping through the Sparks logo colors (the next on each landing) and the line in a gradient of the same colors, rotating through them left to right. Reduced motion: still dot, still gradient (MOTION.md → AI thinking)

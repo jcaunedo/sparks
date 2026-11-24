@@ -53,7 +53,7 @@ type FitCheckData = {
 	counterReturns?: { order: string; partId: string; customer: string; savedVehicle: boolean }[];
 };
 
-/** The screens, in the order Sparks builds them (each one clickable as soon as it's ready). */
+/** The screens, in the order Sparks builds them. */
 const fitCheckScreens = ["the vehicle picker", "a part that fits", "a part that doesn't fit", "the cart", "the store staff lookup"];
 
 type FitCheckAudience = "customer" | "staff";
@@ -117,8 +117,8 @@ const fitCheckElements: Record<string, string> = {
 type FitCheckPrototypeProps = {
 	data: FitCheckData;
 	audience: FitCheckAudience;
-	/** How many of `fitCheckScreens` are built: the rest show as being built. */
-	readyScreens: number;
+	/** The screen it opens on, by its place in `fitCheckScreens`, as it's being built; without it, where the journey starts. */
+	openOn?: number;
 	changes?: FitCheckChanges;
 	/** "Edit element": a click (or Enter) on an element selects it instead of using it. */
 	pointing?: boolean;
@@ -198,18 +198,6 @@ function PartImage({ part, className }: { part: FitPart; className?: string }) {
 	);
 }
 
-/** A screen that isn't built yet. */
-function Building({ screen }: { screen: string }) {
-	return (
-		<div className='flex flex-1 flex-col items-center justify-center gap-3 p-8 text-center'>
-			<div className='h-2 w-40 overflow-hidden rounded-full bg-muted'>
-				<div className='h-full w-1/2 animate-pulse rounded-full bg-sparks-accent/40' />
-			</div>
-			<p className='text-sm text-muted-foreground'>Building {screen}…</p>
-		</div>
-	);
-}
-
 /** The changes, deep in any prototype's screens. */
 const useChanges = (): FitCheckChanges => React.useContext(ViewContext).changes ?? {};
 
@@ -283,19 +271,20 @@ function Field({ label, value, options, onChange }: { label: string; value: stri
 }
 
 /** The customer's shop: add a vehicle, open parts and see whether they fit, the cart and a pretend order. */
-function CustomerShop({ data, readyScreens }: { data: FitCheckData; readyScreens: number }) {
+function CustomerShop({ data, openOn }: { data: FitCheckData; openOn?: number }) {
 	const [vehicle, setVehicle] = React.useState<Partial<FitVehicle>>({});
-	const [saved, setSaved] = React.useState<FitVehicle | null>(null);
-	const [partId, setPartId] = React.useState(data.firstPartId);
-	const [cart, setCart] = React.useState<string[]>([]);
-	const [view, setView] = React.useState<"part" | "cart" | "ordered">("part");
+	const [saved, setSaved] = React.useState<FitVehicle | null>(openOn ? data.vehicle : null);
+	const [partId, setPartId] = React.useState(
+		() => (openOn === 2 ? data.parts.find((p) => p.fit === "doesnt")?.id : undefined) ?? data.firstPartId,
+	);
+	const [cart, setCart] = React.useState<string[]>(openOn === 3 ? [data.firstPartId] : []);
+	const [view, setView] = React.useState<"part" | "cart" | "ordered">(openOn === 3 ? "cart" : "part");
 
 	const changes = React.useContext(ViewContext).changes;
 	const saveButton = useButton("save-vehicle", "Save vehicle");
 	const cartButton = useButton("add-to-cart", "Add to cart");
 	const orderButton = useButton("place-order", "Place order");
 	const part = data.parts.find((p) => p.id === partId) ?? data.parts[0];
-	const screenFor = (fit: FitResult) => (fit === "doesnt" ? 2 : 1);
 	const complete = (["year", "make", "model", "trim", "engine"] as const).every((key) => vehicle[key]);
 
 	// Sticky: the store's header stays at the top while the page scrolls under it.
@@ -316,7 +305,7 @@ function CustomerShop({ data, readyScreens }: { data: FitCheckData; readyScreens
 				<button
 					type='button'
 					aria-label={`Cart, ${cart.length} items`}
-					onClick={() => saved && readyScreens > 3 && setView("cart")}
+					onClick={() => saved && setView("cart")}
 					className='relative grid size-8 place-items-center rounded-full text-icon hover:bg-background-subtle'
 				>
 					<ShoppingCart className='size-4' aria-hidden />
@@ -335,37 +324,33 @@ function CustomerShop({ data, readyScreens }: { data: FitCheckData; readyScreens
 		return (
 			<>
 				{header}
-				{readyScreens < 1 ? (
-					<Building screen={fitCheckScreens[0]} />
-				) : (
-					<div className='flex flex-col gap-4 p-4'>
-						<div className='flex flex-col gap-1'>
-							<EditableText as='h2' id='vehicle-title' className='text-lg font-semibold text-foreground-prominent'>
-								Add your vehicle
-							</EditableText>
-							<EditableText id='vehicle-hint' className='text-sm text-muted-foreground'>
-								Add it once, and every part shows whether it fits.
-							</EditableText>
-						</div>
-						<div className='grid grid-cols-2 gap-3'>
-							<Field label='Year' value={vehicle.year ?? ""} options={data.options.years} onChange={(year) => setVehicle((v) => ({ ...v, year }))} />
-							<Field label='Make' value={vehicle.make ?? ""} options={data.options.makes} onChange={(make) => setVehicle((v) => ({ ...v, make }))} />
-							<Field label='Model' value={vehicle.model ?? ""} options={data.options.models} onChange={(model) => setVehicle((v) => ({ ...v, model }))} />
-							<Field label='Trim' value={vehicle.trim ?? ""} options={data.options.trims} onChange={(trim) => setVehicle((v) => ({ ...v, trim }))} />
-							<div className='col-span-2'>
-								<Field label='Engine' value={vehicle.engine ?? ""} options={data.options.engines} onChange={(engine) => setVehicle((v) => ({ ...v, engine }))} />
-							</div>
-						</div>
-						<div className='flex flex-wrap gap-2'>
-							<Button {...saveButton.props} disabled={!complete} onClick={() => setSaved(vehicle as FitVehicle)}>
-								{saveButton.label}
-							</Button>
-							<Button variant='ghost' className='rounded-button-lg' onClick={() => setVehicle(data.vehicle)}>
-								Use a sample vehicle
-							</Button>
+				<div className='flex flex-col gap-4 p-4'>
+					<div className='flex flex-col gap-1'>
+						<EditableText as='h2' id='vehicle-title' className='text-lg font-semibold text-foreground-prominent'>
+							Add your vehicle
+						</EditableText>
+						<EditableText id='vehicle-hint' className='text-sm text-muted-foreground'>
+							Add it once, and every part shows whether it fits.
+						</EditableText>
+					</div>
+					<div className='grid grid-cols-2 gap-3'>
+						<Field label='Year' value={vehicle.year ?? ""} options={data.options.years} onChange={(year) => setVehicle((v) => ({ ...v, year }))} />
+						<Field label='Make' value={vehicle.make ?? ""} options={data.options.makes} onChange={(make) => setVehicle((v) => ({ ...v, make }))} />
+						<Field label='Model' value={vehicle.model ?? ""} options={data.options.models} onChange={(model) => setVehicle((v) => ({ ...v, model }))} />
+						<Field label='Trim' value={vehicle.trim ?? ""} options={data.options.trims} onChange={(trim) => setVehicle((v) => ({ ...v, trim }))} />
+						<div className='col-span-2'>
+							<Field label='Engine' value={vehicle.engine ?? ""} options={data.options.engines} onChange={(engine) => setVehicle((v) => ({ ...v, engine }))} />
 						</div>
 					</div>
-				)}
+					<div className='flex flex-wrap gap-2'>
+						<Button {...saveButton.props} disabled={!complete} onClick={() => setSaved(vehicle as FitVehicle)}>
+							{saveButton.label}
+						</Button>
+						<Button variant='ghost' className='rounded-button-lg' onClick={() => setVehicle(data.vehicle)}>
+							Use a sample vehicle
+						</Button>
+					</div>
+				</div>
 			</>
 		);
 
@@ -420,70 +405,65 @@ function CustomerShop({ data, readyScreens }: { data: FitCheckData; readyScreens
 	return (
 		<>
 			{header}
-			{readyScreens <= screenFor(part.fit) ? (
-				<Building screen={fitCheckScreens[screenFor(part.fit)]} />
-			) : (
-				<div className='flex flex-col gap-4 p-4'>
-					<PartImage part={part} className='aspect-[4/3] w-full' />
-					<div className='flex flex-col gap-2'>
-						<h2 className='text-lg font-semibold text-foreground-prominent'>{part.name}</h2>
-						{changes?.fitAbovePrice ? <FitMessage part={part} vehicle={saved} /> : null}
-						<span className='text-sm text-muted-foreground'>{part.price}</span>
-						{changes?.fitAbovePrice ? null : <FitMessage part={part} vehicle={saved} />}
-						{changes?.liveStock && part.fit !== "doesnt" ? (
-							// Pretend: AutoParts Co. doesn't have live stock by store today.
-							<span className='text-sm text-foreground'>In stock at Store 214, 2.1 miles away</span>
-						) : null}
-					</div>
-					{part.fit === "doesnt" && part.fitsInstead?.length ? (
-						<div className='flex flex-col gap-2 rounded-md bg-background-subtle p-3'>
-							<EditableText as='span' id='fits-instead' className='text-sm font-semibold text-foreground'>
-								{`Parts that fit your ${vehicleName(saved)}`}
-							</EditableText>
-							{part.fitsInstead.map((id) => {
-								const other = data.parts.find((p) => p.id === id)!;
-								return (
-									<button key={id} type='button' onClick={() => setPartId(id)} className='flex items-center justify-between gap-2 text-left text-sm text-foreground underline-offset-4 hover:underline'>
-										{other.name} <span className='text-muted-foreground'>{other.price}</span>
-									</button>
-								);
-							})}
-						</div>
+			<div className='flex flex-col gap-4 p-4'>
+				<PartImage part={part} className='aspect-[4/3] w-full' />
+				<div className='flex flex-col gap-2'>
+					<h2 className='text-lg font-semibold text-foreground-prominent'>{part.name}</h2>
+					{changes?.fitAbovePrice ? <FitMessage part={part} vehicle={saved} /> : null}
+					<span className='text-sm text-muted-foreground'>{part.price}</span>
+					{changes?.fitAbovePrice ? null : <FitMessage part={part} vehicle={saved} />}
+					{changes?.liveStock && part.fit !== "doesnt" ? (
+						// Pretend: AutoParts Co. doesn't have live stock by store today.
+						<span className='text-sm text-foreground'>In stock at Store 214, 2.1 miles away</span>
 					) : null}
-					<Button
-						{...cartButton.props}
-						disabled={part.fit === "doesnt" || cart.includes(part.id)}
-						onClick={() => setCart((c) => [...c, part.id])}
-					>
-						{cart.includes(part.id) ? "In your cart" : part.fit === "doesnt" ? "Doesn't fit your vehicle" : cartButton.label}
-					</Button>
-					<div className='flex flex-col gap-2 border-t border-border pt-3'>
-						<span className='text-sm font-semibold text-foreground'>Other parts</span>
-						<ul className='flex flex-col gap-1'>
-							{data.parts
-								.filter((p) => p.id !== part.id)
-								.map((p) => (
-									<li key={p.id}>
-										<button type='button' onClick={() => setPartId(p.id)} className='flex w-full items-center justify-between gap-2 rounded-md px-2 py-1.5 text-left text-sm text-foreground hover:bg-background-subtle'>
-											{p.name}
-											<span className='text-muted-foreground'>{p.price}</span>
-										</button>
-									</li>
-								))}
-						</ul>
-					</div>
 				</div>
-			)}
+				{part.fit === "doesnt" && part.fitsInstead?.length ? (
+					<div className='flex flex-col gap-2 rounded-md bg-background-subtle p-3'>
+						<EditableText as='span' id='fits-instead' className='text-sm font-semibold text-foreground'>
+							{`Parts that fit your ${vehicleName(saved)}`}
+						</EditableText>
+						{part.fitsInstead.map((id) => {
+							const other = data.parts.find((p) => p.id === id)!;
+							return (
+								<button key={id} type='button' onClick={() => setPartId(id)} className='flex items-center justify-between gap-2 text-left text-sm text-foreground underline-offset-4 hover:underline'>
+									{other.name} <span className='text-muted-foreground'>{other.price}</span>
+								</button>
+							);
+						})}
+					</div>
+				) : null}
+				<Button
+					{...cartButton.props}
+					disabled={part.fit === "doesnt" || cart.includes(part.id)}
+					onClick={() => setCart((c) => [...c, part.id])}
+				>
+					{cart.includes(part.id) ? "In your cart" : part.fit === "doesnt" ? "Doesn't fit your vehicle" : cartButton.label}
+				</Button>
+				<div className='flex flex-col gap-2 border-t border-border pt-3'>
+					<span className='text-sm font-semibold text-foreground'>Other parts</span>
+					<ul className='flex flex-col gap-1'>
+						{data.parts
+							.filter((p) => p.id !== part.id)
+							.map((p) => (
+								<li key={p.id}>
+									<button type='button' onClick={() => setPartId(p.id)} className='flex w-full items-center justify-between gap-2 rounded-md px-2 py-1.5 text-left text-sm text-foreground hover:bg-background-subtle'>
+										{p.name}
+										<span className='text-muted-foreground'>{p.price}</span>
+									</button>
+								</li>
+							))}
+					</ul>
+				</div>
+			</div>
 		</>
 	);
 }
 
 /** What a store associate sees at the counter: the customer's saved vehicle, and whether a part fits it. */
-function StaffLookup({ data, readyScreens }: { data: FitCheckData; readyScreens: number }) {
-	const [found, setFound] = React.useState(false);
-	const [checked, setChecked] = React.useState<string | null>(null);
+function StaffLookup({ data, openOn }: { data: FitCheckData; openOn?: number }) {
+	const [found, setFound] = React.useState(openOn !== undefined);
+	const [checked, setChecked] = React.useState<string | null>(openOn !== undefined ? data.firstPartId : null);
 	const lookUp = useButton("look-up", "Look up");
-	if (readyScreens < 5) return <Building screen={fitCheckScreens[4]} />;
 	const part = data.parts.find((p) => p.id === checked);
 	return (
 		<div className='flex flex-col gap-4 p-4'>
@@ -567,16 +547,15 @@ function PrototypeFrame({ changes, pointing, pointedAt, onPoint, onTextChange, c
 }
 
 /** The prototype for "Fit check before you buy", for the audience shown. */
-function FitCheckPrototype({ data, audience, readyScreens, ...view }: FitCheckPrototypeProps) {
+function FitCheckPrototype({ data, audience, openOn, ...view }: FitCheckPrototypeProps) {
 	return (
 		<PrototypeFrame {...view}>
-			{audience === "customer" ? <CustomerShop data={data} readyScreens={readyScreens} /> : <StaffLookup data={data} readyScreens={readyScreens} />}
+			{audience === "customer" ? <CustomerShop data={data} openOn={openOn} /> : <StaffLookup data={data} openOn={openOn} />}
 		</PrototypeFrame>
 	);
 }
 
 export {
-	Building,
 	EditableText,
 	PartImage,
 	Field,

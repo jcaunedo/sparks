@@ -1,6 +1,6 @@
 import type { SparksReply, SparksSuggestion } from "../workspace/workspace";
 import type { SuccessAssumptionCheck, SuccessDraft, SuccessPartDraft } from "./success-card";
-import { sampleWithCorrection } from "./sample-correction";
+import { sampleIntoNext } from "./sample-section";
 
 /*
  * Plan's Success part for "Wrong-part returns", one question at a time (prds/sparks-plan-define-success.md). What the AI
@@ -290,19 +290,11 @@ export function sampleSuccessFrom(answers: SuccessAnswers): SuccessDraft {
 	};
 }
 
-/** The answers to the Success criteria. */
-/**
- * The answers to every Plan summary (the problem, what we know, what success looks like, what we'll build): the first
- * approves it and moves on, so it says so, and there's no question before it (prds/sparks.md, "Talking with Sparks").
- */
-export const sampleSummaryReplies = ["Looks right, continue", "Not quite"];
-
-export const sampleSuccessSummaryReplies = sampleSummaryReplies;
-
-/** After the last question: how Sparks took it, the Success criteria, and the approval question. */
-export function sampleSuccessSummaryReply(answer: SuccessAnswer, success: SuccessDraft): SparksReply {
-	return {
-		id: "success-summary",
+/** After the last question: how Sparks took it, the Success criteria, then on to the directions (`next`). */
+export function sampleSuccessSummaryReply(answer: SuccessAnswer, success: SuccessDraft, next: SparksReply): SparksReply {
+	const summary: SparksReply = {
+		// The directions are what waits for her.
+		id: next.id,
 		from: "sparks",
 		thinking: ["Putting the success criteria on the lift…"],
 		parts: [
@@ -313,30 +305,9 @@ export function sampleSuccessSummaryReply(answer: SuccessAnswer, success: Succes
 			{ kind: "success", success },
 			{
 				kind: "text",
-				text: "From here on, every idea gets checked against this goal.",
+				text: "Done. What success looks like is in your plan. From here on, every idea gets checked against this goal.",
 			},
 		],
-		quickReplies: sampleSuccessSummaryReplies,
 	};
+	return sampleIntoNext(summary, next);
 }
-
-/** After "Not quite" on the Success criteria: the card can't be edited in place, so Sparks asks what's off. */
-export const sampleSuccessNotQuiteReply: SparksReply = {
-	id: "success-not-quite",
-	from: "sparks",
-	parts: [{ kind: "text", text: "What's off? Tell me in your own words, and I'll update it." }],
-};
-
-/** After her correction: Sparks updates the Success criteria, shows them again with her words worked in, and asks again. */
-export const sampleSuccessAgainReply = (success: SuccessDraft, words: string): SparksReply => ({
-	id: "success-again",
-	from: "sparks",
-	parts: [
-		{ kind: "text", text: "Thanks, I've updated it.\n\n**Here's what success looks like now:**" },
-		{
-			kind: "success",
-			success: { ...success, goal: { ...success.goal, text: sampleWithCorrection(success.goal.text, words), source: "dana" }, approved: false },
-		},
-	],
-	quickReplies: sampleSuccessSummaryReplies,
-});

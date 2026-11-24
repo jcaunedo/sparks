@@ -1,7 +1,8 @@
 import * as React from "react";
-import { ArrowLeft, Bell, Check, ChevronDown, FlaskConical, Folder, ListChecks, LoaderCircle, MessageCircle, MousePointerClick, Paperclip, Pencil, Users, X, Zap } from "lucide-react";
+import { ArrowLeft, Bell, ChevronDown, FlaskConical, Folder, ListChecks, MessageCircle, MousePointerClick, Paperclip, Pencil, Users, X, Zap } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 
+import { ActivityFeed } from "@/components/chat/activity-feed";
 import { AssistantMessage } from "@/components/chat/assistant-message";
 import { ClarificationCard } from "@/components/chat/clarification-card";
 import { Badge } from "@/components/data-display/badge";
@@ -15,6 +16,7 @@ import {
 	DropdownMenuTrigger,
 } from "@/components/overlays/dropdown-menu";
 import { QuickReplies } from "@/components/chat/quick-replies";
+import { SectionDivider } from "@/components/chat/section-divider";
 import { ThinkingIndicator } from "@/components/chat/thinking-indicator";
 import { AppHeader } from "@/components/navigation/app-header";
 import { StepNav, StepNavItem } from "@/components/navigation/step-nav";
@@ -28,7 +30,9 @@ import {
 	overlayVariants,
 	panelVariants,
 	revealVariants,
+	scrollContainerOf,
 	scrollIntoViewSmoothly,
+	scrollMetrics,
 	useMotionPreference,
 } from "@/lib/motion";
 
@@ -131,8 +135,13 @@ type SparksReplyPart =
 	| { kind: "success"; success: SuccessDraft }
 	| { kind: "direction"; direction: DirectionDraft }
 	| { kind: "chosen"; chosen: ChosenDraft }
-	/** A line of progress that updates in place (not typed out again), e.g. "Building the cart, 4 of 5 screens." */
-	| { kind: "progress"; text: string; done?: boolean };
+	/** A section of Plan ends here: the zigzag divider, then what Sparks works through before it goes on. */
+	| { kind: "section"; thinking?: string[] }
+	/**
+	 * Sparks doing a long piece of work (ActivityFeed): its status and the steps so far, updated in place; `done`, it folds
+	 * to `doneLabel`. The prototype being built, a run in Evaluate and the idea being written for Review all use it.
+	 */
+	| { kind: "progress"; status: string; steps: string[]; startedAt?: number; done?: boolean; doneLabel: string; stopped?: boolean };
 
 /** A reply from Sparks. */
 type SparksReply = {
@@ -203,6 +212,44 @@ function ChangingAnswer({ suggestion, replies, change }: { suggestion: SparksSug
 	);
 }
 
+/** How long Sparks thinks over `lines`: about `thinkingStep` per line, a little more or less, so it reads like real work (ms). */
+const thinkingTime = (lines: number) => motionDuration.thinkingStep * lines * (0.9 + Math.random() * 0.3) * 1000;
+
+/**
+ * Where a section of Plan ends inside a reply and the next starts: the divider draws, Sparks thinks below it
+ * (while there's something to work through), then the section comes in. Already there (`active` off), only the divider.
+ * 32px above and below it.
+ */
+function SectionBreak({ active, thinking, onDone }: { active: boolean; thinking?: string[]; onDone: () => void }) {
+	const [drawn, setDrawn] = React.useState(false);
+	const lines = thinking?.length ?? 0;
+	const onDoneRef = React.useRef(onDone);
+	onDoneRef.current = onDone;
+	const { prefersReducedMotion } = useMotionPreference();
+	const dividerRef = React.useRef<HTMLDivElement>(null);
+	// The section ends just below the view: it moves once, only enough to show the divider and the line below it
+	// (`scroll-mb-24`), so she sees that Sparks went on. Further away, she's reading somewhere else: it stays put.
+	React.useEffect(() => {
+		const divider = dividerRef.current;
+		if (!active || !divider) return;
+		const below = divider.getBoundingClientRect().bottom + 96 - scrollMetrics(scrollContainerOf(divider)).bottom;
+		if (below > 0 && below < 240) return scrollIntoViewSmoothly(divider, { reducedMotion: Boolean(prefersReducedMotion) });
+		// Only as it appears.
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, []);
+	React.useEffect(() => {
+		if (!active || !drawn) return;
+		const timer = window.setTimeout(() => onDoneRef.current(), thinkingTime(lines));
+		return () => window.clearTimeout(timer);
+	}, [active, drawn, lines]);
+	return (
+		<>
+			<SectionDivider ref={dividerRef} draw={active} onDrawn={() => setDrawn(true)} className='my-4 scroll-mb-24' />
+			{active && drawn && thinking && lines > 0 ? <ThinkingIndicator steps={thinking} /> : null}
+		</>
+	);
+}
+
 /**
  * A reply from Sparks. New, it shows Sparks thinking (ThinkingIndicator), then its parts one after the other: text
  * streams, a card Reveals. Already in the conversation when the concept opened, it shows whole.
@@ -229,24 +276,22 @@ function SparksReplyView({
 	const { prefersReducedMotion } = useMotionPreference();
 	const [thinking, setThinking] = React.useState(animate && Boolean(reply.thinking?.length));
 	// Parts before `step` are whole; part `step` is coming in.
-	const [step, setStep] = React.useState(animate ? 0 : reply.parts.length);
+	// A reply can go on after it's shown (the prototype's progress, then what was built): not animated (she came back to
+	// its step), what's added shows whole.
+	const [shownParts, setStep] = React.useState(animate ? 0 : reply.parts.length);
+	const step = animate ? shownParts : reply.parts.length;
 	const done = step >= reply.parts.length;
 
-	// About `thinkingStep` per line, a little more or less, so the last line gets its time too and it reads like real work.
 	React.useEffect(() => {
 		if (!thinking) return;
-		const lines = reply.thinking?.length ?? 1;
-		const timer = window.setTimeout(
-			() => setThinking(false),
-			motionDuration.thinkingStep * lines * (0.9 + Math.random() * 0.3) * 1000,
-		);
+		const timer = window.setTimeout(() => setThinking(false), thinkingTime(reply.thinking?.length ?? 1));
 		return () => window.clearTimeout(timer);
 	}, [thinking, reply.thinking]);
 
-	// A card under reduced motion appears at once, so what follows it comes in right away.
+	// A card under reduced motion appears at once, so what follows it comes in right away (a section waits for its thinking).
 	const current = reply.parts[step];
 	React.useEffect(() => {
-		if (!thinking && current && current.kind !== "text" && prefersReducedMotion) setStep((s) => s + 1);
+		if (!thinking && current && current.kind !== "text" && current.kind !== "section" && prefersReducedMotion) setStep((s) => s + 1);
 	}, [thinking, current, prefersReducedMotion]);
 
 	if (thinking) return <ThinkingIndicator steps={reply.thinking ?? []} />;
@@ -264,6 +309,8 @@ function SparksReplyView({
 							onStreamEnd={active ? () => setStep(index + 1) : undefined}
 						/>
 					);
+				if (part.kind === "section")
+					return <SectionBreak key={index} active={active} thinking={part.thinking} onDone={() => setStep(index + 1)} />;
 				return (
 					<motion.div
 						key={index}
@@ -287,15 +334,14 @@ function SparksReplyView({
 						) : part.kind === "chosen" ? (
 							<ChosenCard chosen={part.chosen} />
 						) : part.kind === "progress" ? (
-							// Sparks building: a spinner while it works, a check when it's done. Read once it changes.
-							<p aria-live='polite' className='flex items-center gap-2 text-sm text-muted-foreground'>
-								{part.done ? (
-									<Check aria-hidden className='size-4 text-success' />
-								) : (
-									<LoaderCircle aria-hidden className='size-4 animate-spin motion-reduce:animate-none' />
-								)}
-								{part.text}
-							</p>
+							<ActivityFeed
+								status={part.status}
+								steps={part.steps}
+								startedAt={part.startedAt}
+								done={part.done}
+								doneLabel={part.doneLabel}
+								stopped={part.stopped}
+							/>
 						) : changing ? (
 							<ChangingAnswer suggestion={part.suggestion} replies={reply.quickReplies ?? []} change={changing} />
 						) : part.suggestion.confirmed || part.suggestion.answering ? (
@@ -961,7 +1007,8 @@ function SparksWorkspace({
 										style={
 											lastIsNewReply && message === last
 												? {
-														minHeight: Math.max(0, viewHeight - scrollPadding - sentHeight),
+														// No message above it ("Continue"): it fills the view on its own.
+														minHeight: Math.max(0, viewHeight - scrollPadding - (sent ? sentHeight : 0)),
 														// Room below its end: scrolling down a long reply, she can bring its end up to the middle of
 														// the view, and no further.
 														paddingBottom: Math.round(viewHeight / 2),

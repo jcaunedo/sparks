@@ -13,6 +13,9 @@ export {
 
 export {
   fadeVariants,
+  lineDrawVariants,
+  feedItemVariants,
+  drawVariants,
   rowRemoveVariants,
   revealVariants,
   expandVariants,

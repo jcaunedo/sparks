@@ -1,10 +1,13 @@
 import * as React from "react";
 import { Maximize2, TriangleAlert, MessageCirclePlus, Monitor, MousePointerClick, RotateCcw, Smartphone } from "lucide-react";
+import { motion } from "motion/react";
 
 import { Button } from "@/components/buttons/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/overlays/tooltip";
+import { fadeVariants, revealVariants, useMotionPreference } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 
+import { BuildingScreen } from "./building-screen";
 import { HeaderIconButton } from "../../header-icon-button";
 import { VersionsMenu } from "../shared/versions-menu";
 import { PrototypeComments, type CommentMention, type PrototypeComment, type PrototypeCommentAuthor } from "./prototype-comments";
@@ -12,12 +15,21 @@ import { PrototypeComments, type CommentMention, type PrototypeComment, type Pro
 type PrototypeAudience = { id: string; label: string; /** The device it suits (customers on a phone, staff at the counter); the prototype opens on the first audience's, and switching audience keeps the device. */ device: PrototypeDevice };
 type PrototypeDevice = "phone" | "desktop";
 
+type PrototypeBuild = {
+	readyScreens: number;
+	totalScreens: number;
+	/** `key`: the screen, so the next one is assembled from blank; `device`: the one it's for. */
+	screen?: { key: React.Key; device: PrototypeDevice; content: React.ReactNode };
+};
+
 type PrototypePanelProps = {
 	/** Who the prototype is for, e.g. "Customer", "Store staff". The first opens first. */
 	audiences: PrototypeAudience[];
-	/** How many screens are built, of how many: shown while building. */
-	readyScreens: number;
-	totalScreens: number;
+	/**
+	 * While Sparks builds it: nothing to try yet. `screen` is the one being built, assembled as it goes; without it (before
+	 * the first), there's no device, only the empty panel (prds/sparks-prototype.md, "Building it").
+	 */
+	building?: PrototypeBuild;
 	/** The prototype for an audience. A new `key` from "Start over" resets its sample data. */
 	children: (audience: string) => React.ReactNode;
 	/** "Edit element" is on: Dana selects an element in the prototype instead of using it. */
@@ -113,8 +125,7 @@ function Switcher<T extends string>({
  */
 function PrototypePanel({
 	audiences,
-	readyScreens,
-	totalScreens,
+	building: build,
 	children,
 	pointing = false,
 	onPointingChange,
@@ -138,7 +149,8 @@ function PrototypePanel({
 	const [fullScreen, setFullScreen] = React.useState(false);
 	const openerRef = React.useRef<HTMLButtonElement>(null);
 	const backRef = React.useRef<HTMLButtonElement>(null);
-	const building = readyScreens < totalScreens;
+	const building = Boolean(build);
+	const { prefersReducedMotion } = useMotionPreference();
 	// Comments on the prototype (prds/sparks-prototype.md, "Commenting on it"): "Add comment" and pointing ("Edit
 	// element") are one mode at a time.
 	const [commenting, setCommenting] = React.useState(false);
@@ -187,15 +199,43 @@ function PrototypePanel({
 		return () => window.removeEventListener("keydown", onKey);
 	}, [fullScreen, closeFullScreen]);
 
+	const note = (
+		<p className='flex shrink-0 items-center gap-1.5 pt-2 text-xs text-muted-foreground'>
+			<TriangleAlert aria-hidden className='size-3.5 shrink-0' />
+			Prototype: made-up data, nothing is real.
+		</p>
+	);
+	const deviceClasses = (shown: PrototypeDevice) =>
+		cn(
+			"min-h-0 flex-1 border border-border bg-background shadow-sm",
+			shown === "phone" ? "max-h-[760px] w-[375px] rounded-[32px]" : "w-full rounded-card",
+		);
+
+	// Being built: blank until the first screen, then the device it's for, with the screen assembled in it. Nothing in it
+	// can be used yet (`inert`): what it shows changes with each screen.
+	const buildingFrame = build?.screen ? (
+		<div inert className={cn("flex min-h-0 flex-1 flex-col items-center overflow-hidden", build.screen.device === "phone" && "pt-4")}>
+			<motion.div
+				key={build.screen.device}
+				variants={prefersReducedMotion ? fadeVariants : revealVariants}
+				initial='initial'
+				animate='animate'
+				className={cn(deviceClasses(build.screen.device), "overflow-hidden")}
+			>
+				<BuildingScreen key={build.screen.key}>{build.screen.content}</BuildingScreen>
+			</motion.div>
+			{note}
+		</div>
+	) : (
+		<div className='min-h-0 flex-1' />
+	);
+
 	const frame = (
 		// The device, then under it, outside it, a small note that nothing is real (so nothing in the prototype reads as
 		// real, without taking room in its screens).
 		<div className={cn("flex min-h-0 flex-1 flex-col items-center overflow-hidden", device === "phone" && "pt-4")}>
 			<div
-				className={cn(
-					"scrollbar-subtle min-h-0 flex-1 overflow-y-auto border border-border bg-background shadow-sm",
-					device === "phone" ? "max-h-[760px] w-[375px] rounded-[32px]" : "w-full rounded-card",
-				)}
+				className={cn(deviceClasses(device), "scrollbar-subtle overflow-y-auto")}
 			>
 				{commentAuthor ? (
 					<PrototypeComments
@@ -216,10 +256,7 @@ function PrototypePanel({
 					<React.Fragment key={`${audience}-${run}`}>{children(audience)}</React.Fragment>
 				)}
 			</div>
-			<p className='flex shrink-0 items-center gap-1.5 pt-2 text-xs text-muted-foreground'>
-				<TriangleAlert aria-hidden className='size-3.5 shrink-0' />
-				Prototype: made-up data, nothing is real.
-			</p>
+			{note}
 		</div>
 	);
 
@@ -237,7 +274,8 @@ function PrototypePanel({
 					{paths.length ? (
 						<VersionsMenu
 							title={(paths.find((option) => option.id === path) ?? paths[0]).label}
-							versions={versions}
+							// No version yet while it's being built.
+							versions={building ? [] : versions}
 							onRestore={onRestore}
 							paths={paths}
 							path={path}
@@ -246,7 +284,8 @@ function PrototypePanel({
 					) : null}
 				</div>
 				{/* In the middle, together: who it's for and the device. */}
-				<div className='flex shrink-0 items-center gap-2'>
+				{/* Nothing to switch or do until it's built: the controls keep their place, hidden. */}
+				<div className={cn("flex shrink-0 items-center gap-2", building && "invisible")}>
 					{audiences.length > 1 ? (
 						<Switcher
 							label='Audience'
@@ -266,18 +305,13 @@ function PrototypePanel({
 						onChange={setDevice}
 					/>
 				</div>
-				<div className='flex items-center justify-end gap-2'>
-					{/* Announced at each finished screen, not continuously. */}
-					<span aria-live='polite' className='text-sm text-muted-foreground'>
-						{building ? `${readyScreens} of ${totalScreens} screens ready` : ""}
-					</span>
+				<div className={cn("flex items-center justify-end gap-2", building && "invisible")}>
 					{/* Icon buttons, each named in a tooltip. "Edit element": select an element, then say what to change (Esc
 					    stops it). */}
 					<HeaderIconButton
 						label='Edit element'
 						aria-pressed={pointing}
 						className={toggleClasses}
-						disabled={building}
 						onClick={() => onPointingChange?.(!pointing)}
 					>
 						<MousePointerClick aria-hidden />
@@ -288,7 +322,6 @@ function PrototypePanel({
 							label='Add comment'
 							aria-pressed={commenting}
 							className={toggleClasses}
-							disabled={building}
 							onClick={() => {
 								if (!commenting && pointing) onPointingChange?.(false);
 								setCommenting(!commenting);
@@ -306,7 +339,7 @@ function PrototypePanel({
 				</div>
 			</div>
 			{/* The prototype isn't in step with the plan: what changed, and the way to update it. */}
-			{notice ? (
+			{notice && !building ? (
 				<div role='status' className='flex items-center gap-3 rounded-lg border border-warning-muted bg-warning-subtle px-3 py-2 text-sm text-foreground'>
 					<TriangleAlert aria-hidden className='size-4 shrink-0 text-warning' />
 					<span className='min-w-0 flex-1'>{notice.text}</span>
@@ -317,8 +350,12 @@ function PrototypePanel({
 					) : null}
 				</div>
 			) : null}
-			{fullScreen ? null : frame}
-			{fullScreen ? (
+			{/* Announced at each finished screen, not continuously; the conversation shows the steps. */}
+			<span aria-live='polite' className='sr-only'>
+				{build?.readyScreens ? `${build.readyScreens} of ${build.totalScreens} screens ready` : ""}
+			</span>
+			{building ? buildingFrame : fullScreen ? null : frame}
+			{fullScreen && !building ? (
 				<div role='dialog' aria-modal='true' aria-label='Prototype, full screen' className='fixed inset-0 z-50 flex flex-col gap-3 bg-background-subtle p-4'>
 					<div className='flex items-center justify-between'>
 						<span className='text-sm text-muted-foreground'>Esc to go back</span>
@@ -333,4 +370,4 @@ function PrototypePanel({
 	);
 }
 
-export { PrototypePanel, type PrototypeAudience, type PrototypeDevice, type PrototypePanelProps };
+export { PrototypePanel, type PrototypeBuild, type PrototypeAudience, type PrototypeDevice, type PrototypePanelProps };

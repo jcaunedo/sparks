@@ -1,7 +1,6 @@
 import type { SparksReply } from "../workspace/workspace";
 import type { ChosenDraft } from "./chosen-card";
 import type { DirectionDraft } from "./direction-card";
-import { sampleSummaryReplies } from "./sample-success";
 import { sampleWithCorrection } from "./sample-correction";
 
 /*
@@ -54,8 +53,9 @@ export function sampleChosenFrom(chosen: DirectionDraft, directions: DirectionDr
 	};
 }
 
-/** The answers to "What we'll build". */
-export const sampleChosenReplies = sampleSummaryReplies;
+/** The answers to "What we'll build": hers is a decision, so it says what it does and shows as her message. */
+export const sampleBuildIt = "Build it";
+export const sampleChosenReplies = [sampleBuildIt, "Not quite"];
 
 /**
  * After her pick: "What we'll build", drafted in one go, and one question. Against Sparks's pick, it says the catch

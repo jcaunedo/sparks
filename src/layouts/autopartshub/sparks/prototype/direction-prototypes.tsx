@@ -140,4 +140,10 @@ const directionPrototypes: Record<string, DirectionPrototype> = {
 	},
 };
 
-export { directionPrototypes, type DirectionPrototype };
+/** Who a screen is for, by its place in the order Sparks builds them: the audience to show it as while it's being built. */
+function screenAudience(prototype: DirectionPrototype, screen: number) {
+	const owners = prototype.contents.flatMap((group) => group.screens.map(() => group.audience));
+	return prototype.audiences.find((audience) => audience.label === owners[screen]) ?? prototype.audiences[0];
+}
+
+export { directionPrototypes, screenAudience, type DirectionPrototype, type PrototypeContents };

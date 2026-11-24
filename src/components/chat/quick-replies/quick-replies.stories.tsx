@@ -35,7 +35,7 @@ export const WithoutEnter: Story = {
 export const AllVariants: Story = {
 	render: (args) => (
 		<div className='flex flex-col gap-6'>
-			<QuickReplies {...args} enter={false} replies={["Looks right, continue", "Not quite"]} />
+			<QuickReplies {...args} enter={false} replies={["Build it", "Not quite"]} />
 			<QuickReplies {...args} replies={["Yes, that's right", "Not quite", "I'm not sure"]} />
 		</div>
 	),

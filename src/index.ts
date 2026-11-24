@@ -95,6 +95,7 @@ export { AppCard, type AppCardProps } from "@/components/cards/app-card";
 /* Chat                                                                       */
 /* -------------------------------------------------------------------------- */
 
+export { ActivityFeed, type ActivityFeedProps } from "@/components/chat/activity-feed";
 export { AssistantMessage, type AssistantMessageProps } from "@/components/chat/assistant-message";
 export {
 	ClarificationCard,
@@ -109,6 +110,7 @@ export {
 } from "@/components/chat/direction-card";
 export { PromptComposer, type PromptComposerProps } from "@/components/chat/prompt-composer";
 export { QuickReplies, type QuickRepliesProps } from "@/components/chat/quick-replies";
+export { SectionDivider, type SectionDividerProps } from "@/components/chat/section-divider";
 export { ThinkingIndicator, type ThinkingIndicatorProps } from "@/components/chat/thinking-indicator";
 export { UserMessage, type UserMessageProps } from "@/components/chat/user-message";
 

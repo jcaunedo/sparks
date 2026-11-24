@@ -3,16 +3,17 @@ import { Check, CornerDownLeft } from "lucide-react";
 
 import { Button } from "@/components/buttons/button";
 import { useEnterShortcut } from "@/lib/hooks/use-enter-shortcut";
+import { scrollContainerOf, scrollIntoViewSmoothly, scrollMetrics, useMotionPreference } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 
-type QuickRepliesProps = Omit<React.ComponentProps<"div">, "children"> & {
-	/** The likely answers, the main one ("Yes, that's right", "Looks right, continue") first. */
+type QuickRepliesProps = Omit<React.ComponentProps<"div">, "children" | "ref"> & {
+	/** The likely answers, the main one ("Yes, that's right", "Build it") first. */
 	replies: string[];
 	/** Picking one. */
 	onReply?: (reply: string) => void;
 	/**
 	 * The first reply is the "continue": it shows the ↵ key and Enter picks it, while focus is on the page or in the empty
-	 * message box. On by default; turn it off when another set of replies on the screen has it.
+	 * message box; out of view, Enter scrolls to the replies first. On by default; turn it off when another set of replies on the screen has it.
 	 */
 	enter?: boolean;
 	/**
@@ -29,9 +30,27 @@ type QuickRepliesProps = Omit<React.ComponentProps<"div">, "children"> & {
  */
 function QuickReplies({ replies, onReply, enter = true, selected, className, ...props }: QuickRepliesProps) {
 	const main = replies[0];
-	useEnterShortcut(enter && main !== undefined && onReply ? () => onReply(main) : undefined);
+	const { prefersReducedMotion } = useMotionPreference();
+	const rowRef = React.useRef<HTMLDivElement>(null);
+	useEnterShortcut(
+		enter && main !== undefined && onReply
+			? () => {
+					// Out of view, Enter brings the replies into view instead: it never answers a question she can't see.
+					const row = rowRef.current;
+					if (row) {
+						const view = scrollMetrics(scrollContainerOf(row));
+						const box = row.getBoundingClientRect();
+						if (box.top < view.top || box.bottom > view.bottom) {
+							scrollIntoViewSmoothly(row, { reducedMotion: Boolean(prefersReducedMotion) });
+							return;
+						}
+					}
+					onReply(main);
+				}
+			: undefined,
+	);
 	return (
-		<div data-slot='quick-replies' className={cn("flex w-full flex-wrap justify-end gap-2.5", className)} {...props}>
+		<div ref={rowRef} data-slot='quick-replies' className={cn("flex w-full flex-wrap justify-end gap-2.5", className)} {...props}>
 			{[...replies].reverse().map((reply) => {
 				const isMain = enter && reply === main;
 				const isSelected = selected !== undefined && reply === selected;

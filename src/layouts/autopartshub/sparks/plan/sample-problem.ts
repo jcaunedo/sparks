@@ -1,7 +1,7 @@
 import type { SparksReply } from "../workspace/workspace";
 import type { ProblemDraft } from "./problem-card";
-import { sampleClarifyReplies, sampleClarifyTodaySuggestion, sampleSummaryReplies } from "./sample-clarify";
-import { sampleCorrectionSentence } from "./sample-correction";
+import { sampleClarifyReplies, sampleClarifyTodaySuggestion } from "./sample-clarify";
+import { sampleIntoNext } from "./sample-section";
 
 /*
  * Plan's Problem part for "Wrong-part returns", one thing at a time (prds/sparks-plan-problem.md). What the AI and
@@ -160,16 +160,12 @@ function problemWhyReply(opening: string): SparksReply {
 }
 export const sampleProblemWhyReply = problemWhyReply("");
 
-/** The answers to the Problem summary, as for the brief. */
-export const sampleProblemSummaryReplies = sampleSummaryReplies;
-
 /**
- * Step 4: what's been tried, then the problem as it stands, whole, and whether it captures the problem: a checkpoint
- * before Clarify, as every part of Plan ends with one (prds/sparks-plan-problem.md, "Finishing this part"). Built from
- * what she confirmed.
+ * Step 4: what's been tried, then the problem as it stands, whole, built from what she confirmed; then Sparks goes on to
+ * Clarify (prds/sparks-plan-problem.md, "Finishing this part").
  */
 export function sampleProblemDoneReply(problem: ProblemDraft, opening = ""): SparksReply {
-	return {
+	const summary: SparksReply = {
 		id: "problem-done",
 		from: "sparks",
 		parts: [
@@ -180,40 +176,20 @@ export function sampleProblemDoneReply(problem: ProblemDraft, opening = ""): Spa
 **Here's the problem as a whole:**`,
 			},
 			{ kind: "problem", problem },
+			{ kind: "text", text: "Done. The problem is in your plan." },
 		],
-		quickReplies: sampleProblemSummaryReplies,
 	};
+	return sampleIntoNext(summary, problemNextReply);
 }
 
-/** After "Not quite" on the summary: the card can't be edited in place, so Sparks asks what's off. */
-export const sampleProblemSummaryNotQuiteReply: SparksReply = {
-	id: "problem-summary-not-quite",
-	from: "sparks",
-	parts: [{ kind: "text", text: "What's off? Tell me in your own words, and I'll update it." }],
-};
-
-/** After her correction: Sparks updates the problem, shows it again with her words worked in, and asks again. */
-export const sampleProblemSummaryAgainReply = (problem: ProblemDraft, words: string): SparksReply => ({
-	id: "problem-summary-again",
-	from: "sparks",
-	parts: [
-		{ kind: "text", text: "Thanks, I've updated it.\n\n**Here's the problem now:**" },
-		{ kind: "problem", problem: { ...problem, summary: `${problem.summary.trim()}\n\n${sampleCorrectionSentence(words)}`, approved: false } },
-	],
-	quickReplies: sampleProblemSummaryReplies,
-});
-
-/**
- * "Looks right": the problem is in the concept, and Sparks goes straight into Clarify's first question, with no button
- * in between (prds/sparks-plan-clarify.md, "Starting this part").
- */
-export const sampleProblemApprovedReply: SparksReply = {
+/** The next section, after the problem's summary: Clarify's first question (prds/sparks-plan-clarify.md, "Starting this part"). */
+const problemNextReply: SparksReply = {
 	id: "problem-approved",
 	from: "sparks",
 	parts: [
 		{
 			kind: "text",
-			text: "Done. The problem is in your plan.\n\n**Now, let's understand it better and clarify a few things.**\n\nThe data already tells me how often this happens and what it costs, so I'll only ask what it can't, one question at a time. At the end, I'll put it all together for you to check.",
+			text: "**Now, let's understand it better and clarify a few things.**\n\nThe data already tells me how often this happens and what it costs, so I'll only ask what it can't, one question at a time. At the end, I'll put it all together for you to check.",
 		},
 		{ kind: "suggestion", suggestion: sampleClarifyTodaySuggestion },
 	],
