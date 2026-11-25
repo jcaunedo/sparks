@@ -1,7 +1,9 @@
 <!--
 Created: Nov 20, 2026
 Created by: Julio Caunedo
-Last updated: Nov 25, 2026 ("My library" lists her files, links and notes, the same as Sparks's "Add from library", which no longer opens the home; each tab has an icon; new comments on an idea are one notification, with how many; the home has one tab too: "Add from library" goes back to it; an app's card goes to its tab when it's already open, instead of opening another; the second tab is "My library" again; ~~the tabs are "Apps" and "Library", without "My"~~; selecting a notification opens its concept; notifications open a popover, with Unread and All; Sparks's "Add from library" opens the home on "My library"; the "Knowledge" tab is named "My library"; a notifications button in the header, before the profile photo; Cards open their app in a new tab)
+Last updated: Nov 25, 2026
+Latest update: "My library" lists her files, links and notes, newest first, with a search: the same list as Sparks's "Add from library", which no longer opens the home. Why: that dialog shows what's in My library, so the tab can't say it's empty.
+Recent updates: each tab has an icon, and new comments on an idea are one notification, with how many. Each app has one tab: its card goes back to that tab when it's already open, and the home has one tab too. The second tab is "My library" again. Notifications open a popover, with Unread and All, and selecting one opens its idea.
 Scope: the AutoPartsHUB home screen (`AutoPartsHubHome`) and the app frame it sits in (`AutoPartsHubShell`): header, welcome, tabs and the user's apps.
 Purpose: defines what a signed-in user sees and can do on AutoPartsHUB's first screen, and records what's still undecided for the tabs that aren't designed yet.
 -->

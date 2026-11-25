@@ -1901,7 +1901,10 @@ function WorkspacePrototype(props: SparksWorkspaceProps) {
 								<EmptyState
 									className='flex-1'
 									title="This prototype hasn't been evaluated yet"
-									description={`Select "Run": Sparks tries "${direction.name}" in realistic scenarios on the prototype, and checks it against AutoParts Co.'s data. Each path has its own results.`}
+									description={`Sparks tries "${direction.name}" in realistic scenarios on the prototype, and checks it against AutoParts Co.'s data. Each path has its own results.`}
+									// The same as "Run" in the panel's header, which is the dark one: here it's outlined (EmptyState's second button, on its own).
+									secondaryButtonLabel='Evaluate the prototype'
+									secondaryButtonProps={{ onClick: startRun }}
 								/>
 							}
 						/>

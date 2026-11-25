@@ -457,8 +457,8 @@ function ValidatePanel({
 					<Square aria-hidden data-icon='inline-start' /> Stop
 				</Button>
 			) : onRun ? (
-				// After a change to the prototype, running it again is the next thing to do: it stands out.
-				<Button variant={changedSince ? "neutral" : "outline"} onClick={onRun}>
+				// Before the first run, or after a change to the prototype, running it is the next thing to do: it stands out.
+				<Button variant={!evaluation || changedSince ? "neutral" : "outline"} onClick={onRun}>
 					<Play aria-hidden data-icon='inline-start' /> {evaluation ? "Run again" : "Run"}
 				</Button>
 			) : null}

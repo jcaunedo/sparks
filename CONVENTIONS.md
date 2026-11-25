@@ -1,7 +1,8 @@
 <!--
 Created: Nov 9, 2026
 Created by: Julio Caunedo
-Last updated: Nov 21, 2026
+Last updated: Nov 25, 2026
+Latest update: the PRD header's update lines: the date, the latest update with its why, and a short paragraph on the recent ones, rewritten on every change. Why: the old line had grown into a changelog that buried the latest change.
 Scope: how this repo's work is branched, committed, versioned, tagged and traced, and how docs under `prds/` are written.
 Purpose: keep the team's workflow and writing rules in the repo, so they're the same on every machine and for every person or assistant.
 -->
@@ -91,17 +92,28 @@ If that decision is replaced too, strike it as well and add the newest after it,
 
 ### Creation header
 
-New docs open with this comment block. Update `Last updated:` whenever the content changes:
+New docs open with this comment block:
 
 ```html
 <!--
 Created: Oct 15, 2026
 Created by: <name>
 Last updated: Oct 15, 2026
+Latest update: Created.
 Scope: one or two lines on which spec doc(s) this file governs.
 Purpose: one or two lines on why the file exists.
 -->
 ```
+
+Whenever the content changes, rewrite the three update lines (never append to them):
+
+- **Last updated:** the date only.
+- **Latest update:** what changed, and what it improves (when it does), then `Why:` and the rationale or decision behind it (when there is one). A sentence or two.
+- **Recent updates:** a short paragraph (two to four sentences) on the most recent earlier updates, for context beyond the latest one. Leave it out until there is an earlier update.
+
+The latest update moves into "Recent updates" when the next one comes, and what's older drops out. Several changes in a day share one "Latest update".
+
+**Why:** the header says at a glance what changed last and why, with a little context. A list that grows with every edit buries that, and repeats what the ✅ notes (decisions) and git (history) already keep.
 
 ### This project
 
