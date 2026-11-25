@@ -222,13 +222,13 @@ function FindingFix({
 			)}
 			{finding.fixable ? (
 				onFix ? (
-					<Button variant='outline' onClick={() => onFix(finding.id)}>
+					<Button variant='neutral' onClick={() => onFix(finding.id)}>
 						<WandSparkles aria-hidden data-icon='inline-start' /> {fixed ? "Change the fix in the prototype" : "Fix in the prototype"}
 					</Button>
 				) : null
 			) : finding.direction && tryDirection ? (
 				// Another direction: tried as another path beside this one, which stays as it is.
-				<Button variant='outline' onClick={tryDirection.onClick}>
+				<Button variant='neutral' onClick={tryDirection.onClick}>
 					<GitBranchPlus aria-hidden data-icon='inline-start' /> {tryDirection.built ? "Open" : "Try"} "{finding.direction.name}"
 				</Button>
 			) : null}
@@ -348,12 +348,12 @@ function ScenarioRow({
 					{status === "done" ? (
 						<div className='flex flex-wrap items-center gap-1 pt-1'>
 							{onWatch ? (
-								<Button variant='ghost' size='sm' className='-ms-2' onClick={onWatch}>
+								<Button variant='ghost' size='sm' className='-ms-2 text-link hover:text-link' onClick={onWatch}>
 									<Play aria-hidden data-icon='inline-start' />
 									Watch it on the prototype
 								</Button>
 							) : null}
-							<Button variant='ghost' size='sm' aria-expanded={open} aria-controls={id} className={cn(!onWatch && "-ms-3")} onClick={() => setOpen((value) => !value)}>
+							<Button variant='ghost' size='sm' aria-expanded={open} aria-controls={id} className={cn("text-link hover:text-link", !onWatch && "-ms-3")} onClick={() => setOpen((value) => !value)}>
 								Step through
 								<ChevronDown aria-hidden data-icon='inline-end' className={cn("transition-transform", open && "rotate-180")} />
 							</Button>
@@ -457,8 +457,7 @@ function ValidatePanel({
 					<Square aria-hidden data-icon='inline-start' /> Stop
 				</Button>
 			) : onRun ? (
-				// Before the first run, or after a change to the prototype, running it is the next thing to do: it stands out.
-				<Button variant={!evaluation || changedSince ? "neutral" : "outline"} onClick={onRun}>
+				<Button variant='neutral' onClick={onRun}>
 					<Play aria-hidden data-icon='inline-start' /> {evaluation ? "Run again" : "Run"}
 				</Button>
 			) : null}
@@ -690,7 +689,7 @@ function ValidatePanel({
 							))}
 						</ul>
 						{onWatch && expert.notes.some((note) => note.at) && finished ? (
-							<Button variant='ghost' size='sm' className='-ms-2 w-fit' onClick={() => onWatch(expert.id)}>
+							<Button variant='ghost' size='sm' className='-ms-2 w-fit text-link hover:text-link' onClick={() => onWatch(expert.id)}>
 								<Play aria-hidden data-icon='inline-start' />
 								Watch it on the prototype
 							</Button>

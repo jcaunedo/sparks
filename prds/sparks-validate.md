@@ -2,8 +2,8 @@
 Created: Nov 21, 2026
 Created by: Julio Caunedo
 Last updated: Nov 25, 2026
-Latest update: a path with no run yet now has "Evaluate the prototype" (outlined) under its empty state, which starts the run, and "Run" in the header is dark until the first run. Why: the empty state named the action but gave no way to take it, and before any results, running is the one thing to do there.
-Recent updates: Evaluate has no conversation: the evaluation on the left, the prototype on the right. Every agent (one per scenario, plus four experts) works the prototype at once, as a pointer that moves its own way across a strip of the prototype's screens, and findings drop on the element as they're found. "Fix in the prototype" opens Prototype on the finding's page with Sparks's plan, and after the fix Evaluate comes back to that finding. A suggestion that's another direction offers to try it as another path.
+Latest update: "Run again" is always dark (Button Solid · Neutral), like "Run", instead of outlined once there are results; the fix buttons on a finding ("Fix in the prototype", Try "{direction}") are dark too. Why: running again is the step that checks a fix, so it stays as easy to find as the first run.
+Recent updates: a path with no run yet has "Evaluate the prototype" (outlined) under its empty state, which starts the run. Evaluate has no conversation: the evaluation on the left, the prototype on the right, with every agent working the prototype at once and findings dropping on the element as they're found. "Fix in the prototype" opens Prototype on the finding's page with Sparks's plan, and after the fix Evaluate comes back to that finding.
 Scope: the Evaluate step of a Sparks concept, the third of four (Plan, Prototype, Evaluate, Review): the scenario-based AI evaluation (scenarios worked through the prototype, and checks against business data, previous experiments, engineering context and the design system), the findings, the evidence status of the hypothesis, Dana's go-ahead, and the Evaluation section of the concept.
 Purpose: defines how Dana learns, on her own and in minutes, what could go wrong with her concept and whether it can be built, before anyone else sees it, and how the evaluation stays honest about what an AI evaluation can and can't show.
 -->
@@ -88,7 +88,7 @@ Every result says which method it comes from.
 - A run evaluates the prototype version that's current when it starts, and says which.
 - **A path with no run yet** shows "This prototype hasn't been evaluated yet" in Evaluate, with "Evaluate the prototype".
 
-  ✅ **Resolved:** "Evaluate the prototype" (outlined) sits under the empty state's text and starts the run, the same as "Run" in the panel's header. The text no longer starts with `Select "Run":`. Until the first run, "Run" stands out too (dark, Button Solid · Neutral); once there are results, "Run again" is outlined, and stands out again only after a change to the prototype.
+  ✅ **Resolved:** "Evaluate the prototype" (outlined) sits under the empty state's text and starts the run, the same as "Run" in the panel's header. The text no longer starts with `Select "Run":`. ~~Until the first run, "Run" stands out too (dark, Button Solid · Neutral); once there are results, "Run again" is outlined, and stands out again only after a change to the prototype.~~ ✅ **Resolved:** "Run" and "Run again" are always dark (Button Solid · Neutral), before the first run and after it.
 
 ✅ **Resolved:** Evaluate works as Prototype does: progress first, a blank panel that fills in as it goes, then what was done and the conclusions.
 
@@ -231,7 +231,7 @@ What an AI evaluation can't answer well: whether customers trust the fit message
 
 - ~~**"Fix this in the prototype"** opens Prototype with the suggested fix ready as a suggestion. Dana accepts it or changes it there, and comes back to Evaluate.~~ ~~✅ **Resolved:** **"Fix this in the prototype"** makes the change right away, in Evaluate, as a new version of the prototype (in its versions, as any change). The prototype shows where it changed, the finding's marker turns into a check, the finding says "Fixed in version {n} · run again to check it", and the card says "The prototype changed since this run". "Run again" stands out (dark) until she runs it. Why: the prototype is on screen, so going to Prototype to accept the change only moved her away from the results.~~
 - ✅ **Resolved:** **"Fix in the prototype"**, on a finding and on a scenario that ran into it, opens Prototype on the page where the finding happens. Sparks shows its plan first, with suggested follow-ups to pick from; nothing changes until she says so ([sparks-prototype.md](sparks-prototype.md), "Fixing a finding"). Why: a one-click fix left her no part in it; in Prototype she works the solution out with Sparks, in her own words.
-- **Back in Evaluate after a fix,** its finding is in view, on both panels: the marker is a check, the finding and the scenario say "Fixed in version {n} · run again to check it", with **"Change the fix in the prototype"** to go on with it, and the card says "The prototype changed since this run". "Run again" stands out (dark) until she runs it.
+- **Back in Evaluate after a fix,** its finding is in view, on both panels: the marker is a check, the finding and the scenario say "Fixed in version {n} · run again to check it", with **"Change the fix in the prototype"** to go on with it, and the card says "The prototype changed since this run". ~~"Run again" stands out (dark) until she runs it.~~ "Run again" is dark, as always.
 - The button shows only once a run is finished: not while one is going, nor after one was stopped.
 - Dana can also go back to the part of Plan a finding points to: the choice, if the direction doesn't hold; the success criteria, if a target turns out unrealistic. Sparks reopens that part in the conversation ([sparks.md](sparks.md), "Plan"). From Evaluate, "Go back to the choice" is under Sparks's read when it's "Needs another look".
 - **"Run again"** runs the plan on the current prototype version. Sparks shows what changed since the last run: "3 of 4 findings fixed. 'Doesn't fit' returns: now likely 40–55% fewer."
@@ -306,7 +306,7 @@ Evaluate is Done when there's a complete run on the current prototype version an
 | Results ready | ~~What Sparks did and found;~~ Sparks's read, the evidence status, then each part of the results; markers on the prototype | Watch or step through scenarios, fix in the prototype, go back to Plan, decide |
 | A run failed | "I couldn't finish the evaluation. Your prototype and earlier runs are unchanged." and "Try again" | Try again |
 | A source can't be reached | The check that depends on it says "Couldn't check {source}" and its confidence drops | Run again later, go on |
-| Prototype changed since the last run | "The prototype changed since this run…"; "Run again" stands out; "Add to Review" disabled | Run again |
+| Prototype changed since the last run | "The prototype changed since this run…"; "Add to Review" disabled | Run again |
 | Ready to continue | ~~Sparks's question and "Go ahead to Review"~~ "Add to Review" | Go ahead, keep improving |
 
 ## Checks
