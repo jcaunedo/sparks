@@ -9,7 +9,7 @@ import type { Evaluation, EvaluationExpert, EvaluationFinding, EvaluationScenari
  * supply: every number is illustrative, and nothing here is research with real people.
  */
 
-/** The nine scenarios: situations built from patterns across AutoParts Co.'s customers and stores, never a real person. */
+/** The eight scenarios: situations built from patterns across AutoParts Co.'s customers and stores, never a real person. */
 function scenariosFor(changes: FitCheckChanges): EvaluationScenario[] {
 	return [
 		{
@@ -101,16 +101,6 @@ function scenariosFor(changes: FitCheckChanges): EvaluationScenario[] {
 			steps: [{ screen: "Vehicle picker", evaluation: "Asking for the vehicle first is clear; the reason is said in one line." }],
 		},
 		{
-			id: "store-call",
-			label: "Call at the counter",
-			audience: "Store staff",
-			situation: 'A store associate answers a call asking "will this fit?" during a busy hour.',
-			task: "Tell the customer whether the part fits.",
-			outcome: "done",
-			summary: "Looked the customer up by phone and saw the fit for the part.",
-			steps: [{ screen: "Customer lookup", evaluation: "The saved vehicle answers the question without asking the customer to read out their VIN." }],
-		},
-		{
 			id: "screen-reader",
 			label: "Screen reader",
 			audience: "Customer",
@@ -175,11 +165,11 @@ function expertsFor(changes: FitCheckChanges): EvaluationExpert[] {
 			label: "Engineer",
 			focus: "What it needs to be built",
 			notes: [
+				{ screen: "Vehicle picker heading", note: "Reading VINs and invoices is new. Invoices also hold personal details, so keep only the vehicle." },
 				{ screen: "Vehicle chip", note: "Saved vehicles come from Sales' customer accounts. Available." },
 				{ screen: "Product page", note: "The fit reads the catalog's fit data, missing for about 1 in 8 parts on older vehicles." },
-				{ screen: "Customer lookup", note: "Lookup by phone uses the store system's accounts. Available." },
 			],
-			summary: "Buildable with what AutoParts Co. has; the fit data gaps stay.",
+			summary: "Buildable; reading VINs and invoices is new, and the fit data gaps stay.",
 		},
 		{
 			id: "data",
@@ -267,7 +257,6 @@ const sampleStops: Record<string, { screens: Record<string, PrototypeStop>; find
 			"Parts that fit": { view: 2, element: "fits-instead" },
 			"Product page, a part with no fit data": { view: 1, part: "spark-plugs", element: "fit-message" },
 			"Vehicle chip": { view: 1, element: "vehicle-chip" },
-			"Customer lookup": { view: 4, element: "look-up" },
 			"Vehicle picker heading": { view: 0, element: "vehicle-title" },
 			"The cart": { view: 3, element: "place-order" },
 		},
@@ -293,7 +282,6 @@ const sampleStops: Record<string, { screens: Record<string, PrototypeStop>; find
 		screens: {
 			Checkout: { view: 2, element: "fit-message" },
 			"The cart": { view: 1, element: "go-to-checkout" },
-			"Order lookup": { view: 3, element: "look-up" },
 			"The shop": { view: 0, element: "shop-title" },
 			"Place order": { view: 2, element: "place-order" },
 		},
@@ -405,6 +393,11 @@ function evaluationFor(changes: FitCheckChanges, version: number, previous: Eval
 				evidence: "The scenarios assume they do. A short test with real customers, or a small live trial, would show how many.",
 			},
 			{
+				text: "Most invoices can be read well enough to find the vehicle.",
+				status: "Still unknown",
+				evidence: "The prototype only pretends to read one. A try with a few hundred real invoices would show how many work.",
+			},
+			{
 				text: "Fit data covers most parts customers buy.",
 				status: "Supported",
 				evidence: "About 7 in 8 parts have fit data for vehicles under 15 years old (engineering context, catalog data).",
@@ -417,6 +410,7 @@ function evaluationFor(changes: FitCheckChanges, version: number, previous: Eval
 		],
 		build: [
 			"Saved vehicles: available from Sales (customer accounts).",
+			"Reading VINs and invoices: not available yet, so it's pretend. Picking the vehicle's details works without it.",
 			"Fit data: available from the catalog, but missing for about 1 in 8 parts on vehicles over 15 years old.",
 			"Product pages: can't change until early January (holiday freeze).",
 			...(changes.liveStock ? ["Stock at the nearest store: not available. Stores don't report stock in real time (engineering context), so it stays pretend."] : []),
@@ -438,7 +432,6 @@ function evaluationFor(changes: FitCheckChanges, version: number, previous: Eval
 		realPeople: [
 			{ question: "Do customers trust the fit message enough to buy without checking elsewhere?", how: "a short test of the prototype with 5 to 8 customers." },
 			{ question: "Do professional mechanics want a saved vehicle, or do they switch cars all day?", how: "interviews with a few mechanics who order often." },
-			{ question: "Do associates use the counter lookup on busy days?", how: "a trial in two stores." },
 		],
 		checks,
 		sinceLast,
@@ -547,10 +540,3 @@ export const sampleValidateStartedReply: SparksReply = {
 
 /** Going back to the choice in Plan: offered when the read is "Needs another look". */
 export const sampleBackToChoice = "Go back to the choice";
-
-/** "Add to Review": open findings go as known issues, said once, at the top of what Sparks says in Review. */
-export function sampleValidateGoAheadOpening(open: number) {
-	const issues =
-		open > 0 ? `${open === 1 ? "One finding is" : `${["", "", "Two", "Three", "Four"][open] ?? open} findings are`} still open. ${open === 1 ? "It goes" : "They'll go"} to review as known issues.\n\n` : "";
-	return `${issues}Done. Evaluate is finished, and the evaluation is in your plan.\n\n`;
-}

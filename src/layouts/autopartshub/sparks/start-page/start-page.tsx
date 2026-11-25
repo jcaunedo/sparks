@@ -69,6 +69,8 @@ const statusBadge: Record<SparksConceptStatus, { label: string; tone: BadgeProps
 		SparksStep,
 		{ label: string; tone: BadgeProps["tone"] }
 	>),
+	// Not the step's name alone: with the teams, it's being reviewed (prds/sparks.md, "The start page").
+	review: { label: "In review", tone: stepTone.review },
 	waiting: { label: "Waiting for a decision", tone: "amber" },
 	advanced: { label: "Advanced", tone: "green" },
 	stopped: { label: "Stopped", tone: "neutral" },
@@ -102,12 +104,12 @@ function SparksStartPage({
 			{/* No back button: Sparks opens in its own tab, and the AutoPartsHUB home stays open in the other. */}
 			{/* sparks.ds "header-autopartshub" → "Sparks": the logo is 28px tall. */}
 			<AppHeader logo={<Logo className='h-[26px]' />}>
-				<HeaderActions user={user} comments={{}} notifications={notifications} />
+				<HeaderActions user={user} notifications={notifications} />
 			</AppHeader>
 
-			{/* 24px top (not Figma's 48: DESIGN.md → "Canvas top padding"), 48px bottom, a 1232px column (248px sides at
+			{/* 24px all around (DESIGN.md → "Pages have 24px around"), a 1232px column (248px sides at
 			    1728). Figma: 16px between the title and the tabs; the tabs, the buttons and the list are 32px apart. */}
-			<main className='px-8 py-6'>
+			<main className='px-6 py-6'>
 				<div className='mx-auto flex w-full max-w-[1232px] flex-col gap-4'>
 					{/* Figma "Frame 10121850": the title on the left, search and "New idea" on the right, on one row. The title
 					    alone, no line under it (prds/sparks.md, "The start page"). */}
@@ -121,14 +123,11 @@ function SparksStartPage({
 							<OutlineIconButton label='Search ideas'>
 								<Search aria-hidden />
 							</OutlineIconButton>
-							{/* Figma: tone/neutral, radius/button/lg, sm semibold; a 16px plus on the left: 10px before it, 6px between it
-							    and the label, 14px after (Figma's 8px padding, the icon's 2px and the label's 6px). */}
 							<Button
 								variant='neutral'
-								className='gap-1.5 rounded-button-lg ps-2.5 pe-3.5 font-semibold'
 								onClick={onNewIdea}
 							>
-								<Plus aria-hidden />
+								<Plus aria-hidden data-icon='inline-start' />
 								New idea
 							</Button>
 						</div>

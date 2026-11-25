@@ -7,12 +7,19 @@ import type { FitCheckChanges } from "./fit-check-prototype";
  * screen, then introduces it and asks if it's ready to be put through its paces. What the AI would supply.
  */
 
-/** Before the screens, and after them: the same for every direction. */
-const buildStart = ["Reading your plan", "Picking parts from AutoParts Co.'s design system", "Making up sample vehicles and parts"];
+/**
+ * Before the screens, and after them: the same for every direction. The second one is the live app the prototype starts
+ * from (prds/sparks-plan-problem.md, "The live app"), or, for a new app, similar ones.
+ */
+const buildStart = ["Reading your plan", "Checking the app as it's live today", "Picking parts from AutoParts Co.'s design system", "Making up sample vehicles and parts"];
 const buildEnd = ["Checking it on a phone and a desktop", "Checking it against the design system"];
 
 /** Everything Sparks does to build a prototype, in order: getting ready, each screen (`screens`), then the checks. */
-export const sampleBuildSteps = (screens: string[]) => [...buildStart, ...screens.map((screen) => `Building ${screen}`), ...buildEnd];
+export const sampleBuildSteps = (screens: string[], newApp = false) => [
+	...buildStart.map((step, index) => (newApp && index === 1 ? "Looking at similar AutoParts Co. apps" : step)),
+	...screens.map((screen) => `Building ${screen}`),
+	...buildEnd,
+];
 
 /** The screen being built at a step (the last one stays for the checks), or none before the first; and how many are built. */
 export function sampleBuildScreen(screens: string[], step: number) {
@@ -27,8 +34,8 @@ export function sampleBuildStepMs(screens: string[], step: number) {
 }
 
 /** Sparks's progress as it builds (`step`: how many steps are finished), with one status for each stage. */
-export function sampleBuildProgress(screens: string[], step: number, seconds = 18) {
-	const steps = sampleBuildSteps(screens);
+export function sampleBuildProgress(screens: string[], step: number, seconds = 18, newApp = false) {
+	const steps = sampleBuildSteps(screens, newApp);
 	return {
 		status:
 			step < buildStart.length
@@ -46,11 +53,11 @@ export function sampleBuildProgress(screens: string[], step: number, seconds = 1
  * Sparks builds a direction (Plan's pick, or another path): only its progress, step by step, until it's done; then
  * `samplePrototypeReadyReply` says what it built (prds/sparks-prototype.md, "Building it"). The id carries the direction.
  */
-export function samplePrototypeBuildingReply(directionId: string, screens: string[], step = 0): SparksReply {
+export function samplePrototypeBuildingReply(directionId: string, screens: string[], step = 0, newApp = false): SparksReply {
 	return {
 		id: `prototype-building-${directionId}`,
 		from: "sparks",
-		parts: [{ kind: "progress", ...sampleBuildProgress(screens, step), startedAt: Date.now() }],
+		parts: [{ kind: "progress", ...sampleBuildProgress(screens, step, undefined, newApp), startedAt: Date.now() }],
 	};
 }
 
@@ -60,11 +67,11 @@ export const samplePrototypeReadyReplies = ["Yes, evaluate it", "Go to Review in
 /** Where to start in each direction's prototype, and what's pretend. */
 const readyIntros: Record<string, string> = {
 	"fit-check":
-		'Start with the customer\'s phone: add a vehicle, then open a few parts and see which fit. Switch to "Store staff" to see what an associate sees at the counter. Placing an order is pretend; nothing leaves the prototype.',
+		'Start with the customer\'s phone: add a vehicle with its VIN, a past invoice or its details, then open a few parts and see which fit. Placing an order is pretend; nothing leaves the prototype.',
 	"flag-returns":
 		"Start with the search results on the customer's phone: two parts carry the flag. Open one to see how often it comes back, check its fit list, and add it to the cart. Placing an order is pretend; nothing leaves the prototype.",
 	"checkout-check":
-		'Start on the customer\'s phone: add a few parts, including the FL-400S oil filter, and go to checkout. Pick the vehicle, and see what doesn\'t fit and the swap. Switch to "Store staff" to see an order at the counter. Placing an order is pretend.',
+		'Start on the customer\'s phone: add a few parts, including the FL-400S oil filter, and go to checkout. Pick the vehicle, and see what doesn\'t fit and the swap. Placing an order is pretend.',
 	"fit-data":
 		'Start with the walkthrough, then try each piece: the return screen at the counter ("Store staff"), the weekly list ("Catalog team") and the fit list customers see ("Customer"). Nothing is noted or fixed for real.',
 };
@@ -97,7 +104,7 @@ export function samplePrototypeReadyReply(direction: { id: string; name: string;
 		parts: [
 			{
 				kind: "text",
-				text: `${opening}\n\n**Here's what I built:**\n\n**${direction.name}:** ${idea}\n\n${note}${screens}\n\n${readyIntros[direction.id] ?? readyIntros["fit-check"]}\n\n**Ready for me to put it through its paces?**\n\nIn Evaluate, AI agents with the profiles of different customers and store staff will try it in realistic scenarios, and I'll check it against AutoParts Co.'s data. Try it first if you like, and tell me what to change, or point at something.`,
+				text: `${opening}\n\n**Here's what I built:**\n\n**${direction.name}:** ${idea}\n\n${note}${screens}\n\n${readyIntros[direction.id] ?? readyIntros["fit-check"]}\n\n**Ready for me to put it through its paces?**\n\nIn Evaluate, AI agents with the profiles of different people who'd use it will try it in realistic scenarios, and I'll check it against AutoParts Co.'s data. Try it first if you like, and tell me what to change, or point at something.`,
 			},
 		],
 		quickReplies: samplePrototypeReadyReplies,

@@ -182,7 +182,7 @@ function SharePopover({ members, onInvite, directory = [], onRoleChange, link, c
 					</div>
 					{/* Only once what she's typed is an email; until then the field takes the whole row. */}
 					{email ? (
-						<Button type='submit' variant='neutral' className='rounded-button-lg px-3.5 font-semibold'>
+						<Button type='submit' variant='neutral'>
 							Invite
 						</Button>
 					) : null}

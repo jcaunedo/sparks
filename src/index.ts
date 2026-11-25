@@ -162,6 +162,18 @@ export {
 	DropdownMenuSubContent,
 } from "@/components/overlays/dropdown-menu";
 export {
+	Dialog,
+	DialogTrigger,
+	DialogPortal,
+	DialogClose,
+	DialogOverlay,
+	DialogContent,
+	DialogHeader,
+	DialogFooter,
+	DialogTitle,
+	DialogDescription,
+} from "@/components/overlays/dialog";
+export {
 	Popover,
 	PopoverTrigger,
 	PopoverContent,

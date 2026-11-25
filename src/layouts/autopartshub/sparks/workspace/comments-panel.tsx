@@ -14,7 +14,7 @@ import { SidePanel } from "./side-panel";
 type CommentsPanelProps = {
 	/** The reviewers, with their status and, once given, their comment, view and why. Empty before the concept is in review. */
 	reviewers: Reviewer[];
-	/** Reviewers whose latest feedback she hasn't opened: they show the unread dot. */
+	/** What she hasn't opened, by id: the reviewers with new feedback, and the new comments on the prototype. They show the unread dot. */
 	unread?: string[];
 	/** She opened a reviewer's comment: it's read now. */
 	onRead?: (id: string) => void;
@@ -48,7 +48,7 @@ const initialsOf = (name: string) =>
  * A comment on the prototype: her avatar, name and when, where it is (the path, the audience, the device, what she clicked), then
  * the comment. A button that opens its pin while the prototype is on screen.
  */
-function PrototypeCommentRow({ comment, onOpen }: { comment: PrototypeComment; onOpen?: (id: string) => void }) {
+function PrototypeCommentRow({ comment, unread = false, onOpen }: { comment: PrototypeComment; unread?: boolean; onOpen?: (id: string) => void }) {
 	const replies = comment.replies?.length ?? 0;
 	const time = formatRelativeDate(comment.createdAt);
 	const where = [comment.path?.label, comment.scope.audienceLabel, comment.scope.device === "phone" ? "Phone" : "Desktop", comment.where ? `"${comment.where}"` : null]
@@ -56,6 +56,12 @@ function PrototypeCommentRow({ comment, onOpen }: { comment: PrototypeComment; o
 		.join(" · ");
 	const content = (
 		<>
+			{/* New, not opened yet: the reviewers' unread dot, before it. */}
+			{unread ? (
+				<span className='absolute top-5.5 -left-1.5 size-2 rounded-full bg-(--sky-500)'>
+					<span className='sr-only'>New: </span>
+				</span>
+			) : null}
 			<Avatar className='size-8 shrink-0'>
 				{comment.author.avatarSrc ? <AvatarImage src={comment.author.avatarSrc} alt='' /> : null}
 				<AvatarFallback className='text-xs'>{initialsOf(comment.author.name)}</AvatarFallback>
@@ -76,7 +82,7 @@ function PrototypeCommentRow({ comment, onOpen }: { comment: PrototypeComment; o
 				{replies || comment.resolved ? (
 					<span className='flex items-center gap-3 pt-0.5 text-xs text-muted-foreground'>
 						{replies ? (
-							<span className='flex items-center gap-1'>
+							<span className='flex items-center gap-1 text-link'>
 								<MessageSquare aria-hidden className='size-3.5' />
 								{replies} {replies === 1 ? "reply" : "replies"}
 							</span>
@@ -92,7 +98,7 @@ function PrototypeCommentRow({ comment, onOpen }: { comment: PrototypeComment; o
 			</span>
 		</>
 	);
-	const classes = "flex w-full items-start gap-3 rounded-lg px-2 py-2.5 text-start";
+	const classes = "relative flex w-full items-start gap-3 rounded-lg px-2 py-2.5 text-start";
 	return onOpen ? (
 		<button type='button' className={cn(classes, "outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring")} onClick={() => onOpen(comment.id)}>
 			{content}
@@ -234,7 +240,7 @@ function CommentsPanel({
 								<ul className='flex flex-col gap-0.5'>
 									{pinsBy(open.department).map((comment) => (
 										<li key={comment.id}>
-											<PrototypeCommentRow comment={comment} onOpen={onOpenPrototypeComment} />
+											<PrototypeCommentRow comment={comment} unread={unread.includes(comment.id)} onOpen={onOpenPrototypeComment} />
 										</li>
 									))}
 								</ul>
@@ -303,7 +309,7 @@ function CommentsPanel({
 								<ul className='flex flex-col gap-0.5'>
 									{openPins.map((comment) => (
 										<li key={comment.id}>
-											<PrototypeCommentRow comment={comment} onOpen={onOpenPrototypeComment} />
+											<PrototypeCommentRow comment={comment} unread={unread.includes(comment.id)} onOpen={onOpenPrototypeComment} />
 										</li>
 									))}
 								</ul>
@@ -314,7 +320,7 @@ function CommentsPanel({
 										<ul className='flex flex-col gap-0.5'>
 											{resolvedPins.map((comment) => (
 												<li key={comment.id}>
-													<PrototypeCommentRow comment={comment} onOpen={onOpenPrototypeComment} />
+													<PrototypeCommentRow comment={comment} unread={unread.includes(comment.id)} onOpen={onOpenPrototypeComment} />
 												</li>
 											))}
 										</ul>

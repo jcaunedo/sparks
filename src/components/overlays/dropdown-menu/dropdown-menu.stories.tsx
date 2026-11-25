@@ -30,7 +30,7 @@ export const Default: Story = {
 	render: (args) => (
 		<DropdownMenu {...args}>
 			<DropdownMenuTrigger asChild>
-				<Button variant='ghost' size='icon' aria-label='Jump to a section' className='rounded-button-lg text-icon [&_svg]:size-[18px]'>
+				<Button variant='ghost' size='icon' aria-label='Jump to a section' className='text-icon [&_svg]:size-[18px]'>
 					<Menu aria-hidden />
 				</Button>
 			</DropdownMenuTrigger>

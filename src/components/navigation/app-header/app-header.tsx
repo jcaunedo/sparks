@@ -23,9 +23,9 @@ function AppHeader({ className, logo, nav, children, ...props }: AppHeaderProps)
 		<header
 			data-slot='app-header'
 			className={cn(
-				// Figma: padding 28 top/bottom (spacing/7), 32 left/right; space-between, centered. Its 1353px
+				// Figma: padding 28 top/bottom (spacing/7), 24 left/right; space-between, centered. Its 1353px
 				// gap is just what space-between leaves at 1728px; gap-4 only keeps the sides apart on narrow screens.
-				"flex w-full items-center justify-between gap-4 px-8 py-7",
+				"flex w-full items-center justify-between gap-4 px-6 py-7",
 				className,
 			)}
 			{...props}

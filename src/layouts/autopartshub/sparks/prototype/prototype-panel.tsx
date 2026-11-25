@@ -9,8 +9,9 @@ import { cn } from "@/lib/utils";
 
 import { BuildingScreen } from "./building-screen";
 import { HeaderIconButton } from "../../header-icon-button";
+import { PanelAction, type PanelActionProps } from "../shared/panel-action";
 import { VersionsMenu } from "../shared/versions-menu";
-import { PrototypeComments, type CommentMention, type PrototypeComment, type PrototypeCommentAuthor } from "./prototype-comments";
+import { onCommentScreen, PrototypeComments, type CommentMention, type PrototypeComment, type PrototypeCommentAuthor } from "./prototype-comments";
 
 type PrototypeAudience = { id: string; label: string; /** The device it suits (customers on a phone, staff at the counter); the prototype opens on the first audience's, and switching audience keeps the device. */ device: PrototypeDevice };
 type PrototypeDevice = "phone" | "desktop";
@@ -32,15 +33,20 @@ type PrototypePanelProps = {
 	building?: PrototypeBuild;
 	/**
 	 * The prototype for an audience, opened on a screen (its place in `screens`) when she goes to one with the arrows;
-	 * without it, where the journey starts.
+	 * without it, where the journey starts. `part`: the part `openAt` opens a product page on.
 	 */
-	children: (audience: string, screen?: number) => React.ReactNode;
+	children: (audience: string, screen?: number, part?: string) => React.ReactNode;
+	/**
+	 * Opens on this screen, part and element instead of where the journey starts ("Fix in the prototype" in Evaluate). A
+	 * new `key` opens it again; once she goes to another screen or audience, she's on her own.
+	 */
+	openAt?: { key: React.Key; view: number; part?: string; element?: string; /** Its name, when it isn't the screen's own. */ label?: string };
 	/**
 	 * Every screen Sparks built, in the order it built them, with the audience each is for: the arrows on either side of
 	 * the device go through them (prds/sparks-prototype.md, "Trying it").
 	 */
 	screens?: { name: string; audience: string }[];
-	/** "Edit element" is on: Dana selects an element in the prototype instead of using it. */
+	/** "Edit element" is on: Dana selects an element in the prototype instead of using it. Without `onPointingChange`, it can't be changed here, and there's no "Edit element". */
 	pointing?: boolean;
 	onPointingChange?: (pointing: boolean) => void;
 	/** Every version, oldest first; the last is the current one (prds/sparks-prototype.md, "Versions"). */
@@ -69,6 +75,8 @@ type PrototypePanelProps = {
 	 * plan changes"), with an optional action ("Update prototype"). It stays until the story clears it.
 	 */
 	notice?: { text: string; actionLabel?: string; onAction?: () => void };
+	/** The step's way forward, last in the toolbar ("Evaluate"); hidden while it's being built. */
+	action?: PanelActionProps;
 	/** Open a comment's pin (from the Comments panel): shows its audience and device and opens its popover. */
 	openComment?: string;
 	onOpenCommentChange?: (id: string | undefined) => void;
@@ -100,16 +108,17 @@ function FitPhone({ children, after, className }: { children: React.ReactNode; /
 	React.useLayoutEffect(() => {
 		const node = ref.current;
 		if (!node) return;
-		const observer = new ResizeObserver(() =>
-			// Room for what's under it (about one line).
-			setScale(Math.max(0.4, Math.min(1, (node.clientHeight - (after ? 28 : 0)) / phoneSize.height, node.clientWidth / phoneSize.width))),
-		);
+		// Room for what's under it (about one line). Measured before it's first painted, so it's never at another size.
+		const measure = () => setScale(Math.max(0.4, Math.min(1, (node.clientHeight - (after ? 28 : 0)) / phoneSize.height, node.clientWidth / phoneSize.width)));
+		measure();
+		const observer = new ResizeObserver(measure);
 		observer.observe(node);
 		return () => observer.disconnect();
 	}, []);
 	return (
 		<div ref={ref} className={cn("flex min-h-0 w-full flex-1 flex-col items-center", className)}>
-			<div className='shrink-0' style={{ width: phoneSize.width * scale, height: phoneSize.height * scale }}>
+			{/* `data-phone`: what glides from one step to the next (the workspace's step change). */}
+			<div data-phone className='shrink-0' style={{ width: phoneSize.width * scale, height: phoneSize.height * scale }}>
 				<div style={{ width: phoneSize.width, height: phoneSize.height, transform: `scale(${scale})`, transformOrigin: "0 0" }}>{children}</div>
 			</div>
 			{after}
@@ -140,7 +149,7 @@ function ScreenArrow({ direction, to, disabled, onClick }: { direction: -1 | 1; 
 			aria-label={to ? `${label}: ${to}` : label}
 			disabled={disabled}
 			onClick={onClick}
-			className='size-10 shrink-0 rounded-full bg-background shadow-xs [&_svg]:size-5'
+			className='size-10 shrink-0 rounded-full [&_svg]:size-5'
 		>
 			{direction < 0 ? <ChevronLeft aria-hidden /> : <ChevronRight aria-hidden />}
 		</Button>
@@ -216,12 +225,14 @@ function PrototypePanel({
 	audiences,
 	building: build,
 	children,
+	openAt,
 	screens = [],
 	pointing = false,
 	onPointingChange,
 	versions = [],
 	onRestore,
 	notice,
+	action,
 	commentAuthor,
 	mentionable,
 	comments: commentsProp,
@@ -233,11 +244,14 @@ function PrototypePanel({
 	onPathChange,
 	className,
 }: PrototypePanelProps) {
-	const [audience, setAudience] = React.useState(audiences[0]?.id ?? "");
-	const [device, setDevice] = React.useState<PrototypeDevice>(audiences[0]?.device ?? "phone");
+	const openAudience = audiences.find((a) => a.id === (openAt && screens[openAt.view]?.audience)) ?? audiences[0];
+	const [audience, setAudience] = React.useState(openAudience?.id ?? "");
+	const [device, setDevice] = React.useState<PrototypeDevice>(openAudience?.device ?? "phone");
 	// The screen she went to with the arrows; none: where the audience's journey starts (and after she switches audience
 	// or starts over). The arrows go on from the first screen of the audience shown.
-	const [screen, setScreen] = React.useState<number>();
+	const [screen, setScreen] = React.useState<number | undefined>(openAt?.view);
+	// Where `openAt` opened it, until she goes to another screen or audience.
+	const [opened, setOpened] = React.useState(openAt);
 	const screenAt = screen ?? Math.max(0, screens.findIndex((s) => s.audience === audience));
 	// Each move with the arrows: the screen slides in from the side it's on (Carousel), the one shown slides out the other
 	// way. Switching audience or device changes the screen in place.
@@ -247,12 +261,35 @@ function PrototypePanel({
 		if (!next) return;
 		setSlide((current) => ({ key: current.key + 1, direction: index > screenAt ? 1 : -1 }));
 		setScreen(index);
+		setOpened(undefined);
 		if (next.audience !== audience) {
 			setAudience(next.audience);
 			setDevice(audiences.find((a) => a.id === next.audience)?.device ?? device);
 		}
 	};
 	const [fullScreen, setFullScreen] = React.useState(false);
+	const scrollerRef = React.useRef<HTMLDivElement>(null);
+	// Opened again on another place while the panel is already there.
+	React.useEffect(() => {
+		if (!openAt || openAt.key === opened?.key) return;
+		setScreen(openAt.view);
+		setOpened(openAt);
+		setFullScreen(false);
+		if (openAudience) {
+			setAudience(openAudience.id);
+			setDevice(openAudience.device);
+		}
+	}, [openAt?.key]);
+	// The element it opens on comes into view inside the device (the phone may be scaled: it scrolls in its own pixels).
+	React.useEffect(() => {
+		const scroller = scrollerRef.current;
+		const target = opened?.element ? scroller?.querySelector(`[data-point="${opened.element}"], [data-agent="${opened.element}"]`) : undefined;
+		if (!scroller || !target) return;
+		const t = target.getBoundingClientRect();
+		const s = scroller.getBoundingClientRect();
+		const k = s.height / (scroller.clientHeight || s.height || 1) || 1;
+		if (t.top < s.top + 24 || t.bottom > s.bottom - 24) scroller.scrollTop += (t.top - s.top - s.height / 3) / k;
+	}, [opened?.key]);
 	const openerRef = React.useRef<HTMLButtonElement>(null);
 	const backRef = React.useRef<HTMLButtonElement>(null);
 	const building = Boolean(build);
@@ -264,13 +301,20 @@ function PrototypePanel({
 	const comments = onCommentsChange ? (commentsProp ?? []) : commentsState;
 	const setComments = (update: (current: PrototypeComment[]) => PrototypeComment[]) =>
 		onCommentsChange ? onCommentsChange(update(comments)) : setCommentsState(update);
-	// Opening a comment from outside shows where it was added first.
+	// Opening a comment (from the Comments panel) goes to where it is first: its audience, device and screen, with its part.
+	// Already there, the screen stays as she left it.
 	React.useEffect(() => {
 		const comment = comments.find((c) => c.id === openComment);
 		if (!comment) return;
-		setAudience(comment.scope.audience);
-		setDevice(comment.scope.device);
+		const { scope, view, part } = comment;
+		const there = scope.audience === audience && scope.device === device && onCommentScreen(scrollerRef.current, comment);
+		setAudience(scope.audience);
+		setDevice(scope.device);
 		setFullScreen(false);
+		if (view !== undefined && !there) {
+			setScreen(view);
+			setOpened({ key: `comment-${comment.id}-${Date.now()}`, view, part });
+		}
 	}, [openComment]);
 	React.useEffect(() => {
 		if (pointing) setCommenting(false);
@@ -342,7 +386,7 @@ function PrototypePanel({
 		<div className={cn("flex min-h-0 flex-1 flex-col items-center overflow-hidden", device === "phone" && "pt-4")}>
 			{(() => {
 				const deviceView = (
-					<div className={cn(deviceClasses(device), "scrollbar-subtle overflow-y-auto")}>
+					<div ref={scrollerRef} className={cn(deviceClasses(device), "scrollbar-subtle overflow-y-auto")}>
 				{commentAuthor ? (
 					<PrototypeComments
 						active={commenting}
@@ -356,10 +400,10 @@ function PrototypePanel({
 						openId={onOpenCommentChange ? openComment : undefined}
 						onOpenChange={onOpenCommentChange}
 					>
-						<React.Fragment key={`${audience}-${screen ?? "start"}`}>{children(audience, screen)}</React.Fragment>
+						<React.Fragment key={`${audience}-${screen ?? "start"}-${opened?.key ?? ""}`}>{children(audience, screen, opened?.part)}</React.Fragment>
 					</PrototypeComments>
 				) : (
-					<React.Fragment key={`${audience}-${screen ?? "start"}`}>{children(audience, screen)}</React.Fragment>
+					<React.Fragment key={`${audience}-${screen ?? "start"}-${opened?.key ?? ""}`}>{children(audience, screen, opened?.part)}</React.Fragment>
 				)}
 					</div>
 				);
@@ -400,7 +444,7 @@ function PrototypePanel({
 							/>
 						</div>
 						<span aria-live='polite' className='sr-only'>
-							{screen !== undefined ? `${screens[screenAt]?.name}, ${screenAt + 1} of ${screens.length}` : ""}
+							{screen !== undefined ? `${opened?.label ?? screens[screenAt]?.name}, ${screenAt + 1} of ${screens.length}` : ""}
 						</span>
 					</div>
 				);
@@ -443,6 +487,7 @@ function PrototypePanel({
 							onChange={(id) => {
 								setAudience(id);
 								setScreen(undefined);
+								setOpened(undefined);
 							}}
 						/>
 					) : null}
@@ -459,14 +504,16 @@ function PrototypePanel({
 				<div className={cn("flex items-center justify-end gap-2", building && "invisible")}>
 					{/* Icon buttons, each named in a tooltip. "Edit element": select an element, then say what to change (Esc
 					    stops it). */}
-					<HeaderIconButton
-						label='Edit element'
-						aria-pressed={pointing}
-						className={toggleClasses}
-						onClick={() => onPointingChange?.(!pointing)}
-					>
-						<MousePointerClick aria-hidden />
-					</HeaderIconButton>
+					{onPointingChange ? (
+						<HeaderIconButton
+							label='Edit element'
+							aria-pressed={pointing}
+							className={toggleClasses}
+							onClick={() => onPointingChange?.(!pointing)}
+						>
+							<MousePointerClick aria-hidden />
+						</HeaderIconButton>
+					) : null}
 					{/* "Add comment": a click on the prototype drops a pin and opens the comment's popover (Esc stops it). */}
 					{commentAuthor ? (
 						<HeaderIconButton
@@ -484,6 +531,7 @@ function PrototypePanel({
 					<HeaderIconButton ref={openerRef} label='Try it full screen' onClick={() => setFullScreen(true)}>
 						<Maximize2 aria-hidden />
 					</HeaderIconButton>
+					{action ? <PanelAction {...action} /> : null}
 				</div>
 			</div>
 			{/* The prototype isn't in step with the plan: what changed, and the way to update it. */}
@@ -492,7 +540,7 @@ function PrototypePanel({
 					<TriangleAlert aria-hidden className='size-4 shrink-0 text-warning' />
 					<span className='min-w-0 flex-1'>{notice.text}</span>
 					{notice.actionLabel && notice.onAction ? (
-						<Button variant='outline' size='sm' className='shrink-0 rounded-button-md bg-background shadow-xs' onClick={notice.onAction}>
+						<Button variant='outline' size='sm' className='shrink-0' onClick={notice.onAction}>
 							{notice.actionLabel}
 						</Button>
 					) : null}
@@ -504,10 +552,10 @@ function PrototypePanel({
 			</span>
 			{building ? buildingFrame : fullScreen ? null : frame}
 			{fullScreen && !building ? (
-				<div role='dialog' aria-modal='true' aria-label='Prototype, full screen' className='fixed inset-0 z-50 flex flex-col gap-3 bg-background-subtle p-4'>
+				<div role='dialog' aria-modal='true' aria-label='Prototype, full screen' className='fixed inset-0 z-50 flex flex-col gap-3 bg-background-subtle p-6'>
 					<div className='flex items-center justify-between'>
 						<span className='text-sm text-muted-foreground'>Esc to go back</span>
-						<Button ref={backRef} variant='outline' size='sm' className='rounded-button-md shadow-xs' onClick={closeFullScreen}>
+						<Button ref={backRef} variant='outline' size='sm' onClick={closeFullScreen}>
 							Back to Sparks
 						</Button>
 					</div>

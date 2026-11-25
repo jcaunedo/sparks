@@ -1,7 +1,7 @@
 <!--
 Created: Nov 21, 2026
 Created by: Julio Caunedo
-Last updated: Nov 23, 2026 (after the summary, Sparks goes on by itself, with no button; a zigzag divider ends the section, and the summary ends with "Done. … is in your plan."; the step "Validate" renamed "Evaluate"; after a correction, Sparks shows the updated summary before asking again; "in your plan" instead of "in your blueprint"; Plan becomes the Blueprint once it's done: what this part adds shows there, not in a panel during Plan; confirmations ("Done. … in your blueprint.") are regular; the bold line names what comes next; Sparks thinks one line at a time, in automotive terms, before it replies; after "Looks right, continue" on the brief, Sparks opens Success with "Now, let's define what success looks like."; Sparks's confirmation says "in your blueprint"; what we know is approved with "Looks right, continue", no question; "What we know" is a conversational summary in Sparks's reply, not a card; the brief's card renamed "What we know", with plainer part names, and without "Who's affected most", which is on the problem card; after a correction, Sparks says what changed and why it matters before the next question; Clarify starts in the reply that puts the problem in the concept, after "Looks right, continue" on the Problem summary; "Looks right, continue" goes straight into Success's first question, the goal; the brief summary built: the card, its labels, approval and corrections; "Who's involved" filled from data, not asked; the third question, about limits, built; the second question, "Why does it happen?", built; each reply opens by taking the last answer in one line; one question at a time from the first reply, on clarification cards; the first question built; Part of Plan: one conversation, the brief as a card, no step buttons)
+Last updated: Nov 24, 2026 (Purpose opens with what Clarify is for, and the demo's one-sentence version; after the summary, Sparks goes on by itself, with no button; a zigzag divider ends the section, and the summary ends with "Done. … is in your plan."; the step "Validate" renamed "Evaluate"; after a correction, Sparks shows the updated summary before asking again; "in your plan" instead of "in your blueprint"; Plan becomes the Blueprint once it's done: what this part adds shows there, not in a panel during Plan; confirmations ("Done. … in your blueprint.") are regular; the bold line names what comes next; Sparks thinks one line at a time, in automotive terms, before it replies; after "Looks right, continue" on the brief, Sparks opens Success with "Now, let's define what success looks like."; Sparks's confirmation says "in your blueprint"; what we know is approved with "Looks right, continue", no question; "What we know" is a conversational summary in Sparks's reply, not a card; the brief's card renamed "What we know", with plainer part names, and without "Who's affected most", which is on the problem card; after a correction, Sparks says what changed and why it matters before the next question; Clarify starts in the reply that puts the problem in the concept, after "Looks right, continue" on the Problem summary; "Looks right, continue" goes straight into Success's first question, the goal; the brief summary built: the card, its labels, approval and corrections; "Who's involved" filled from data, not asked; the third question, about limits, built; the second question, "Why does it happen?", built; each reply opens by taking the last answer in one line; one question at a time from the first reply, on clarification cards; the first question built; Part of Plan: one conversation, the brief as a card, no step buttons)
 Scope: the Clarify part of Plan, the second of Plan's five parts: how Sparks gathers evidence, what it asks Dana, how facts, Dana's answers and assumptions are told apart, and the Problem brief it adds to the concept.
 Purpose: defines how an agreed problem becomes a brief the team can trust, so success measures and solutions rest on what's known and what's assumed is visible.
 -->
@@ -16,6 +16,19 @@ Purpose: defines how an agreed problem becomes a brief the team can trust, so su
 ---
 
 ## Purpose
+
+**To understand the problem well enough to choose the right solution.** Problem agrees on *what* the problem is. Clarify fills in what Sparks still needs to know about it: what customers do today, why it happens and what any solution has to work around.
+
+It does that in two ways:
+
+- **It combines what the company knows with what Dana knows.** The data already says how often it happens and what it costs. Sparks asks Dana only about what the data can't answer.
+- **It separates facts from guesses.** Each answer is recorded as evidence, as Dana's own knowledge or as an assumption. The assumptions carry forward to be checked in Evaluate, so nobody builds on a guess without knowing it.
+
+It ends with a summary, "Here's what we know so far," which the rest of Plan builds on: the success criteria, the directions and the comparison.
+
+In one sentence, for the demo:
+
+> The purpose of Clarify is to get from *what* the problem is to *why* it happens, and to be honest about what we know and what we're still assuming, before we think about solutions.
 
 After Problem, Dana and Sparks agree on what the problem is. Clarify answers how big it is, who it hits hardest, what it costs, what people do about it today, why it happens and what limits any solution. Those answers decide which success measures make sense and which solutions are worth exploring.
 

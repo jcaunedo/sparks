@@ -1,7 +1,7 @@
 import { PlanSummary } from "./plan-summary";
 
 /** The parts of the Problem section Dana needs before moving on (prds/sparks-plan-problem.md, "The Problem section"). */
-type ProblemPartId = "name" | "statement" | "who" | "today" | "why";
+type ProblemPartId = "name" | "statement" | "app" | "who" | "today" | "why";
 
 /** One part as it stands in the concept. */
 type ProblemPartDraft = {
@@ -17,6 +17,8 @@ type ProblemPartDraft = {
 /** The Problem section, part by part. */
 type ProblemDraft = {
 	parts: Record<ProblemPartId, ProblemPartDraft>;
+	/** What Dana added to support the idea: file names, links or notes, marked as hers ("Supporting material"). */
+	added?: string[];
 	/** Solutions Dana mentioned, kept for the directions ("Ideas to explore"), in her words. */
 	ideas?: string[];
 	/**
@@ -36,6 +38,7 @@ function sourcesLine(problem: ProblemDraft) {
 			part.source === "edited" ? "your changes" : part.basis ? part.basis.toLowerCase() : part.source === "you" ? "your message" : "";
 		for (const each of source.split(" and ")) if (each && !sources.includes(each)) sources.push(each);
 	}
+	if (problem.added?.length) sources.push("what you added");
 	const list = sources.length < 2 ? sources.join("") : `${sources.slice(0, -1).join(", ")} and ${sources[sources.length - 1]}`;
 	return `From ${list}.`;
 }
@@ -60,7 +63,16 @@ function ProblemCard({ problem, compact, className }: ProblemCardProps) {
 
 /** The summary's text (AssistantMessage's format) and its sources line: what the card shows, and what the plan edits. */
 function problemSummary(problem: ProblemDraft) {
-	return { text: problem.summary, sources: sourcesLine(problem) };
+	// The app's name, with its address (the card's second line) in brackets.
+	const [app, ...address] = problem.parts.app.text.split("\n");
+	const text = [
+		problem.summary,
+		`**The app it improves:** ${app}${address.length ? ` (${address.join(", ")})` : ""}`,
+		problem.added?.length ? `**What you added:** ${problem.added.join(", ")}` : "",
+	]
+		.filter(Boolean)
+		.join("\n\n");
+	return { text, sources: sourcesLine(problem) };
 }
 
 export { ProblemCard, problemSummary, type ProblemCardProps, type ProblemDraft, type ProblemPartDraft, type ProblemPartId };

@@ -5,6 +5,7 @@ import { AutoPartsHubHome } from "./home";
 import { sampleApps } from "./sample-apps";
 import { sampleUser } from "../sample-data/sample-user";
 import { conceptStoryLinks } from "../sparks/start-page/concept-story-links";
+import { sampleLibrary, sampleLibraryNow } from "../sample-data/sample-library";
 import { sampleNotifications, sampleNotificationsNow } from "../sample-data/sample-notifications";
 
 const meta = {
@@ -15,12 +16,13 @@ const meta = {
 	},
 	// Prototype: the Sparks card opens the Sparks start page in a new tab, as the cards do.
 	// "#sparks" opens Sparks in its own tab; a notification about a concept opens that concept in its own tab too.
-	// The home's tab is named, so Sparks's "Add from library" brings it back instead of opening another.
 	decorators: [withTabName("autopartshub-home"), withStoryLinks(() => ({ ...conceptStoryLinks(true), "#sparks": { storyId: storyIds.sparksStartPage, newTab: true, tab: "autopartshub-sparks" } }))],
 	args: {
 		user: sampleUser,
 		notifications: { notifications: sampleNotifications, now: sampleNotificationsNow },
 		apps: sampleApps,
+		library: sampleLibrary,
+		now: sampleLibraryNow,
 	},
 } satisfies Meta<typeof AutoPartsHubHome>;
 
@@ -37,7 +39,12 @@ export const NoPhoto: Story = {
 	},
 };
 
-/** Opened on "My library", as Sparks's "Add from library" opens it. Its content isn't designed yet: the empty state. */
+/** "My library": the same assets as Sparks's "Add from library". Not designed yet. */
 export const MyLibrary: Story = {
 	args: { defaultTab: "library" },
+};
+
+/** "My library" with nothing in it: the empty state. */
+export const MyLibraryEmpty: Story = {
+	args: { defaultTab: "library", library: [] },
 };

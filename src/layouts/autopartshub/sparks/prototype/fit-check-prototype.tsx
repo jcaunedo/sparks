@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Car, Check, ChevronLeft, CircleHelp, Search, ShoppingCart, X } from "lucide-react";
+import { Car, Check, ChevronLeft, CircleHelp, FileText, ScanBarcode, ShoppingCart, X } from "lucide-react";
 
 import { AutoPartsLogo } from "@/components/brand/autoparts-logo";
 import { Badge } from "@/components/data-display/badge";
@@ -40,11 +40,14 @@ type FitPart = {
 type FitCheckData = {
 	/** The vehicle the customer adds, and the options the form offers. */
 	vehicle: FitVehicle;
+	/** That vehicle's made-up VIN, and the past repair invoice it can be read from. */
+	vin?: string;
+	invoice?: string;
 	options: { years: string[]; makes: string[]; models: string[]; trims: string[]; engines: string[] };
 	parts: FitPart[];
 	/** The part the customer opens first. */
 	firstPartId: string;
-	/** The customer a store associate looks up. */
+	/** A customer with a saved vehicle, for a return at the counter. */
 	customer: { name: string; phone: string };
 	/** This week's "doesn't fit" returns, with the vehicle stores noted: what the catalog team works from. */
 	returns?: { id: string; partId: string; vehicle: string; store: string }[];
@@ -55,9 +58,8 @@ type FitCheckData = {
 };
 
 /** The screens, in the order Sparks builds them. */
-const fitCheckScreens = ["the vehicle picker", "a part that fits", "a part that doesn't fit", "the cart", "the store staff lookup"];
+const fitCheckScreens = ["the vehicle picker", "a part that fits", "a part that doesn't fit", "the cart"];
 
-type FitCheckAudience = "customer" | "staff";
 
 /**
  * What Dana has changed (prds/sparks-prototype.md, "Changing it"). Each version of the prototype is one of these.
@@ -77,6 +79,8 @@ type FitCheckChanges = {
 	fitAbovePrice?: boolean;
 	/** "We're not sure this fits" offers a next step: "See the fit list", "Ask a store" (a fix from Evaluate). */
 	unsureHelp?: boolean;
+	/** With `unsureHelp`: "Tell me when you know" too (a follow-up while fixing it; pretend). */
+	unsureNotify?: boolean;
 	/** "Flag often-returned parts": the flag reads as a reminder to check the fit, not a warning (a fix from Evaluate). */
 	flagReminder?: boolean;
 	/** "Fit check at checkout": the fit is checked as parts go in the cart, so checkout has no surprises (a fix from Evaluate). */
@@ -111,13 +115,10 @@ const fitCheckElements: Record<string, string> = {
 	"fits-instead": "\"Parts that fit your vehicle\"",
 	"cart-title": "the \"Your cart\" heading",
 	"place-order": "the \"Place order\" button",
-	"staff-title": "the \"Customer lookup\" heading",
-	"look-up": "the \"Look up\" button",
 };
 
 type FitCheckPrototypeProps = {
 	data: FitCheckData;
-	audience: FitCheckAudience;
 	/** The screen it opens on, by its place in `fitCheckScreens`, as it's being built; without it, where the journey starts. */
 	openOn?: number;
 	/** The part a product page opens on, by id, when it isn't the screen's own (Evaluate's agents: a part with no fit data). */
@@ -152,10 +153,11 @@ function EditableText({ id, children, className, as: Tag = "p" }: { id: string; 
 	return (
 		<Tag
 			{...pointable(id, view)}
-			contentEditable={!view.pointing}
+			// Only where a change is taken (Prototype): in Evaluate, Review and the reviewers' page it's plain text.
+			contentEditable={Boolean(view.onTextChange) && !view.pointing}
 			suppressContentEditableWarning
 			spellCheck={false}
-			aria-label={`${text} (you can type over it)`}
+			aria-label={view.onTextChange ? `${text} (you can type over it)` : undefined}
 			onBlur={(event) => {
 				const next = event.currentTarget.textContent?.trim() ?? "";
 				if (next && next !== text) view.onTextChange?.(id, next, text);
@@ -185,7 +187,7 @@ function useButton(id: string, label: string) {
 		label: view.changes?.text?.[id] ?? label,
 		props: {
 			...pointable(id, view),
-			className: cn("rounded-button-lg", view.changes?.larger?.includes(id) && "h-11 px-6 text-base"),
+			className: cn(shopButton, "px-4", view.changes?.larger?.includes(id) && "h-11 px-6 text-base"),
 		},
 	};
 }
@@ -238,12 +240,17 @@ function FitMessage({ part, vehicle, fit = part.fit }: { part: FitPart; vehicle:
 			{view.changes?.unsureHelp ? (
 				// A next step, so nobody's left stuck (pretend: nothing opens for real).
 				<div className='flex flex-wrap gap-2 pt-1'>
-					<Button variant='outline' size='sm' className='rounded-button-md'>
+					<Button variant='outline' size='sm' className={shopButtonSm}>
 						See the fit list
 					</Button>
-					<Button variant='outline' size='sm' className='rounded-button-md'>
+					<Button variant='outline' size='sm' className={shopButtonSm}>
 						Ask a store
 					</Button>
+					{view.changes.unsureNotify ? (
+						<Button variant='outline' size='sm' className={shopButtonSm}>
+							Tell me when you know
+						</Button>
+					) : null}
 				</div>
 			) : null}
 		</div>
@@ -302,13 +309,22 @@ const sectionTitle = "text-lg font-semibold text-foreground-prominent";
 /** A screen's content column: centered, at most 576px on the desktop. */
 const screenBody = "mx-auto flex w-full max-w-xl flex-col gap-6 px-4 pt-6 pb-8";
 
+/** The shop's buttons keep their own lighter look: AutoParts Co.'s, not Sparks's Button (medium text, no shadow). */
+const shopButton = "font-medium shadow-none";
+/** The same, small. */
+const shopButtonSm = cn(shopButton, "px-3 text-xs");
+
 /** The screen's main button: a dark, full-width pill, larger when she asked for it. */
 function pillClass(id?: string, larger?: string[]) {
-	return cn("h-12 w-full rounded-full px-6 text-base", id && larger?.includes(id) && "h-14 text-lg");
+	return cn(shopButton, "h-12 w-full rounded-full px-6 text-base", id && larger?.includes(id) && "h-14 text-lg");
 }
 
-/** A screen of the shop. A new `screen` starts at its top: the device's scroll area goes back up (never the page). */
-function ShopScreen({ screen, children }: { screen: string; children: React.ReactNode }) {
+/**
+ * A screen of the shop. A new `screen` starts at its top: the device's scroll area goes back up (never the page).
+ * `view` (its place in the prototype's screens) and `part` (the part it shows) say where a comment added on it is, so it
+ * opens there again (`data-view`, `data-part`; `PrototypeComments`). None: it can't be opened on directly.
+ */
+function ShopScreen({ screen, view, part, children }: { screen: string; view?: number; part?: string; children: React.ReactNode }) {
 	const ref = React.useRef<HTMLDivElement>(null);
 	React.useEffect(() => {
 		const root = ref.current;
@@ -317,7 +333,7 @@ function ShopScreen({ screen, children }: { screen: string; children: React.Reac
 		if (scroller !== document.documentElement) scroller.scrollTo({ top: 0 });
 	}, [screen]);
 	return (
-		<div ref={ref} className='@container flex flex-1 flex-col'>
+		<div ref={ref} data-view={view} data-part={part} className='@container flex flex-1 flex-col'>
 			{children}
 		</div>
 	);
@@ -341,8 +357,8 @@ function ShopHeader({
 	return (
 		<div className='sticky top-0 z-20 bg-background'>
 			<header className='flex items-center justify-between gap-3 px-4 py-3 @3xl:px-10'>
-				{/* The store's own logo: sparks.ds "AutoParts Logo" (73:5941), 20px tall. */}
-				<AutoPartsLogo className='h-5' />
+				{/* The store's own logo: sparks.ds "AutoParts Logo" (73:5941), 30px tall. */}
+				<AutoPartsLogo className='h-7.5' />
 				<button
 					type='button'
 					aria-label={`Cart, ${cart} items`}
@@ -651,9 +667,50 @@ function VehiclePicker({
 	);
 }
 
+/** How the vehicle is added besides picking its details: with its VIN, or from a past repair invoice. Both are pretend. */
+type VehicleWay = "vin" | "invoice";
+const vehicleWays = [
+	{ way: "vin", label: "Enter your VIN", icon: ScanBarcode },
+	{ way: "invoice", label: "Upload an invoice", icon: FileText },
+] as const;
+
+/** A VIN: 17 letters and numbers, never I, O or Q. */
+const isVin = (text: string) => /^[A-HJ-NPR-Z0-9]{17}$/i.test(text.trim());
+
+/** The VIN, typed. Any valid one reads as the sample vehicle. */
+function VinField({ value, onChange }: { value: string; onChange: (value: string) => void }) {
+	const id = React.useId();
+	const wrong = value.length === 17 && !isVin(value);
+	return (
+		<div className='flex flex-col gap-2'>
+			<label htmlFor={id} className={sectionTitle}>
+				VIN
+			</label>
+			<input
+				id={id}
+				value={value}
+				maxLength={17}
+				autoComplete='off'
+				spellCheck={false}
+				aria-invalid={wrong || undefined}
+				aria-describedby={`${id}-hint`}
+				onChange={(event) => onChange(event.target.value.toUpperCase().trim())}
+				className='h-12 w-full rounded-lg border border-border bg-background px-4 text-base text-foreground outline-none focus-visible:border-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50 aria-invalid:border-destructive'
+			/>
+			<p id={`${id}-hint`} aria-live='polite' className='text-sm text-muted-foreground'>
+				{wrong
+					? "That isn't a VIN: it never has the letters I, O or Q. Check it and try again."
+					: "17 letters and numbers, on the driver's side door or your insurance card."}
+			</p>
+		</div>
+	);
+}
+
 /** The customer's shop: add a vehicle, open parts and see whether they fit, the cart and a pretend order. */
 function CustomerShop({ data, openOn, openPart }: { data: FitCheckData; openOn?: number; openPart?: string }) {
 	const [vehicle, setVehicle] = React.useState<Partial<FitVehicle>>({});
+	const [way, setWay] = React.useState<VehicleWay>();
+	const [vin, setVin] = React.useState("");
 	const [saved, setSaved] = React.useState<FitVehicle | null>(openOn || openPart ? data.vehicle : null);
 	const [partId, setPartId] = React.useState(
 		() => openPart ?? (openOn === 2 ? data.parts.find((p) => p.fit === "doesnt")?.id : undefined) ?? data.firstPartId,
@@ -667,20 +724,33 @@ function CustomerShop({ data, openOn, openPart }: { data: FitCheckData; openOn?:
 	const orderButton = useButton("place-order", "Place order");
 	const part = data.parts.find((p) => p.id === partId) ?? data.parts[0];
 	const complete = vehicleSteps.every((step) => vehicle[step.key]);
+	const typeVin = (text: string) => {
+		setVin(text);
+		setVehicle(isVin(text) ? data.vehicle : {});
+	};
+	const startOver = () => {
+		setWay(undefined);
+		setVin("");
+		setVehicle({});
+	};
 	const cartParts = cart.map((id) => data.parts.find((p) => p.id === id)!);
 	const header = (
 		<ShopHeader
 			cart={cart.length}
 			onCart={() => saved && setView("cart")}
 			vehicle={saved ?? undefined}
-			onChangeVehicle={() => setSaved(null)}
+			onChangeVehicle={() => {
+				setWay(undefined);
+				setVin("");
+				setSaved(null);
+			}}
 		/>
 	);
 
 	// 1. The vehicle picker.
 	if (!saved)
 		return (
-			<ShopScreen screen='vehicle'>
+			<ShopScreen screen='vehicle' view={0}>
 				{header}
 				<div className={screenBody}>
 					<div className='flex flex-col gap-2'>
@@ -691,7 +761,35 @@ function CustomerShop({ data, openOn, openPart }: { data: FitCheckData; openOn?:
 							Add it once, and every part shows whether it fits.
 						</EditableText>
 					</div>
-					<VehiclePicker options={data.options} value={vehicle} onChange={setVehicle} />
+					{way ? (
+						<BackLink onClick={startOver} />
+					) : (
+						<div className='grid grid-cols-2 gap-2'>
+							{vehicleWays.map(({ way: id, label, icon: Icon }) => (
+								<button
+									key={id}
+									type='button'
+									onClick={() => {
+										setWay(id);
+										// The invoice is pretend: choosing it reads the sample one.
+										setVehicle(id === "invoice" ? data.vehicle : {});
+									}}
+									className={cn("flex flex-col items-start gap-2 p-4 text-left", choiceClass(false))}
+								>
+									<Icon className='size-5 text-icon' aria-hidden />
+									{label}
+								</button>
+							))}
+							<p className='col-span-2 pt-2 text-sm text-muted-foreground'>Or pick its details:</p>
+						</div>
+					)}
+					{way === "vin" ? <VinField value={vin} onChange={typeVin} /> : null}
+					{way && complete ? (
+						<p role='status' className='text-base text-foreground'>
+							{way === "vin" ? "From your VIN. Is this your vehicle?" : `From ${data.invoice ?? "your invoice"}. Is this your vehicle?`}
+						</p>
+					) : null}
+					{way === "vin" && !complete ? null : <VehiclePicker options={data.options} value={vehicle} onChange={setVehicle} />}
 				</div>
 				<ActionBar>
 					<Button
@@ -703,13 +801,15 @@ function CustomerShop({ data, openOn, openPart }: { data: FitCheckData; openOn?:
 					>
 						{saveButton.label}
 					</Button>
-					<button
-						type='button'
-						onClick={() => setVehicle(data.vehicle)}
-						className='h-9 text-sm font-medium text-foreground underline underline-offset-4 hover:text-muted-foreground'
-					>
-						Use a sample vehicle
-					</button>
+					{way === "invoice" ? null : (
+						<button
+							type='button'
+							onClick={() => (way === "vin" ? typeVin(data.vin ?? "") : setVehicle(data.vehicle))}
+							className='h-9 text-sm font-medium text-foreground underline underline-offset-4 hover:text-muted-foreground'
+						>
+							{way === "vin" ? "Use a sample VIN" : "Use a sample vehicle"}
+						</button>
+					)}
 				</ActionBar>
 			</ShopScreen>
 		);
@@ -731,7 +831,7 @@ function CustomerShop({ data, openOn, openPart }: { data: FitCheckData; openOn?:
 	// 4. The cart.
 	if (view === "cart")
 		return (
-			<ShopScreen screen='cart'>
+			<ShopScreen screen='cart' view={3}>
 				{header}
 				<div className={screenBody}>
 					<BackLink onClick={() => setView("part")} />
@@ -769,7 +869,7 @@ function CustomerShop({ data, openOn, openPart }: { data: FitCheckData; openOn?:
 
 	// 2–3. A part, with whether it fits; and the other parts to open.
 	return (
-		<ShopScreen screen={`part-${part.id}`}>
+		<ShopScreen screen={`part-${part.id}`} view={part.fit === "doesnt" ? 2 : 1} part={part.id}>
 			{header}
 			<PartLayout
 				part={part}
@@ -840,57 +940,6 @@ function CustomerShop({ data, openOn, openPart }: { data: FitCheckData; openOn?:
 	);
 }
 
-/** What a store associate sees at the counter: the customer's saved vehicle, and whether a part fits it. */
-function StaffLookup({ data, openOn }: { data: FitCheckData; openOn?: number }) {
-	const [found, setFound] = React.useState(openOn !== undefined);
-	const [checked, setChecked] = React.useState<string | null>(openOn !== undefined ? data.firstPartId : null);
-	const lookUp = useButton("look-up", "Look up");
-	const part = data.parts.find((p) => p.id === checked);
-	return (
-		<div className='flex flex-col gap-4 p-4'>
-			<div className='sticky top-0 z-10 -mx-4 -mt-4 flex items-center justify-between gap-3 border-b border-border bg-background px-4 pt-4 pb-3'>
-				{/* The store's own logo (sparks.ds "AutoParts Logo"), then which screen this is. */}
-				<span className='flex items-center gap-2 text-sm font-medium text-foreground-prominent'>
-					<AutoPartsLogo className='h-5' />
-					<span aria-hidden>·</span> Counter
-				</span>
-				<span className='text-xs text-muted-foreground'>Store 214</span>
-			</div>
-			<EditableText as='h2' id='staff-title' className='text-lg font-semibold text-foreground-prominent'>
-				Customer lookup
-			</EditableText>
-			<div className='flex gap-2'>
-				<div className='flex h-9 flex-1 items-center gap-2 rounded-input border border-border px-2.5 text-sm text-foreground'>
-					<Search className='size-4 text-icon' aria-hidden />
-					{data.customer.phone}
-				</div>
-				<Button {...lookUp.props} onClick={() => setFound(true)}>
-					{lookUp.label}
-				</Button>
-			</div>
-			{found ? (
-				<div className='flex flex-col gap-3 rounded-md border border-border p-3'>
-					<div className='flex flex-col'>
-						<span className='text-sm font-semibold text-foreground'>{data.customer.name}</span>
-						<span className='text-sm text-muted-foreground'>
-							Saved vehicle: {vehicleName(data.vehicle)} {data.vehicle.trim} {data.vehicle.engine}
-						</span>
-					</div>
-					<span className='text-sm font-medium text-foreground'>Will this fit? Pick a part:</span>
-					<div className='flex flex-wrap gap-2'>
-						{data.parts.map((p) => (
-							<Button key={p.id} variant='outline' size='sm' aria-pressed={checked === p.id} className={cn("rounded-button-md", checked === p.id && "border-border-defined")} onClick={() => setChecked(p.id)}>
-								{p.name}
-							</Button>
-						))}
-					</div>
-					{part ? <FitMessage part={part} vehicle={data.vehicle} /> : null}
-				</div>
-			) : null}
-		</div>
-	);
-}
-
 /** What every prototype takes for changing it: her changes, pointing, and typing over text. */
 type PrototypeViewProps = Pick<FitCheckPrototypeProps, "changes" | "pointing" | "pointedAt" | "onPoint" | "onTextChange">;
 
@@ -927,11 +976,11 @@ function PrototypeFrame({ changes, pointing, pointedAt, onPoint, onTextChange, c
 	);
 }
 
-/** The prototype for "Fit check before you buy", for the audience shown. */
-function FitCheckPrototype({ data, audience, openOn, openPart, ...view }: FitCheckPrototypeProps) {
+/** The prototype for "Fit check before you buy": the customer's shop, its only audience. */
+function FitCheckPrototype({ data, openOn, openPart, ...view }: FitCheckPrototypeProps) {
 	return (
 		<PrototypeFrame {...view}>
-			{audience === "customer" ? <CustomerShop data={data} openOn={openOn} openPart={openPart} /> : <StaffLookup data={data} openOn={openOn} />}
+			<CustomerShop data={data} openOn={openOn} openPart={openPart} />
 		</PrototypeFrame>
 	);
 }
@@ -949,6 +998,8 @@ export {
 	PartPhoto,
 	PartRow,
 	pillClass,
+	shopButton,
+	shopButtonSm,
 	screenBody,
 	screenTitle,
 	sectionTitle,
@@ -969,7 +1020,6 @@ export {
 	fitCheckElements,
 	fitCheckScreens,
 	type FitCheckChanges,
-	type FitCheckAudience,
 	type FitCheckData,
 	type FitCheckPrototypeProps,
 	type FitPart,

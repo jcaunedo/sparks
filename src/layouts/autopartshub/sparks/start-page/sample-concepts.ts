@@ -9,7 +9,7 @@ export const sampleConcepts: SparksConceptSummary[] = [
 		id: "fit-check",
 		name: "Fit check before checkout",
 		summary: "Too many returns are parts that don't fit the customer's car.",
-		sharing: "Only you",
+		sharing: "You and 3 others",
 		createdAt: "2026-11-14T09:30:00",
 		validation: "failed",
 		editedAt: "2026-11-21T08:05:00",

@@ -11,7 +11,7 @@ import { sampleWithCorrection } from "./sample-correction";
 /** Why it's the one, the hypothesis's change, and what it gives up, by the direction's id. */
 const chosenDetails: Record<string, { why: string; change: string; givesUp: string }> = {
 	"fit-check": {
-		why: "It should cut \"doesn't fit\" returns the most, for Medium effort, with nothing extra for customers to do.",
+		why: "It should cut \"doesn't fit\" returns the most, for Medium effort, and customers add their vehicle only once.",
 		change: "showing on every product page whether a part fits the customer's saved vehicle",
 		givesUp:
 			"It can't launch before early January, when product pages can change again. And fit data has gaps for older vehicles, so for some parts it can only say \"We're not sure this fits\".",

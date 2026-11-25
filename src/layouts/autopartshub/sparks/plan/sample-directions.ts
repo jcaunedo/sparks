@@ -14,26 +14,27 @@ import type { DirectionDraft } from "./direction-card";
 export const sampleDirectionFitCheck: DirectionDraft = {
 	id: "fit-check",
 	name: "Fit check before you buy",
-	idea: "Customers save their vehicle once, and every product page says whether the part fits.",
+	idea: "Customers save their vehicle once, with its VIN, a past repair invoice or its details, and every product page says whether the part fits.",
 	where: "On the product page",
 	effect: "Big",
-	effort: { size: "Medium", reason: "Saved vehicles exist, but every product page needs the fit check." },
+	effort: { size: "Medium", reason: "Saved vehicles exist, but every product page needs the fit check, and reading VINs and invoices is new." },
 	risk: { level: "Medium", reason: "It's only as good as the fit data, which has gaps for vehicles over 10 years old." },
 	notWorse: "Safe",
 	catch: "Product pages can't change until early January, so it can't launch before then.",
-	good: "Answers \"will this fit?\" on every page, with nothing extra to do.",
+	good: "Answers \"will this fit?\" on every page, and nobody has to know their engine or trim: the VIN or an invoice can say it.",
 	howItWorks: [
-		"You add your car to your account once.",
+		"You add your car once: enter its VIN, upload an invoice from a past repair, or pick the year, make, model, trim and engine.",
+		"You check it's the right car, and save it.",
 		"Every part says \"Fits your 2015 F-150\" or \"Doesn't fit\".",
 		"If it doesn't fit, you see parts that do.",
 	],
 	expectedImpact:
 		"Fewer \"doesn't fit\" returns: it answers the fit question before people buy. Customers who used the vehicle selector returned far fewer parts (previous experiments, 2025).",
 	buildsOn: "The vehicles customers already save in their account, and the catalog's fit data.",
-	unknowns: ["Whether customers will save their vehicle.", "How many parts have no fit data."],
+	unknowns: ["Whether customers will save their vehicle.", "How many invoices can be read, since every shop's look different.", "How many parts have no fit data."],
 	departments: "Web team, catalog team.",
 	triedBefore:
-		"A vehicle selector on product pages, 2025. Customers who used it returned far fewer parts as \"doesn't fit\", but most skipped it. This one checks automatically, so there's no step to skip.",
+		"A vehicle selector on product pages, 2025. Customers who used it returned far fewer parts as \"doesn't fit\", but most skipped it. This one asks once, not on every part, and the VIN or an invoice saves picking every detail.",
 };
 
 /** Dana's own idea, from her first message, filled in like the others, honest about its limit. */
@@ -140,7 +141,7 @@ export function sampleRecommended(directions: DirectionDraft[]): DirectionDraft 
 /** Why Sparks recommends each direction, in the reply, by its id. */
 const recommendations: Record<string, string> = {
 	"fit-check":
-		"It should cut \"doesn't fit\" returns the most: customers who used last year's vehicle selector returned far fewer, and this one checks without anyone having to look for it. It's Medium effort, since it builds on the vehicles customers already save. The catch is timing: product pages can't change until early January.",
+		"It should cut \"doesn't fit\" returns the most: customers who used last year's vehicle selector returned far fewer, and this one checks without anyone having to look for it. Customers don't need to know their engine or trim, either: they can enter their VIN or upload an invoice from a past repair. It's Medium effort, since it builds on the vehicles customers already save. The catch is timing: product pages can't change until early January.",
 	"checkout-check":
 		"It catches the wrong part before the order goes through, and it could launch before January. The catch: a warning at the last step can make some people give up the order.",
 	"fit-data":

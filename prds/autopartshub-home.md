@@ -1,7 +1,7 @@
 <!--
 Created: Nov 20, 2026
 Created by: Julio Caunedo
-Last updated: Nov 23, 2026 (the home has one tab too: "Add from library" goes back to it; an app's card goes to its tab when it's already open, instead of opening another; the second tab is "My library" again; ~~the tabs are "Apps" and "Library", without "My"~~; selecting a notification opens its concept; notifications open a popover, with Unread and All; Sparks's "Add from library" opens the home on "My library"; the "Knowledge" tab is named "My library"; a notifications button in the header, before the profile photo; Cards open their app in a new tab)
+Last updated: Nov 25, 2026 ("My library" lists her files, links and notes, the same as Sparks's "Add from library", which no longer opens the home; each tab has an icon; new comments on an idea are one notification, with how many; the home has one tab too: "Add from library" goes back to it; an app's card goes to its tab when it's already open, instead of opening another; the second tab is "My library" again; ~~the tabs are "Apps" and "Library", without "My"~~; selecting a notification opens its concept; notifications open a popover, with Unread and All; Sparks's "Add from library" opens the home on "My library"; the "Knowledge" tab is named "My library"; a notifications button in the header, before the profile photo; Cards open their app in a new tab)
 Scope: the AutoPartsHUB home screen (`AutoPartsHubHome`) and the app frame it sits in (`AutoPartsHubShell`): header, welcome, tabs and the user's apps.
 Purpose: defines what a signed-in user sees and can do on AutoPartsHUB's first screen, and records what's still undecided for the tabs that aren't designed yet.
 -->
@@ -37,9 +37,11 @@ The header shows on every AutoPartsHUB screen.
 
 ~~🙋 **Open question:** what notifications open (a panel, a page) and what they're about. Until it's designed, the button does nothing.~~
 
-- **Notifications** open a popover from the bell, the same in every AutoPartsHUB header (the home, Sparks's start page and a concept): "Notifications", "Clear all", and two tabs, "Unread" (open first) and "All", newest first. Each one: an unread dot, a person's avatar, a department, or an icon for what happened (done, a warning, an error, an update), its title, one line (cut with an ellipsis), and when ("Just now", "23 min ago", "Yesterday"). Selecting one opens what it's about, the concept, and marks it read: in the same tab inside Sparks, in its own tab from the home (as Sparks opens). The bell shows a dot while any is unread. With nothing unread: "You're all caught up." After "Clear all": "All cleared. Nothing to show here now." and "Notifications older than 60 days are cleared automatically."
+- **Notifications** open a popover from the bell, the same in every AutoPartsHUB header (the home, Sparks's start page and a concept): "Notifications", "Clear all", and two tabs, "Unread" (open first) and "All", newest first. Each one: an unread dot, a person's avatar, a department, or an icon for what happened (done, a warning, an error, an update, new comments), its title, one line (cut with an ellipsis), and when ("Just now", "23 min ago", "Yesterday"). Selecting one opens what it's about, the concept, and marks it read: in the same tab inside Sparks, in its own tab from the home (as Sparks opens). The bell shows a dot while any is unread. With nothing unread: "You're all caught up." After "Clear all": "All cleared. Nothing to show here now." and "Notifications older than 60 days are cleared automatically."
 
 ✅ **Resolved:** notifications open a simple popover (not designed yet, after a typical notifications panel), with Unread and All. ~~🙋 **Open question:** where selecting a notification takes her (the concept, the comment), beyond marking it read.~~ ✅ **Resolved:** selecting a notification opens its concept.
+
+✅ **Resolved:** new comments on an idea are one notification with how many there are and who wrote them; selecting it opens the idea with Comments open, and the popover closes when a notification opens something ([sparks.md](sparks.md), "New comments").
 
 🙋 **Open question:** what the profile photo does when selected (an account menu, sign out). Until it's decided, it isn't interactive.
 
@@ -49,7 +51,9 @@ In order, top to bottom:
 
 1. "Welcome back, {first name}", for example "Welcome back, Dana".
 2. "Connect with the tools, knowledge, and intelligence that power your work."
-3. Three tabs: ~~"My apps"~~ "Apps" (selected when the page opens), ~~"Knowledge"~~ ~~"Library"~~ "My library" and "Connections".
+3. Three tabs: ~~"My apps"~~ "Apps" (selected when the page opens), ~~"Knowledge"~~ ~~"Library"~~ "My library" and "Connections". Each has an icon before its name: a grid, a folder (as "Library" in a Sparks idea) and a bolt.
+
+✅ **Resolved:** the home's tabs have icons (Sparks → "AutoPartsHUB", 7:1021). ⚠️ **Figma update:** it names the first tab "My apps"; the name is "Apps".
 
 ~~✅ **Resolved:** the tabs are "Apps" and "Library", without "My": shorter, and the page is already hers ("Welcome back, Dana").~~ ✅ **Resolved:** the tabs are "Apps" and "My library". Why: "Apps" are the company's apps she uses; "My library" is hers (her notes, reports and files), and "My" says so.
 
@@ -82,7 +86,7 @@ Both tabs can be selected. Until they have content, each shows the product's sta
 | ~~Knowledge~~ ~~Library~~ My library | ~~"Nothing in Knowledge yet"~~ "Nothing in your library yet" | ~~"When knowledge is added, it'll show up here."~~ "Files, notes and research you add will show up here." |
 | Connections | "No connections yet" | "When connections are added, they'll show up here." |
 
-✅ **Resolved:** the two tabs use the same empty state as every other empty view in the product, not a blank panel. A blank panel reads as broken; the empty state says what's missing and that it will appear here. The copy says only that, because neither tab's content is designed yet.
+✅ **Resolved:** the two tabs (My library, only with nothing in it) use the same empty state as every other empty view in the product, not a blank panel. A blank panel reads as broken; the empty state says what's missing and that it will appear here. The copy says only that, because neither tab's content is designed yet.
 
 What each tab holds:
 
@@ -93,14 +97,17 @@ The user doesn't need either tab to use knowledge: apps like Sparks bring it int
 
 ~~✅ **Resolved:** Knowledge is the user's own knowledge, in addition to the company's shared knowledge.~~ ✅ **Resolved:** Connections shows where company data comes from; Knowledge shows what the apps can reference, company and personal, separated by source and ownership.
 
-⚠️ **Gap:** neither tab's content is designed, nor how the user adds personal knowledge. The empty state has no button: the brand voice asks for one action, but neither tab has a defined action yet. Also in Open Questions.
+✅ **Resolved:** "My library" lists her files, links and notes, newest first, with a search, the same list as Sparks's "Add from library" ([sparks.md](sparks.md), "Adding from My library"). Why: that dialog shows what's in it, so the tab can't say it's empty. With nothing in it, its empty state.
+
+⚠️ **Gap:** ~~neither tab's content is~~ Connections' content isn't designed, nor "My library"'s look, nor how the user adds personal knowledge or opens it from the tab. The empty state has no button: the brand voice asks for one action, but neither tab has a defined action yet. Also in Open Questions.
 
 ## States
 
 | State | What shows | What the user can do |
 | --- | --- | --- |
 | Apps listed | The user's app cards | Open any app, switch tabs |
-| Library or Connections selected | That tab's empty state ("Knowledge and Connections") | Switch tabs |
+| My library selected | Her files, links and notes; with none, the empty state | Search, switch tabs |
+| Connections selected | Its empty state ("Knowledge and Connections") | Switch tabs |
 | No photo | The first initial in the header | Same as above |
 | No apps | Not designed | — |
 

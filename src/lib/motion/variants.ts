@@ -178,6 +178,24 @@ const iconSwapReducedVariants: Variants = {
 };
 
 /**
+ * Bounce: a small icon hops twice, the second half as high, as something lands in what it opens (Sparks's "Library").
+ * Once per change, never looping: start `"bounce"` from animation controls.
+ * - `bounceReducedVariants` — under reduced motion: a quick dip in opacity instead, so the feedback stays.
+ */
+const bounceVariants: Variants = {
+  rest: { y: 0 },
+  bounce: {
+    y: [0, -motionDistance.bounce, 0, -motionDistance.bounce / 2, 0],
+    transition: { duration: motionDuration.deliberate, times: [0, 0.3, 0.6, 0.8, 1], ease: ["easeOut", "easeIn", "easeOut", "easeIn"] },
+  },
+};
+
+const bounceReducedVariants: Variants = {
+  rest: { opacity: 1 },
+  bounce: { opacity: [1, 0.4, 1], transition: { duration: motionDuration.normal } },
+};
+
+/**
  * Pending: something is working on the element's behalf (e.g. AI generating text). A looping
  * pulse — `animate="pending"` while busy, `"idle"` otherwise; returning to idle eases back to rest.
  * An opacity pulse, like a loading skeleton. Three variants:
@@ -267,6 +285,8 @@ export {
   staggerContainerVariants,
   iconSwapVariants,
   iconSwapReducedVariants,
+  bounceVariants,
+  bounceReducedVariants,
   pendingIconVariants,
   pendingIconReducedVariants,
   pendingSurfaceVariants,

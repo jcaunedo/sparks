@@ -48,7 +48,8 @@ function SidePanel({ title, actions, closeLabel, onClose, autoFocus = false, bod
 				className,
 			)}
 			onKeyDown={(event) => {
-				if (event.key === "Escape") {
+				// Not a dialog's Esc (React passes it on from its portal): it only closes the dialog.
+				if (event.key === "Escape" && event.currentTarget.contains(event.target as Node)) {
 					event.stopPropagation();
 					onClose();
 				}
@@ -162,6 +163,6 @@ function SidePanelResizer({ width, onWidthChange, label }: { width: number; onWi
 }
 
 /** The panel row's icon buttons: ghost, 36px, an 18px icon in colors/icon/foreground. */
-const sidePanelButtonClasses = "rounded-button-lg text-icon [&_svg]:size-[18px]";
+const sidePanelButtonClasses = "text-icon [&_svg]:size-[18px]";
 
 export { SidePanel, SidePanelResizer, sidePanelButtonClasses, sidePanelWidth, useSidePanelWidth, type SidePanelProps };

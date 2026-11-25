@@ -413,16 +413,6 @@ function checkoutCheck(changes: FitCheckChanges): EvaluationBody {
 				summary: "Was asked for the vehicle at checkout, added it, and the check ran.",
 				steps: [{ screen: "Checkout", evaluation: "Asking at checkout works, but it's one more thing at the last step." }],
 			},
-			{
-				id: "store-order",
-				label: "Order at the counter",
-				audience: "Store staff",
-				situation: "A store associate looks up an order whose part was swapped at checkout.",
-				task: "See what was flagged and what the customer did.",
-				outcome: "done",
-				summary: "Saw the vehicle checked and the swap.",
-				steps: [{ screen: "Order lookup", evaluation: "The order shows the check and the swap, so the associate can explain it." }],
-			},
 			...accessibility("Customer", "checkout"),
 		],
 		experts: [
@@ -438,7 +428,6 @@ function checkoutCheck(changes: FitCheckChanges): EvaluationBody {
 			], "Clear, plain wording."),
 			expert("engineer", "Engineer", "What it needs to be built", [
 				["Checkout", "The check reads the catalog's fit data, missing for about 1 in 8 older parts."],
-				["Order lookup", "Orders keep the swap: stores can see it. Available."],
 			], "Buildable; checkout changes need the payments team."),
 			expert("data", "Data analyst", "Business data and the measures", [
 				["Checkout", 'Most "doesn\'t fit" returns are caught here, if people swap.'],

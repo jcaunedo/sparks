@@ -1,3 +1,4 @@
+import * as React from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 
 import { goToStory, storyIds, withStoryLinks, type StoryLink } from "../../../story-links";
@@ -5,9 +6,9 @@ import { sampleUser } from "../../sample-data/sample-user";
 import { sampleNotifications, sampleNotificationsNow } from "../../sample-data/sample-notifications";
 import type { SparksWorkspaceProps } from "../workspace/workspace";
 import { sampleArchivedConcepts, sampleConcepts, sampleNow, sampleSharedConcepts } from "./sample-concepts";
-import { SparksStartPage } from "./start-page";
-import { conceptStoryLinks } from "./concept-story-links";
-import { loadDemoConcept } from "../shared/demo-session";
+import { SparksStartPage, type SparksStartPageProps } from "./start-page";
+import { conceptStoryLinks, noComments } from "./concept-story-links";
+import { openDemoConcept } from "../shared/demo-session";
 
 /* Prototype: "New idea" opens the workspace with a new concept on Plan and an empty conversation. */
 const newConcept: Partial<SparksWorkspaceProps> = {
@@ -15,7 +16,17 @@ const newConcept: Partial<SparksWorkspaceProps> = {
 	currentStep: "plan",
 	reachedStep: "plan",
 	messages: [],
+	...noComments,
 };
+
+/**
+ * Prototype: the concept she started from "New idea" leads "Your ideas" when she comes back from it ("All ideas"). Opened
+ * any other way, it isn't there: the demo starts over (prds/sparks.md, "The start page"; `demo-session.ts`).
+ */
+function StartPagePrototype(props: SparksStartPageProps) {
+	const [demo] = React.useState(openDemoConcept);
+	return <SparksStartPage {...props} concepts={demo ? [demo.summary, ...props.concepts] : props.concepts} />;
+}
 
 const meta = {
 	title: "Layouts/AutoPartsHUB/Sparks/Start page",
@@ -24,11 +35,7 @@ const meta = {
 		layout: "fullscreen",
 	},
 	decorators: [withStoryLinks(() => conceptStoryLinks())],
-	// Prototype: the concept she started from "New idea" in this tab leads "Your ideas" (prds/sparks.md, "The start page").
-	render: (args) => {
-		const demo = loadDemoConcept();
-		return <SparksStartPage {...args} concepts={demo ? [demo.summary, ...args.concepts] : args.concepts} />;
-	},
+	render: (args) => <StartPagePrototype {...args} />,
 	args: {
 		user: sampleUser,
 		notifications: { notifications: sampleNotifications, now: sampleNotificationsNow },

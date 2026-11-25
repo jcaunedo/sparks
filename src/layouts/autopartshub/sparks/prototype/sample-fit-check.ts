@@ -10,6 +10,8 @@ import sparkPlugs from "./images/spark-plugs.jpg";
  */
 export const sampleFitCheck: FitCheckData = {
 	vehicle: { year: "2015", make: "Ford", model: "F-150", trim: "XLT", engine: "5.0L V8" },
+	vin: "1FTEW1EF0FF000000",
+	invoice: "repair-invoice-march.pdf",
 	options: {
 		years: ["2012", "2013", "2014", "2015", "2016", "2017", "2018"],
 		makes: ["Chevrolet", "Ford", "Toyota"],

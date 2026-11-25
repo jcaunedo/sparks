@@ -9,13 +9,15 @@ import { Typography } from "@/components/typography/typography";
  * sparks.ds has no empty-state design yet (DESIGN.md → "Empty states").
  */
 
-type EmptyStateProps = Omit<React.ComponentProps<"div">, "title"> & {
+type EmptyStateProps = Omit<React.ComponentProps<"div">, "title" | "children"> & {
 	/** Headline, e.g. "No connections yet". */
 	title: string;
 	/** Supporting line, e.g. "When connections are added, they'll show up here." */
 	description?: string;
 	/** Optional icon or illustration above the title. */
 	icon?: React.ReactNode;
+	/** Optional content between the text and the buttons, e.g. the prototype the action is about. */
+	children?: React.ReactNode;
 	/** Call-to-action text. Omit for no button. */
 	buttonLabel?: string;
 	/** Forwarded to the button (`onClick`, or `asChild` with a link). */
@@ -27,13 +29,6 @@ type EmptyStateProps = Omit<React.ComponentProps<"div">, "title"> & {
 };
 
 /**
- * sparks.ds "Button" lg · 36 (38:94), the main one Solid · Neutral (dark): UCL's `default` size (36px, SIZE-SCALE.md: Figma's names are one step off), with
- * Figma's 12px corners, 14px side padding and semibold text, as the Sparks header's Share and Publish
- * (DESIGN.md → "Empty states").
- */
-const emptyStateButtonClasses = "rounded-button-lg px-3.5 font-semibold";
-
-/**
  * A centered message for a view, tab or filter with nothing to show: optional icon, title,
  * description and an optional button. Every empty view uses this layout; only the copy changes.
  * Centers itself in the space its parent gives it: pass `className='flex-1'` or a height to fill a panel.
@@ -42,6 +37,7 @@ function EmptyState({
 	title,
 	description,
 	icon,
+	children,
 	buttonLabel,
 	buttonProps,
 	secondaryButtonLabel,
@@ -75,16 +71,17 @@ function EmptyState({
 					</Typography>
 				)}
 			</div>
+			{children}
 			{/* The main action last, the second one 8px before it (as Cancel before Save). */}
 			{(buttonLabel || secondaryButtonLabel) && (
 				<div className='flex flex-wrap items-center justify-center gap-2'>
 					{secondaryButtonLabel && (
-						<Button variant='outline' {...secondaryButtonProps} className={cn(emptyStateButtonClasses, "shadow-xs", secondaryButtonProps?.className)}>
+						<Button variant='outline' {...secondaryButtonProps}>
 							{secondaryButtonLabel}
 						</Button>
 					)}
 					{buttonLabel && (
-						<Button variant='neutral' {...buttonProps} className={cn(emptyStateButtonClasses, buttonProps?.className)}>
+						<Button variant='neutral' {...buttonProps}>
 							{buttonLabel}
 						</Button>
 					)}

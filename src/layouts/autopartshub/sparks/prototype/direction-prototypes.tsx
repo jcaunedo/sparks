@@ -1,6 +1,6 @@
 import * as React from "react";
 
-import { FitCheckPrototype, fitCheckElements, fitCheckScreens, type FitCheckAudience, type FitCheckChanges } from "./fit-check-prototype";
+import { FitCheckPrototype, fitCheckElements, fitCheckScreens, type FitCheckChanges } from "./fit-check-prototype";
 import {
 	CheckoutCheckPrototype,
 	checkoutScreens,
@@ -40,25 +40,24 @@ const staff: PrototypeAudience = { id: "staff", label: "Store staff", device: "d
 const directionPrototypes: Record<string, DirectionPrototype> = {
 	"fit-check": {
 		screens: fitCheckScreens,
-		audiences: [customer, staff],
+		audiences: [customer],
 		elements: fitCheckElements,
-		render: ({ audience, ...props }) => <FitCheckPrototype audience={audience as FitCheckAudience} {...props} />,
+		render: ({ audience: _audience, ...props }) => <FitCheckPrototype {...props} />,
 		contents: [
 			{
 				audience: "Customer",
 				device: "phone",
 				screens: [
-					{ name: "the vehicle picker", covers: [0] },
-					{ name: "a part that fits", covers: [1] },
-					{ name: "a part that doesn't fit", covers: [1, 2] },
+					{ name: "the vehicle picker", covers: [0, 1] },
+					{ name: "a part that fits", covers: [2] },
+					{ name: "a part that doesn't fit", covers: [2, 3] },
 					{ name: "the cart", covers: [] },
 				],
 			},
-			{ audience: "Store staff", device: "desktop", screens: [{ name: "the store staff lookup", covers: [] }] },
 		],
-		pretend: (changes) => ["Saving a vehicle.", "Placing an order.", ...(changes.liveStock ? ["Stock at the nearest store."] : [])],
+		pretend: (changes) => ["Reading a VIN or an invoice.", "Saving a vehicle.", "Placing an order.", ...(changes.liveStock ? ["Stock at the nearest store."] : []), ...(changes.unsureNotify ? ["Telling a customer when the fit is known."] : [])],
 		sampleData:
-			"1 vehicle (2015 Ford F-150 XLT 5.0L V8), 4 parts (one fits, one doesn't, the one that fits instead, one with no fit data), and 1 customer for the store lookup.",
+			"1 vehicle (2015 Ford F-150 XLT 5.0L V8) and 4 parts (one fits, one doesn't, the one that fits instead, one with no fit data).",
 	},
 	"flag-returns": {
 		screens: flagScreens,
@@ -85,7 +84,7 @@ const directionPrototypes: Record<string, DirectionPrototype> = {
 	},
 	"checkout-check": {
 		screens: checkoutScreens,
-		audiences: [customer, staff],
+		audiences: [customer],
 		elements: {
 			"shop-title": 'the "Popular parts" heading',
 			"cart-title": 'the "Your cart" heading',
@@ -93,8 +92,6 @@ const directionPrototypes: Record<string, DirectionPrototype> = {
 			"checkout-title": 'the "Checkout" heading',
 			"place-order": 'the "Place order" button',
 			"fit-message": "the fit message",
-			"staff-title": 'the "Order lookup" heading',
-			"look-up": 'the "Look up" button',
 		},
 		render: (props) => <CheckoutCheckPrototype {...props} />,
 		contents: [
@@ -107,11 +104,10 @@ const directionPrototypes: Record<string, DirectionPrototype> = {
 					{ name: "the fit check at checkout", covers: [0, 1, 2] },
 				],
 			},
-			{ audience: "Store staff", device: "desktop", screens: [{ name: "the store staff order lookup", covers: [] }] },
 		],
 		pretend: () => ["Placing the order."],
 		sampleData:
-			"1 vehicle (2015 Ford F-150 XLT 5.0L V8), 4 parts (one fits, one doesn't, the one that fits instead, one with no fit data), and 1 order for the store lookup.",
+			"1 vehicle (2015 Ford F-150 XLT 5.0L V8) and 4 parts (one fits, one doesn't, the one that fits instead, one with no fit data).",
 	},
 	"fit-data": {
 		screens: fitDataScreens,

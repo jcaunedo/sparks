@@ -27,6 +27,18 @@ type Story = StoryObj<typeof meta>;
 /** AutoPartsHUB home → Connections. */
 export const Default: Story = {};
 
+/** With content between the text and the buttons: what the action is about. (Example copy.) */
+export const WithContent: Story = {
+	args: {
+		icon: <BookOpen aria-hidden className='size-8 text-icon-muted' />,
+		title: "Nothing shared yet",
+		description: "Share this guide with your team when it's ready.",
+		children: <div className='rounded-input border border-border bg-background px-4 py-3 text-sm text-foreground'>Getting started, version 2</div>,
+		buttonLabel: "Share guide",
+		secondaryButtonLabel: "Back to guides",
+	},
+};
+
 /** With a button. The label names the action, never "OK" or "Continue". (Example copy.) */
 export const WithAction: Story = {
 	args: {

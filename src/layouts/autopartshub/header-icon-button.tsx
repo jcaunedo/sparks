@@ -31,7 +31,7 @@ function HeaderIconButton({
 					variant='ghost'
 					size='icon'
 					aria-label={dot ? `${label}, new` : label}
-					className={cn("relative rounded-button-lg text-icon [&_svg]:size-[18px]", className)}
+					className={cn("relative text-icon [&_svg]:size-[18px]", className)}
 					{...props}
 				>
 					{children}

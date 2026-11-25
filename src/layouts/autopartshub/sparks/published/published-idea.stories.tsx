@@ -60,7 +60,7 @@ const meta = {
 			audiences: fitCheck.audiences,
 			screens: fitCheck.screens.length,
 			screenList: fitCheck.screens.map((name, view) => ({ name, audience: screenAudience(fitCheck, view).id })),
-			render: (audience, screen) => fitCheck.render({ data: sampleFitCheck, audience, changes: {}, openOn: screen }),
+			render: (audience, screen, part) => fitCheck.render({ data: sampleFitCheck, audience, changes: {}, openOn: screen, openPart: part }),
 		},
 		prototypeComments: samplePublishedPrototypeComments,
 		mentionable: sampleMentionable,

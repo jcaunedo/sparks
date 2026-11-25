@@ -1,6 +1,6 @@
 import * as React from "react";
 import { ArrowLeft, Bell, ChevronDown, FlaskConical, Folder, ListChecks, MessageCircle, MousePointerClick, Paperclip, Pencil, RotateCcw, Users, X, Zap } from "lucide-react";
-import { animate as animateElement, AnimatePresence, motion } from "motion/react";
+import { animate, AnimatePresence, motion, useAnimationControls, useIsPresent, usePresenceData, type Variants } from "motion/react";
 
 import { ActivityFeed } from "@/components/chat/activity-feed";
 import { AssistantMessage } from "@/components/chat/assistant-message";
@@ -26,9 +26,12 @@ import { Typography } from "@/components/typography/typography";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/overlays/tooltip";
 import { cn } from "@/lib/utils";
 import {
+	bounceReducedVariants,
+	bounceVariants,
 	easeOutTransition,
 	glideScrollTransition,
 	fadeVariants,
+	motionDistance,
 	motionDuration,
 	overlayVariants,
 	panelVariants,
@@ -37,6 +40,8 @@ import {
 	scrollContainerOf,
 	scrollIntoViewSmoothly,
 	scrollMetrics,
+	stepChangeAt,
+	stepChangeTransition,
 	useMotionPreference,
 } from "@/lib/motion";
 
@@ -47,10 +52,14 @@ import { ChosenCard, type ChosenDraft } from "../plan/chosen-card";
 import { ProblemCard, type ProblemDraft } from "../plan/problem-card";
 import { DirectionCard, type DirectionDraft } from "../plan/direction-card";
 import { SuccessCard, type SuccessDraft } from "../plan/success-card";
+import type { PanelActionProps } from "../shared/panel-action";
 import { sparksSteps, type SparksStep } from "../shared/steps";
 import type { IdeaComment } from "../review/review-panel";
 import type { PrototypeComment } from "../prototype/prototype-comments";
 import { CommentsPanel } from "./comments-panel";
+import { attachTypes, LibraryPanel, type LibraryPanelProps } from "./library-panel";
+import { assetName, libraryIcon } from "../../library/library-assets";
+import { LibraryDialog, type LibraryDialogProps, type LibraryPick } from "./library-dialog";
 import { SidePanelResizer, useSidePanelWidth } from "./side-panel";
 import { directionActionFor, type DirectionPaths } from "./plan-parts";
 import { SharePopover, type SharePopoverProps } from "./share-popover";
@@ -62,6 +71,10 @@ type SparksUserMessage = {
 	id: string;
 	from: "user";
 	text: string;
+	/** The files she attached, by name. With no text, the message is only its files. */
+	attachments?: string[];
+	/** What she added from My library ("Add from library"): shown as the files are. */
+	fromLibrary?: LibraryPick[];
 };
 
 /** One thing Sparks drafted and asks Dana to confirm, shown as a ClarificationCard. */
@@ -94,6 +107,27 @@ type SparksSuggestion = {
 function suggestionSource(suggestion: SparksSuggestion) {
 	if (suggestion.edited) return "Edited by you";
 	return suggestion.basis ? `Suggested by Sparks · from ${suggestion.basis.toLowerCase()}` : "Suggested by Sparks";
+}
+
+/** The files sent with a message, in its bubble, under the text. */
+function MessageFiles({ files = [], fromLibrary = [], spaced }: { files?: string[]; fromLibrary?: LibraryPick[]; spaced: boolean }) {
+	if (!files.length && !fromLibrary.length) return null;
+	return (
+		<span className={cn("flex flex-col gap-1", spaced && "mt-1")}>
+			{files.map((name) => (
+				<span key={name} className='flex min-w-0 items-center gap-1.5 [&_svg]:size-4 [&_svg]:shrink-0 [&_svg]:text-icon-muted'>
+					<Paperclip aria-hidden />
+					<span className='min-w-0 truncate'>{name}</span>
+				</span>
+			))}
+			{fromLibrary.map((item) => (
+				<span key={`${item.kind}:${item.label}`} className='flex min-w-0 items-center gap-1.5 [&_svg]:size-4 [&_svg]:shrink-0 [&_svg]:text-icon-muted'>
+					{React.createElement(libraryIcon(item), { "aria-hidden": true })}
+					<span className='min-w-0 truncate'>{assetName(item)}</span>
+				</span>
+			))}
+		</span>
+	);
 }
 
 /** Quick replies that don't answer a question card: the card stays until she answers it. */
@@ -161,6 +195,16 @@ type SparksReply = {
 	parts: SparksReplyPart[];
 	/** Likely answers under the reply while it's the last message; selecting one sends it as Dana's message. */
 	quickReplies?: string[];
+	/**
+	 * The quick reply that opens the file picker instead of being sent ("Attach files"). While this is the last message,
+	 * files can be sent with no text.
+	 */
+	attachReply?: string;
+	/**
+	 * The quick reply that opens "Add from library" instead of being sent. What she adds from
+	 * there, with this reply or the "+" menu, is her answer.
+	 */
+	libraryReply?: string;
 };
 
 /** One message in the conversation. Sparks's introduction comes first in every concept, outside this list. */
@@ -266,6 +310,7 @@ function SparksReplyView({
 	onSuggestionEdit,
 	directionAction,
 	changing,
+	narrow = false,
 }: {
 	reply: SparksReply;
 	animate: boolean;
@@ -276,6 +321,8 @@ function SparksReplyView({
 	directionAction?: ReturnType<typeof directionActionFor>;
 	/** She's changing her answer to this reply's question: its card opens again (prds/sparks.md, "Changing an answer"). */
 	changing?: AnswerChange;
+	/** In the column beside a preview: its quick replies sit one per row. */
+	narrow?: boolean;
 }) {
 	const { prefersReducedMotion } = useMotionPreference();
 	const [thinking, setThinking] = React.useState(animate && Boolean(reply.thinking?.length));
@@ -392,7 +439,16 @@ function SparksReplyView({
 				>
 					{/* The same replies as ClarificationCard's (`QuickReplies`, sparks.ds "ctas"): the first one, the "continue",
 					    last with the ↵ key, and Enter picks it. */}
-					<QuickReplies replies={reply.quickReplies} onReply={onQuickReply} />
+					<QuickReplies
+						replies={reply.quickReplies}
+						onReply={onQuickReply}
+						onePerRow={narrow}
+						// The same icons as in the "+" menu.
+						icons={{
+							...(reply.attachReply ? { [reply.attachReply]: <Paperclip /> } : {}),
+							...(reply.libraryReply ? { [reply.libraryReply]: <Folder /> } : {}),
+						}}
+					/>
 				</motion.div>
 			) : null}
 			{/* The reply's end, for bringing its actions into view, with 32px below them. */}
@@ -411,7 +467,7 @@ type SparksWorkspaceProps = {
 	reachedStep?: SparksStep;
 	messages: SparksMessage[];
 	/** Sends what Dana wrote in the message box, or the quick reply she selected. */
-	onSend?: (text: string) => void;
+	onSend?: (text: string, attachments?: string[], fromLibrary?: LibraryPick[]) => void;
 	/** Dana edited a suggestion on its card: the reply it's in and which part it fills. */
 	onSuggestionEdit?: (replyId: string, part: string, text: string) => void;
 	/**
@@ -437,16 +493,21 @@ type SparksWorkspaceProps = {
 	 */
 	onAddPlan?: () => void;
 	/**
+	 * The "+" menu's "Reset prototype", for the demo: a new idea, as if nothing had been done. Without it, the menu has no
+	 * "Reset prototype".
+	 */
+	onResetPrototype?: () => void;
+	/**
 	 * Opens at the introduction and scrolls smoothly down to where the conversation's history ends (its latest section),
 	 * instead of starting there: right after "Add Plan", so the filled-in Plan goes by. Reduced motion: it starts there.
 	 */
 	glideToLatest?: boolean;
-	/** The "+" menu's "Add from library": opens the AutoPartsHUB home on "My library". */
-	onAddFromLibrary?: () => void;
+	/** "My library", for "Add from library" (the "+" menu, a `libraryReply`), a dialog to search it and add to the idea; what she adds is sent (`onSend`'s `fromLibrary`). */
+	myLibrary?: Pick<LibraryDialogProps, "assets" | "now">;
 	/**
 	 * "Comments" in the header: it opens the Comments panel with the reviewers' feedback (`reviewers`, empty before Review).
-	 * `unread`: the reviewers whose feedback she hasn't opened; the button and each of them show the dot. `onRead`: she
-	 * opened one's comment.
+	 * `unread`: what she hasn't opened, by id, the reviewers with new feedback and the new comments on the prototype; the
+	 * button and each of them show the dot. `onRead`: she opened a reviewer's comment.
 	 */
 	comments?: {
 		reviewers?: Reviewer[];
@@ -461,6 +522,11 @@ type SparksWorkspaceProps = {
 		/** Selecting one opens its part in Review. */
 		onOpenIdeaComment?: (id: string) => void;
 	};
+	/**
+	 * Opens Comments: set as the idea opens, from the notification about its new comments (prds/sparks.md, "New comments"),
+	 * and each time it changes. 0 or nothing: closed.
+	 */
+	openCommentsKey?: number;
 	/** The bell's notifications popover (the same as every AutoPartsHUB header's). */
 	notifications?: NotificationsPopoverProps;
 	/**
@@ -496,16 +562,25 @@ type SparksWorkspaceProps = {
 	 */
 	paths?: DirectionPaths;
 	/**
-	 * Starts the step after the one reached, from its empty state, once it can start (prds/sparks.md, "Steps"): e.g.
-	 * "Evaluate the prototype" once the prototype is built, beside "Back to Prototype". Without it, only "Back to …".
+	 * Starts a step not reached yet, from its empty state, once it can start (prds/sparks.md, "Moving through the steps"):
+	 * "Evaluate the prototype" and "Add to Review" once the prototype is built, with the prototype they're about. A step
+	 * without one has only "Back to …".
 	 */
-	nextStepAction?: { label: string; onClick: () => void };
+	upcomingActions?: Partial<Record<SparksStep, UpcomingAction>>;
 	/**
-	 * "Publish" in the header, after Share (prds/sparks-review.md, "Publishing"): gives the teams who review a fixed copy
-	 * of the idea and its prototype. `label`: "Publish", "Publish update" once she's changed it since, "Published" when
-	 * they have the latest. `hint`: why it can't be selected now (a tooltip), e.g. before there's a prototype.
+	 * "Library" (a folder) in the header: opens the Library panel with the files, links and notes she gave this idea, to add
+	 * more or remove some (prds/sparks.md, "The idea's library"). Always there, in every step.
 	 */
-	publish?: { label: string; onClick?: () => void; disabled?: boolean; hint?: string };
+	library?: Pick<LibraryPanelProps, "items" | "onAdd" | "onRemove"> & {
+		/** Changes each time something is added from the conversation: the folder bounces, to show where it went. */
+		addedKey?: number;
+	};
+	/**
+	 * "Publish" in the header, after Share, on Review only (prds/sparks-review.md, "Publishing"): gives the teams who review
+	 * a fixed copy of the idea and its prototype. `label`: "Publish", "Publish update" once she's changed it since,
+	 * "Published" when they have the latest. `hint`: why it can't be selected now (a tooltip). Not for collaborators.
+	 */
+	publish?: PanelActionProps;
 	/**
 	 * "All ideas" in the menu on the concept's name: closes the concept, back to the Sparks start page in the same tab
 	 * (prds/sparks.md, "The concept workspace").
@@ -521,15 +596,44 @@ type SparksWorkspaceProps = {
 	onUseDefaultName?: () => void;
 };
 
+/** Starting a step from its empty state: the button, and the prototype it's about. */
+type UpcomingAction = {
+	label: string;
+	onClick: () => void;
+	disabled?: boolean;
+	/** The prototype she's on, e.g. "1. Fit check before you buy", "Version 2 · Not evaluated yet". */
+	prototype: { name: string; detail: string };
+	/** What to know before starting it, or why it can't start now. */
+	note?: string;
+};
+
+/** The prototype a step not reached yet would work on: its name, its version and where it stands, on a card. */
+function UpcomingPrototype({ name, detail, note }: UpcomingAction["prototype"] & { note?: string }) {
+	return (
+		<div className='flex max-w-[480px] flex-col items-center gap-2'>
+			<div className='flex max-w-full items-center gap-3 rounded-[12px] border border-border bg-background py-3 ps-4 pe-5 text-start'>
+				<MousePointerClick aria-hidden className='size-5 shrink-0 text-icon' />
+				<div className='flex min-w-0 flex-col'>
+					<Typography size='base' weight='semibold' className='text-foreground-prominent'>
+						{name}
+					</Typography>
+					<Typography size='sm' className='text-muted-foreground'>
+						{detail}
+					</Typography>
+				</div>
+			</div>
+			{note ? (
+				<Typography size='sm' className='text-muted-foreground'>
+					{note}
+				</Typography>
+			) : null}
+		</div>
+	);
+}
+
 /** The icon on a step's empty state, before Dana gets there. Product artwork. */
 const upcomingIcons = { prototype: MousePointerClick, validate: FlaskConical, review: Users } as const;
 
-
-/**
- * The header's outlined button, Share: Figma's Button Outlined lg · 36, its label alone (sparks.ds "Sparks Project",
- * 39:1608: 14px each side, sm semibold), no icon.
- */
-const headerButtonClasses = "rounded-button-lg px-3.5 text-sm font-semibold text-foreground shadow-xs";
 
 /**
  * The concept's name in its header (sparks.ds "Sparks Project", 79:7175): xl semibold (20/30), `foreground`, with a 22px chevron, 4px after it, opening a menu:
@@ -649,6 +753,88 @@ We start with Plan: we'll define the problem, agree on what success looks like, 
 Describe it in your own words, the way you'd tell a colleague. Rough is fine.`;
 }
 
+/** How the workspace is laid out: the conversation alone, beside a preview, two panels without it, or a step's empty state. */
+type WorkspaceLayout = "centered" | "split" | "panels" | "upcoming";
+
+/**
+ * Going from one layout to another: the conversation narrows to its column ("narrow": Plan ↔ Prototype), or the step
+ * gives way to another ("trade": everything else; `stepChangeAt`). `mainWidth`: `<main>`'s when it started.
+ * `leavingStep`: the conversation that stays while it fades out.
+ */
+type LayoutShift = { kind: "narrow" | "trade"; from: WorkspaceLayout; mainWidth: number; leavingStep?: SparksStep };
+
+/** The conversation's column beside a preview. */
+const conversationWidth = 480;
+
+/**
+ * Where the panel on the right starts, in `<main>`: after the conversation, the second of two equal panels (16px apart,
+ * 24px on each side), or the whole width (a step's empty state). It always ends 24px from the right.
+ */
+const panelLeftIn = (layout: WorkspaceLayout, mainWidth: number) =>
+	({ centered: undefined, split: conversationWidth, panels: mainWidth / 2 + 8, upcoming: 24 })[layout];
+
+const between = (from: number, to: number, progress: number) => from + (to - from) * progress;
+
+/** `custom`: whether the layout she leaves fades out or is just gone. Gone before what's new is in, so they don't show over each other. */
+const previewLayerVariants: Variants = {
+	leave: (fades: boolean) => ({ opacity: 0, transition: fades ? { ...easeOutTransition, duration: motionDuration.fast } : { duration: 0 } }),
+};
+
+/** What's beside the conversation, or takes its place. Leaving, it can't be used anymore. */
+function PreviewLayer({ className, children, style, ref }: { className?: string; children: React.ReactNode; style?: React.CSSProperties; ref?: React.Ref<HTMLDivElement> }) {
+	const present = useIsPresent();
+	const fades = Boolean(usePresenceData());
+	return (
+		<motion.div
+			ref={ref}
+			data-layer={present ? "in" : "out"}
+			inert={!present}
+			variants={previewLayerVariants}
+			exit='leave'
+			style={style}
+			className={cn(className, !present && (fades ? "z-10" : "invisible"))}
+		>
+			{children}
+		</motion.div>
+	);
+}
+
+/** A layer's parts, for the step change: what's in it, its two panels when it has two, and its phone. */
+function layerParts(main: HTMLElement, which: "in" | "out") {
+	const content = main.querySelector<HTMLElement>(`[data-layer=${which}] [data-layer-content]`);
+	const panels = content?.querySelectorAll<HTMLElement>(":scope > div > section");
+	return {
+		content,
+		side: panels?.length === 2 ? panels[0] : undefined,
+		phone: content?.querySelector<HTMLElement>("[data-phone]") ?? undefined,
+	};
+}
+
+/** A picture of the phone as it was, to glide from one step to the other: the same markup, scrolled the same, inert. */
+function pictureOf(phone: HTMLElement) {
+	const picture = phone.cloneNode(true) as HTMLElement;
+	picture.inert = true;
+	picture.setAttribute("aria-hidden", "true");
+	picture.removeAttribute("data-phone");
+	// No second element with the same id, except inside drawings: their gradients are found by id.
+	picture.querySelectorAll("[id]").forEach((element) => element.closest("svg") || element.removeAttribute("id"));
+	picture.querySelectorAll("[data-comment-pin]").forEach((pin) => pin.remove());
+	Object.assign(picture.style, { position: "absolute", left: "0", top: "0", zIndex: "20", pointerEvents: "none", transformOrigin: "0 0" });
+	const scrolled = [...phone.querySelectorAll<HTMLElement>("*")];
+	const copies = [...picture.querySelectorAll<HTMLElement>("*")];
+	return {
+		picture,
+		// Scrolling only holds once it's on the page. (Pins are gone from the copy, so only the same markup is matched.)
+		restoreScroll: () => {
+			const originals = scrolled.filter((element) => element.scrollTop > 0 && !element.closest("[data-comment-pin]"));
+			for (const element of originals) {
+				const index = scrolled.filter((other) => !other.closest("[data-comment-pin]")).indexOf(element);
+				if (copies[index]) copies[index].scrollTop = element.scrollTop;
+			}
+		},
+	};
+}
+
 /**
  * Where Dana works on a concept: the header with the concept's name and the four steps, the conversation with Sparks
  * centered (Sparks's introduction first), and the message box at the bottom. Figma: Sparks → "Sparks Project" (node 27:1932).
@@ -665,9 +851,12 @@ function SparksWorkspace({
 	onAnswerChange,
 	initialPrompt,
 	onAddPlan,
+	onResetPrototype,
 	glideToLatest = false,
-	onAddFromLibrary,
+	myLibrary,
 	comments,
+	openCommentsKey = 0,
+	library,
 	notifications,
 	onStepSelect,
 	preview: previewProp,
@@ -675,7 +864,7 @@ function SparksWorkspace({
 	composerContext,
 	share,
 	paths,
-	nextStepAction,
+	upcomingActions,
 	publish,
 	onClose,
 	onRename,
@@ -713,7 +902,9 @@ function SparksWorkspace({
 	// Plan's never shows in Prototype, or the other way round. A reply belongs to the step it came on (without one, the
 	// reply before's; Plan for the first); Dana's message belongs with the reply that answers it ("Generate a prototype…"
 	// starts Prototype's), or, with none yet, with the step she sent it from.
-	const threadStep = currentStep;
+	// Going to a step with no conversation (Prototype → Evaluate), the one she leaves stays while it fades out.
+	const [shift, setShift] = React.useState<LayoutShift>();
+	const threadStep = shift?.leavingStep ?? currentStep;
 	const stepOf = new Map<string, SparksStep>();
 	{
 		let step: SparksStep = "plan";
@@ -796,7 +987,30 @@ function SparksWorkspace({
 		else itemRefs.current.delete(id);
 	};
 
-	const send = (text: string) => onSend?.(text);
+	// Attached files, waiting to be sent with her next message: "Attach files" in the "+" menu, or a reply's "Attach files".
+	const [files, setFiles] = React.useState<string[]>([]);
+	const fileInputRef = React.useRef<HTMLInputElement>(null);
+	const pickFiles = () => fileInputRef.current?.click();
+	// "Add from library": the dialog with everything in My library.
+	const [pickingFromLibrary, setPickingFromLibrary] = React.useState(false);
+	// The images she picked, by file name, to open from Library: in this tab only (nothing is uploaded).
+	const [images, setImages] = React.useState<Record<string, string>>({});
+	const keepImages = (picked: File[]) => {
+		const added = picked.filter((file) => file.type.startsWith("image/")).map((file) => [file.name, URL.createObjectURL(file)]);
+		if (added.length) setImages((current) => ({ ...current, ...Object.fromEntries(added) }));
+	};
+	// Sparks asked for files: they can go with no text, and "Nothing to add" with files waiting sends the files.
+	const attachReply = last?.from === "sparks" ? last.attachReply : undefined;
+	const libraryReply = last?.from === "sparks" ? last.libraryReply : undefined;
+	const send = (text: string, fromLibrary?: LibraryPick[]) => {
+		onSend?.(text, files.length ? files : undefined, fromLibrary);
+		setFiles([]);
+	};
+	const quickReply = (text: string) => {
+		if (attachReply && text === attachReply) return pickFiles();
+		if (libraryReply && text === libraryReply) return setPickingFromLibrary(true);
+		send(attachReply && files.length ? "" : text);
+	};
 	// What's in the message box. "Initial prompt" fills it; the menu closing puts focus there, caret at the end.
 	const [draft, setDraft] = React.useState("");
 	const fillDraft = (text: string) => setDraft(text);
@@ -877,21 +1091,45 @@ function SparksWorkspace({
 	// A direction's call to action on its card.
 	const directionAction = directionActionFor(messages, paths);
 	// Comments: the reviewers' feedback and her comments on the prototype, 480px on the right in every step (DESIGN.md →
-	// "Side panels share one frame"); with no preview, the conversation stays centered in the rest. It opens only from
-	// "Comments", and takes focus.
-	const [commentsOpen, setCommentsOpen] = React.useState(false);
+	// "Side panels share one frame"); with no preview, the conversation stays centered in the rest. Library: what she gave
+	// the idea. One panel at a time, in the same column; each opens only from its button, and takes focus.
+	const [sidePanel, setSidePanel] = React.useState<"comments" | "library" | undefined>(openCommentsKey ? "comments" : undefined);
+	const openedFor = React.useRef(openCommentsKey);
+	React.useEffect(() => {
+		if (openCommentsKey === openedFor.current) return;
+		openedFor.current = openCommentsKey;
+		if (openCommentsKey) setSidePanel("comments");
+	}, [openCommentsKey]);
+	const commentsOpen = sidePanel === "comments";
+	const libraryOpen = sidePanel === "library";
 	// Its width: 380px to start, dragged from its left edge between 300px and half the window; kept while it's closed.
-	const [commentsWidth, setCommentsWidth] = useSidePanelWidth();
+	const [sidePanelWidth, setSidePanelWidth] = useSidePanelWidth();
 	const commentsButtonRef = React.useRef<HTMLButtonElement>(null);
 	const closeComments = () => {
-		setCommentsOpen(false);
+		setSidePanel(undefined);
 		commentsButtonRef.current?.focus();
 	};
+	const libraryButtonRef = React.useRef<HTMLButtonElement>(null);
+	const closeLibrary = () => {
+		setSidePanel(undefined);
+		libraryButtonRef.current?.focus();
+	};
+	// Something she gave Sparks in the conversation lands in Library: its folder bounces (not when it opens, nor for what
+	// she adds in the panel itself).
+	const libraryBounce = useAnimationControls();
+	const libraryAddedKey = library?.addedKey;
+	const bouncedFor = React.useRef(libraryAddedKey);
+	React.useEffect(() => {
+		if (libraryAddedKey === bouncedFor.current) return;
+		bouncedFor.current = libraryAddedKey;
+		void libraryBounce.start("bounce");
+	}, [libraryAddedKey, libraryBounce]);
 	// A step not reached yet, selected to see what it is: its empty state takes the preview's place until she goes back
 	// (prds/sparks.md, "Steps"). The step she's on doesn't change.
 	const [peekStep, setPeekStep] = React.useState<SparksStep>();
 	React.useEffect(() => setPeekStep(undefined), [currentStep]);
 	const peeked = sparksSteps.find((step) => step.id === peekStep);
+	const peekedAction = peeked && upcomingActions?.[peeked.id];
 	const currentLabel = sparksSteps.find((step) => step.id === currentStep)?.label ?? "";
 	// A step not reached yet (its empty state), or a step with no conversation (Evaluate): no conversation, no message box.
 	const conversationHidden = Boolean(peeked?.upcoming) || !conversation;
@@ -905,57 +1143,137 @@ function SparksWorkspace({
 				})}
 				title={peeked.upcoming.title}
 				description={peeked.upcoming.description}
-				// The next step, once it can start (Evaluate, with the prototype built): its action, and "Back to …" beside it.
-				{...(nextStepAction && sparksSteps.findIndex((step) => step.id === peeked.id) === reachedIndex + 1
+				// Once it can start (Evaluate and Review, with the prototype built): its action, and "Back to …" beside it.
+				{...(peekedAction
 					? {
-							buttonLabel: nextStepAction.label,
+							buttonLabel: peekedAction.label,
 							buttonProps: {
+								disabled: peekedAction.disabled,
 								onClick: () => {
 									setPeekStep(undefined);
-									nextStepAction.onClick();
+									peekedAction.onClick();
 								},
 							},
 							secondaryButtonLabel: `Back to ${currentLabel}`,
 							secondaryButtonProps: { onClick: () => setPeekStep(undefined) },
 						}
 					: { buttonLabel: `Back to ${currentLabel}`, buttonProps: { onClick: () => setPeekStep(undefined) } })}
-			/>
+			>
+				{peekedAction ? <UpcomingPrototype {...peekedAction.prototype} note={peekedAction.note} /> : null}
+			</EmptyState>
 		</section>
 	) : (
 		previewProp
 	);
-	const centered = !preview;
+	// Leaving Plan for a step's empty state, or for Evaluate or Review: its conversation stays as wide as it was.
+	const centered = !preview || (shift?.kind === "trade" && shift.from === "centered");
 
 	// Plan → Prototype (and back): the conversation narrows from the full width to its 480px column while the preview
 	// slides in from the right behind it, on `easeOutTransition` (ease-out, 300ms; MOTION.md → "Step change"). Only
 	// between the two layouts with the conversation showing, not for a step's empty state. Reduced motion: it switches.
+	// Any other step (Prototype ↔ Evaluate or Review, a step's empty state): see `trading`.
 	// At rest the classes size the column (`flex-1` centered, `w-[480px]` beside a preview); only during the shift is its
 	// width set inline, from one to the other, then cleared.
 	const mainRef = React.useRef<HTMLElement>(null);
 	const columnRef = React.useRef<HTMLDivElement>(null);
-	const conversationWidth = 480;
-	const split = Boolean(preview) && !conversationHidden;
-	const [layoutWas, setLayoutWas] = React.useState({ split, hidden: conversationHidden });
-	// The shift in progress, with <main>'s width when it started.
-	const [shift, setShift] = React.useState<{ mainWidth: number }>();
-	if (layoutWas.split !== split || layoutWas.hidden !== conversationHidden) {
-		const eases = layoutWas.split !== split && !layoutWas.hidden && !conversationHidden && !prefersReducedMotion;
-		const mainWidth = mainRef.current?.clientWidth ?? 0;
-		setShift(eases && mainWidth > conversationWidth ? { mainWidth } : undefined);
-		setLayoutWas({ split, hidden: conversationHidden });
+	const layout: WorkspaceLayout = peeked?.upcoming ? "upcoming" : !conversation ? "panels" : preview ? "split" : "centered";
+	const split = layout === "split";
+	// What's on screen, as one layer: the prototype beside the conversation, a step's two panels, or a step's empty state.
+	const layerId = layout === "panels" ? currentStep : layout === "upcoming" ? `upcoming-${peeked?.id}` : layout;
+	const [layoutWas, setLayoutWas] = React.useState({ layout, layerId, step: currentStep });
+	if (layoutWas.layerId !== layerId || layoutWas.step !== currentStep) {
+		const was = layoutWas.layout;
+		if (layoutWas.layerId !== layerId) {
+			const narrows = (was === "centered" && layout === "split") || (was === "split" && layout === "centered");
+			const mainWidth = mainRef.current?.clientWidth ?? 0;
+			const eases = !prefersReducedMotion && mainWidth > conversationWidth;
+			const leavesConversation = (was === "split" || was === "centered") && layout !== "split" && layout !== "centered";
+			setShift(eases ? { kind: narrows ? "narrow" : "trade", from: was, mainWidth, leavingStep: leavesConversation ? layoutWas.step : undefined } : undefined);
+		}
+		setLayoutWas({ layout, layerId, step: currentStep });
 	}
+	const narrowing = shift?.kind === "narrow";
+	// Any other change of step (MOTION.md → "Step change"): the panel on the right is there in both, so it glides from one
+	// layout's place to the other's, with the phone in it; the conversation and the panel on the left take turns.
+	const trading = shift?.kind === "trade" ? shift : undefined;
+	const columnLeaving = Boolean(trading) && conversationHidden && trading?.leavingStep !== undefined;
+	const gliding = trading !== undefined && panelLeftIn(trading.from, trading.mainWidth) !== undefined && panelLeftIn(layout, trading.mainWidth) !== undefined;
+	const glidingPanelRef = React.useRef<HTMLDivElement>(null);
 	React.useLayoutEffect(() => {
 		const column = columnRef.current;
-		if (!shift || !column) return;
-		const from = split ? shift.mainWidth : conversationWidth;
-		const to = split ? conversationWidth : shift.mainWidth;
-		// Set before the first paint, so the column never shows at its content's width.
-		column.style.width = `${from}px`;
-		const controls = animateElement(column, { width: [`${from}px`, `${to}px`] }, easeOutTransition);
-		controls.then(() => setShift(undefined));
+		const main = mainRef.current;
+		if (!shift || !column || !main) return;
+		// From 0 to 1, styles set by hand: Motion keeps the values it animates on an element and writes them again with the
+		// next animation, so a width from one shift would come back in another. Set before the first paint.
+		// Only what it set is cleared: some of these elements have inline styles of their own (a phone's size).
+		const styled = new Map<HTMLElement, Set<string>>();
+		const set = (element: HTMLElement | null | undefined, style: Partial<CSSStyleDeclaration>) => {
+			if (!element) return;
+			const keys = styled.get(element) ?? new Set();
+			styled.set(element, keys);
+			for (const key of Object.keys(style)) keys.add(key);
+			Object.assign(element.style, style);
+		};
+		let picture: HTMLElement | undefined;
+		let draw: (t: number) => void;
+		if (shift.kind === "trade") {
+			const hadConversation = shift.from === "split" || shift.from === "centered";
+			const hasConversation = layout === "split" || layout === "centered";
+			const fromLeft = panelLeftIn(shift.from, shift.mainWidth);
+			const toLeft = panelLeftIn(layout, shift.mainWidth);
+			const arriving = layerParts(main, "in");
+			const leaving = layerParts(main, "out");
+			// The phone, when both steps have one: a picture of it as it was glides to the other's place, over the real one.
+			const origin = main.getBoundingClientRect();
+			const start = leaving.phone && arriving.phone ? leaving.phone.getBoundingClientRect() : undefined;
+			if (leaving.phone && start) {
+				const made = pictureOf(leaving.phone);
+				picture = made.picture;
+				main.append(picture);
+				made.restoreScroll();
+				set(leaving.phone, { visibility: "hidden" });
+			}
+			const glide = (left: number, t: number) => (fromLeft === undefined || toLeft === undefined ? 0 : between(fromLeft, toLeft, t) - left);
+			draw = (t) => {
+				const { move, leave, enter, side, settle } = stepChangeAt(t);
+				// The conversation leaves to the left, and comes in from there.
+				if (hadConversation && !hasConversation) set(column, { opacity: `${1 - leave}`, transform: `translateX(${-move * motionDistance.large}px)` });
+				if (hasConversation && !hadConversation) set(column, { opacity: `${side}`, transform: `translateX(${(side - 1) * motionDistance.large}px)` });
+				// The panel on the right, in its own color, so it doesn't blink while what's in it changes; what's in it follows.
+				if (fromLeft !== undefined && toLeft !== undefined) set(glidingPanelRef.current, { left: `${between(fromLeft, toLeft, move)}px` });
+				if (fromLeft !== undefined && shift.from !== "panels") set(leaving.content, { marginLeft: `${glide(fromLeft, move)}px` });
+				set(arriving.content, { opacity: `${enter}`, marginLeft: toLeft !== undefined && layout !== "panels" ? `${glide(toLeft, move)}px` : "" });
+				// The panel on the left (the evaluation, the idea for review) comes in where the conversation was.
+				set(arriving.side, { opacity: `${side}`, transform: `translateX(${(side - 1) * motionDistance.large}px)` });
+				if (picture && start && arriving.phone) {
+					const phone = arriving.phone;
+					// Its own place now, which moves as its panel does.
+					set(phone, { transform: "none", transformOrigin: "0 0" });
+					const end = phone.getBoundingClientRect();
+					const width = between(start.width, end.width || start.width, move);
+					const x = between(start.left, end.left, move);
+					const y = between(start.top, end.top, move);
+					if (end.width) set(phone, { transform: `translate(${x - end.left}px, ${y - end.top}px) scale(${width / end.width})` });
+					picture.style.transform = `translate(${x - origin.left}px, ${y - origin.top}px) scale(${width / start.width})`;
+					picture.style.opacity = `${1 - settle}`;
+				}
+			};
+		} else {
+			draw = (t) => {
+				const here = split ? 1 - t : t;
+				set(column, { width: `${between(conversationWidth, shift.mainWidth, here)}px` });
+			};
+		}
+		draw(0);
+		const controls = animate(0, 1, {
+			...(shift.kind === "trade" ? stepChangeTransition : easeOutTransition),
+			onUpdate: draw,
+			onComplete: () => setShift((current) => (current === shift ? undefined : current)),
+		});
 		return () => {
 			controls.stop();
-			column.style.width = "";
+			picture?.remove();
+			for (const [element, keys] of styled) for (const key of keys) Object.assign(element.style, { [key]: "" });
 		};
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [shift]);
@@ -1002,15 +1320,28 @@ function SparksWorkspace({
 					</StepNav>
 				}
 			>
-				{/* Figma "Right" (sparks.ds "Sparks Project", 32:1145): Comments, notifications, then Share. No "Blueprint": Plan
+				{/* Figma "Right" (sparks.ds "Sparks Project", 32:1145): Library, Comments, notifications, then Share. No "Blueprint": Plan
 				    stays the conversation once it's done (prds/sparks.md, "The finished plan"). No close button: "All ideas" goes
 				    back to the start page. */}
+				{library ? (
+					<HeaderIconButton
+						ref={libraryButtonRef}
+						label='Library'
+						aria-expanded={libraryOpen}
+						onClick={() => (libraryOpen ? closeLibrary() : setSidePanel("library"))}
+					>
+						{/* sparks.ds "folder" (77:6793), Lucide's. */}
+						<motion.span variants={prefersReducedMotion ? bounceReducedVariants : bounceVariants} initial='rest' animate={libraryBounce} className='flex'>
+							<Folder aria-hidden />
+						</motion.span>
+					</HeaderIconButton>
+				) : null}
 				<HeaderIconButton
 					ref={commentsButtonRef}
 					label='Comments'
 					dot={Boolean(comments?.unread?.length)}
 					aria-expanded={commentsOpen}
-					onClick={() => (commentsOpen ? closeComments() : setCommentsOpen(true))}
+					onClick={() => (commentsOpen ? closeComments() : setSidePanel("comments"))}
 				>
 					<MessageCircle aria-hidden />
 				</HeaderIconButton>
@@ -1025,12 +1356,10 @@ function SparksWorkspace({
 				    alone (no icon). No avatars beside it (32:1145): who has access is in Share's popover. */}
 				{share ? (
 					<SharePopover {...share}>
-						<Button variant='outline' className={headerButtonClasses}>
-							Share
-						</Button>
+						<Button variant='outline'>Share</Button>
 					</SharePopover>
 				) : null}
-				{/* "Publish", last (sparks.ds "Sparks Project" with Publish): Button Solid · Neutral lg · 36, the header's
+				{/* "Publish", last, on Review only (sparks.ds "Sparks Project" with Publish): Button Solid · Neutral lg · 36, the header's
 				    button sizes. Share is for people working on the idea with her (the live version); Publish is for the teams
 				    who review and decide (a fixed version). Unavailable, it says why in a tooltip (a disabled button gets no
 				    hover, so the tooltip sits on a wrapper that takes focus). */}
@@ -1039,7 +1368,7 @@ function SparksWorkspace({
 						<Tooltip>
 							<TooltipTrigger asChild>
 								<span tabIndex={0} className='rounded-button-lg outline-none focus-visible:ring-2 focus-visible:ring-ring'>
-									<Button variant='neutral' disabled className={cn(headerButtonClasses, "text-neutral-foreground")}>
+									<Button variant='neutral' disabled>
 										{publish.label}
 									</Button>
 								</span>
@@ -1053,7 +1382,6 @@ function SparksWorkspace({
 							variant='neutral'
 							disabled={publish.disabled}
 							onClick={publish.onClick}
-							className={cn(headerButtonClasses, "text-neutral-foreground")}
 						>
 							{publish.label}
 						</Button>
@@ -1066,22 +1394,26 @@ function SparksWorkspace({
 			    the scrollbar sits at the page's edge and the text scrolls up to the header. */}
 			{/* With a preview (the prototype), the conversation is a 480px column on the left and the preview takes the rest. */}
 			{/* Clipped while the layout shifts, so the preview comes in from the right edge. */}
-			<main ref={mainRef} className={cn("flex min-h-0 flex-1", shift && "overflow-hidden")}>
+			<main ref={mainRef} className={cn("relative flex min-h-0 flex-1", shift && "overflow-hidden")}>
 			{/* Hidden, not removed, while a step not reached yet shows its empty state: the scroll position stays. */}
 			{/* Beside a preview, the narrow column's text is 15px instead of 16px: messages, cards and the message box (every
 			    `text-base` inside it; DESIGN.md → "The conversation beside a preview is 15px"). */}
 			{/* While the layout shifts, its width is set inline (see `shift`), so no width class then. */}
 			<div
 				ref={columnRef}
+				inert={columnLeaving}
 				className={cn(
 					"flex min-h-0 flex-col",
-					shift ? "min-w-0 shrink-0" : preview ? "w-[480px] shrink-0" : "min-w-0 flex-1",
-					preview && "[&_.text-base]:text-[15px]",
-					conversationHidden && "hidden",
+					narrowing ? "min-w-0 shrink-0" : !centered ? "w-[480px] shrink-0" : "min-w-0 flex-1",
+					// Fading out where the panels take its place, as wide as it was.
+					columnLeaving && (centered ? "absolute inset-0 w-auto" : "absolute inset-y-0 left-0"),
+					// …and its headings sit 12px below what's above them, like any paragraph (24px in Plan).
+					!centered && "[&_.text-base]:text-[15px] [&_[data-slot=assistant-message]_p]:mt-0",
+					conversationHidden && !columnLeaving && "hidden",
 				)}
 			>
 				{/* No scrollbar while the layout shifts: the text rewraps as the column narrows. */}
-				<div ref={scrollRef} className={cn("scrollbar-subtle min-h-0 flex-1 overflow-y-auto px-8", shift && "[scrollbar-width:none]")}>
+				<div ref={scrollRef} className={cn("scrollbar-subtle min-h-0 flex-1 overflow-y-auto px-6", shift && "[scrollbar-width:none]")}>
 					<div className='mx-auto w-full max-w-[728px]'>
 						<ol aria-label='Conversation' aria-live='polite' className='flex flex-col gap-4'>
 							{/* The introduction: first in every concept, in Plan's conversation, 32px above what follows it. */}
@@ -1104,12 +1436,21 @@ function SparksWorkspace({
 										{(() => {
 											const ask = changeableAsk(index);
 											const text = userMessageText(messages, index);
-											if (!ask) return <UserMessage className={preview ? undefined : "max-w-full"}>{text}</UserMessage>;
+											if (!ask)
+												return (
+													<UserMessage className={preview ? undefined : "max-w-full"}>
+														{text}
+														<MessageFiles files={message.attachments} fromLibrary={message.fromLibrary} spaced={Boolean(text)} />
+													</UserMessage>
+												);
 											// Her answer to a question card: the pencil after it, inside the bubble, on its last line (a long
 											// answer wraps), changes it. 20px, centered on the 24px line, so the bubble keeps its height.
 											return (
 												<UserMessage className={cn("flex items-end gap-2", preview ? undefined : "max-w-full")}>
-													<span className='min-w-0'>{text}</span>
+													<span className='min-w-0'>
+														{text}
+														<MessageFiles files={message.attachments} fromLibrary={message.fromLibrary} spaced={Boolean(text)} />
+													</span>
 													<Tooltip>
 														<TooltipTrigger asChild>
 															<button
@@ -1154,11 +1495,12 @@ function SparksWorkspace({
 										}
 									>
 										<SparksReplyView
+											narrow={Boolean(preview)}
 											reply={message}
 											animate={!initialIds.has(message.id) && !settled.current.has(message.id)}
 											// While she changes an answer, only that question's replies show (and take Enter).
 											showQuickReplies={index === messages.length - 1 && !changing}
-											onQuickReply={send}
+											onQuickReply={quickReply}
 											onSuggestionEdit={
 												onSuggestionEdit ? (part, text) => onSuggestionEdit(message.id, part, text) : undefined
 											}
@@ -1172,7 +1514,7 @@ function SparksWorkspace({
 					</div>
 				</div>
 				{/* 24px between the conversation and the message box, outside the scroll area, so text never runs up to the box. */}
-				<div className='shrink-0 px-8 pt-6 pb-6'>
+				<div className='shrink-0 px-6 pt-6 pb-6'>
 					{composerContext ? (
 						<div className={cn("mb-2 flex items-center gap-2 text-sm text-foreground", "mx-auto max-w-[728px]")}>
 							<span className='flex min-w-0 items-center gap-1.5 rounded-full bg-background-subtle py-1 ps-3 pe-1'>
@@ -1189,8 +1531,44 @@ function SparksWorkspace({
 							</span>
 						</div>
 					) : null}
+					{/* The browser's file picker. Only the names are kept: nothing is uploaded in the prototype. */}
+					<input
+						ref={fileInputRef}
+						type='file'
+						multiple
+						accept={attachTypes}
+						aria-label='Attach files'
+						tabIndex={-1}
+						className='hidden'
+						onChange={(event) => {
+							const picked = [...(event.target.files ?? [])];
+							keepImages(picked);
+							const names = picked.map((file) => file.name);
+							// Cleared, so the same file can be picked again after it's removed.
+							event.target.value = "";
+							if (!names.length) return;
+							setFiles((current) => [...current, ...names.filter((name) => !current.includes(name))]);
+							composerRef.current?.focus();
+						}}
+					/>
+					<LibraryDialog
+						open={pickingFromLibrary}
+						onOpenChange={setPickingFromLibrary}
+						assets={myLibrary?.assets ?? []}
+						now={myLibrary?.now}
+						items={library?.items ?? []}
+						// Sent in the conversation, as files on their own: her answer when Sparks asked for supporting material.
+						onAdd={(items) => send("", items)}
+						// Back to her message, as the "+" menu.
+						onCloseAutoFocus={(event) => {
+							event.preventDefault();
+							composerRef.current?.focus();
+						}}
+					/>
 					<PromptComposer
 						ref={composerRef}
+						attachments={files}
+						onAttachmentRemove={(index) => setFiles((current) => current.filter((_, i) => i !== index))}
 						aria-label='Message Sparks'
 						placeholder={
 							composerContext?.placeholder ??
@@ -1219,21 +1597,22 @@ function SparksWorkspace({
 						// sparks.ds "select-prompt-add" (77:6726): attach, add from the library, connect, and the demo's initial prompt.
 						addMenu={
 							<>
-								<DropdownMenuItem>
+								<DropdownMenuItem onSelect={pickFiles}>
 									<Paperclip aria-hidden />
-									Attach
+									Attach files
 								</DropdownMenuItem>
-								{/* Opens "My library" on the AutoPartsHUB home (prds/sparks.md, "The message box"). */}
-								<DropdownMenuItem onSelect={onAddFromLibrary}>
+								{/* A dialog with everything in My library (prds/sparks.md, "Adding from My library"). */}
+								<DropdownMenuItem onSelect={() => setPickingFromLibrary(true)}>
 									<Folder aria-hidden />
 									Add from library
 								</DropdownMenuItem>
 								<DropdownMenuItem>
 									<Zap aria-hidden />
-									Connect
+									Add a connection
 								</DropdownMenuItem>
-								{/* The demo's shortcuts, after a line: the first message, ready to send, and the whole of Plan up to the choice. */}
-								{initialPrompt || onAddPlan ? <DropdownMenuSeparator /> : null}
+								{/* The demo's shortcuts, after a line: the first message, ready to send, the whole of Plan up to
+								    the choice, and starting over. */}
+								{initialPrompt || onAddPlan || onResetPrototype ? <DropdownMenuSeparator /> : null}
 								{initialPrompt ? (
 									<DropdownMenuItem onSelect={() => fillDraft(initialPrompt)}>
 										<MessageCircle aria-hidden />
@@ -1246,6 +1625,12 @@ function SparksWorkspace({
 										Add Plan
 									</DropdownMenuItem>
 								) : null}
+								{onResetPrototype ? (
+									<DropdownMenuItem onSelect={onResetPrototype}>
+										<RotateCcw aria-hidden />
+										Reset prototype
+									</DropdownMenuItem>
+								) : null}
 							</>
 						}
 						className='mx-auto max-w-[728px]'
@@ -1253,43 +1638,57 @@ function SparksWorkspace({
 						autoFocus={messages.length === 0}
 						onSubmit={(text) => {
 							// While she changes an answer, what she types is her new answer, in her words.
-							if (changing) finishChange(text, true);
-							else send(text);
+							// Only files: her answer stays as it was.
+							if (changing && text.trim()) finishChange(text, true);
+							else {
+								if (changing) closeChange();
+								send(text);
+							}
 							setDraft("");
 						}}
 					/>
 				</div>
 			</div>
-			{/* While the layout shifts, the preview keeps its final width (pushed in from the right as the conversation
-			    narrows) and fades in. */}
+			{/* Between steps, the panel on the right gliding from one place to the other, behind what's in it (`trading`). */}
+			{gliding ? <div ref={glidingPanelRef} aria-hidden className='absolute top-0 right-6 bottom-6 rounded-card bg-background-subtle' /> : null}
+			{/* Plan → Prototype: the preview keeps its final width (pushed in from the right as the conversation narrows) and
+			    fades in. Between other steps, the one she leaves fades out on top of the one coming in (`trading`). */}
+			<AnimatePresence initial={false} mode='popLayout' custom={Boolean(trading)}>
 			{preview ? (
-				<motion.div
-					initial={shift && split ? { opacity: 0 } : false}
-					animate={{ opacity: 1 }}
-					transition={easeOutTransition}
-					style={shift && split ? { width: shift.mainWidth - conversationWidth, flex: "none" } : undefined}
-					// Without a conversation (Evaluate, Figma 72:660), 24px on each side and below; a step's empty state keeps 32px.
-					className={cn("flex min-h-0 min-w-0 flex-1 flex-col pb-6", !conversation && !peeked?.upcoming ? "px-6" : cn("pr-8", conversationHidden && "ps-8"))}
+				<PreviewLayer
+					key={layerId}
+					style={narrowing && split && shift ? { width: shift.mainWidth - conversationWidth, flex: "none" } : undefined}
+					// Without a conversation (Evaluate, Figma 72:660), 24px on each side and below.
+					className={cn("relative flex min-h-0 min-w-0 flex-1 flex-col pb-6", layout === "panels" ? "px-6" : cn("pr-6", conversationHidden && "ps-6"))}
 				>
-					{preview}
-				</motion.div>
+					<motion.div initial={narrowing ? { opacity: 0 } : false} animate={{ opacity: 1 }} transition={easeOutTransition} className='flex min-h-0 flex-1 flex-col'>
+						<div data-layer-content className='flex min-h-0 flex-1 flex-col'>
+							{preview}
+						</div>
+					</motion.div>
+				</PreviewLayer>
 			) : null}
+			</AnimatePresence>
 			</main>
 		</div>
-			{/* The Comments panel, on the right edge, 480px, the screen's full height; it slides in (fades, with reduced motion). */}
+			{/* Comments or Library, on the right edge, the screen's full height; it slides in (fades, with reduced motion). From one
+			    to the other, the column stays and its content changes. */}
 			<AnimatePresence initial={false}>
-				{commentsOpen ? (
+				{sidePanel ? (
 					<motion.aside
-						key='comments'
-						aria-label='Comments'
+						key='side-panel'
+						aria-label={commentsOpen ? "Comments" : "Library"}
 						variants={prefersReducedMotion ? overlayVariants : panelVariants}
 						initial='initial'
 						animate='animate'
 						exit='exit'
 						className='relative flex h-full shrink-0 flex-col'
-						style={{ width: commentsWidth }}
+						style={{ width: sidePanelWidth }}
 					>
-						<SidePanelResizer width={commentsWidth} onWidthChange={setCommentsWidth} label='Resize comments' />
+						<SidePanelResizer width={sidePanelWidth} onWidthChange={setSidePanelWidth} label={commentsOpen ? "Resize comments" : "Resize library"} />
+						{libraryOpen && library ? (
+							<LibraryPanel items={library.items} onAdd={library.onAdd} onRemove={library.onRemove} images={images} onFilesPicked={keepImages} onClose={closeLibrary} autoFocus />
+						) : (
 						<CommentsPanel
 							reviewers={comments?.reviewers ?? []}
 							unread={comments?.unread}
@@ -1301,6 +1700,7 @@ function SparksWorkspace({
 							onClose={closeComments}
 							autoFocus
 						/>
+						)}
 					</motion.aside>
 				) : null}
 			</AnimatePresence>

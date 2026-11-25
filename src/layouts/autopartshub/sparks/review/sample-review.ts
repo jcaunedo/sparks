@@ -123,7 +123,7 @@ const inSentence = (department: string) =>
 	department === "UX team" ? "the UX team" : department.endsWith(" team") ? `the ${department.toLowerCase()}` : department.toLowerCase();
 
 /** "the UX team, engineering, stores and the catalog team". */
-const departmentsInWords = (directionId?: string) => {
+export const sampleDepartmentsInWords = (directionId?: string) => {
 	const names = reviewProfileFor(directionId).reviewers.map((r) => inSentence(r.department));
 	return `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}`;
 };
@@ -140,7 +140,6 @@ export const sampleReviewerPeople: Record<string, PrototypeCommentAuthor> = {
 };
 
 const onPhone: CommentScope = { key: "customer-phone", audience: "customer", audienceLabel: "Customer", device: "phone" };
-const atCounter: CommentScope = { key: "staff-desktop", audience: "staff", audienceLabel: "Store staff", device: "desktop" };
 
 /** What each team pins on the "Fit check before you buy" prototype while it reviews, on the element it's about. */
 const fitCheckPins: Record<string, Omit<PrototypeComment, "id" | "createdAt" | "author">> = {
@@ -149,30 +148,34 @@ const fitCheckPins: Record<string, Omit<PrototypeComment, "id" | "createdAt" | "
 		fx: 0.85,
 		fy: 0.5,
 		where: "Add your vehicle",
+		view: 0,
 		scope: onPhone,
 		text: "Lead with what they get: \"See which parts fit your car\" says why to add it.",
 	},
 	eng: {
 		point: "save-vehicle",
-		fx: 0.5,
+		fx: 0.8,
 		fy: 0.5,
 		where: "Save vehicle",
+		view: 0,
 		scope: onPhone,
 		text: "Saved vehicles are already in accounts, so this can reuse them. Should it save the vehicle for guests too?",
 	},
 	stores: {
-		point: "look-up",
-		fx: 0.5,
+		point: "save-vehicle",
+		fx: 0.15,
 		fy: 0.5,
-		where: "Look up",
-		scope: atCounter,
-		text: "At the counter we mostly look customers up by phone number. Can that be the first field?",
+		where: "Save vehicle",
+		view: 0,
+		scope: onPhone,
+		text: "When someone calls us about a part, can we see the vehicle they saved here?",
 	},
 	catalog: {
 		point: "vehicle-hint",
 		fx: 0.8,
 		fy: 0.5,
 		where: "Add it once, and every part shows whether it fits.",
+		view: 0,
 		scope: onPhone,
 		text: "For older vehicles we don't have trim-level fit data yet, so expect \"We're not sure this fits\" there often.",
 	},
@@ -245,136 +248,35 @@ export function sampleReviewBuildProgress(titles: readonly string[], skipped: bo
 	};
 }
 
-/**
- * Going to Review: Sparks writes the idea for review on the right, part by part (prds/sparks-review.md, "Putting it
- * together"). Only its progress until it's done; then the same reply says what it put together, what's open and who to
- * ask (`sampleReviewOpenReply`).
- */
-export function sampleReviewBuildingReply(titles: readonly string[], skipped: boolean, step = 0): SparksReply {
-	return {
-		id: "review-building",
-		from: "sparks",
-		parts: [{ kind: "progress", ...sampleReviewBuildProgress(titles, skipped, step), startedAt: Date.now() }],
-	};
-}
-
-/** Sparks's reply that waits for her to publish: with its progress, or on its own when she's said something since. */
-export const isReviewOpenReply = (id: string) => id.startsWith("review-open") || id.startsWith("review-building");
-
-const bulletsFor = (lines: string[]) => lines.map((line) => `- ${line}`).join("\n");
-
-/** The answer that publishes the idea for the teams, after Sparks shows what they'll get. */
-export const samplePublishIt = "Looks right, publish it";
-
-/**
- * The idea is put together: what's in it, what's still open, who Sparks would invite and why, what publishing gives
- * them, and the invitation it drafted (prds/sparks-review.md, "Checking it's ready", "Publishing"). `opening` says how
- * she got here. Publishing waits for her. `version`: the prototype's version they'd get.
- */
-export function sampleReviewOpenReply(concept: ConceptForReview, opening: string, skipped: boolean, directionId?: string, version = 1): SparksReply {
-	const reviewers = sampleReviewersFor(directionId);
-	const open = [...concept.knownIssues.map((issue) => `Known issue: ${issue.charAt(0).toLowerCase()}${issue.slice(1)}`), ...concept.gaps];
-	return {
-		id: "review-open",
-		from: "sparks",
-		parts: [
-			{
-				kind: "text",
-				text: [
-					`${opening.trim()} Your idea is ready for review.`.trim(),
-					"**Here's what I put together:**",
-					"It's all on the right, from what you decided, with nothing added:",
-					bulletsFor([
-						`**The idea:** the summary, what we believe, why this direction, and ${concept.stories.length} user stories with how to know each one is done.`,
-						`**The evidence:** the success criteria, what the data says and ${skipped ? "that it hasn't been evaluated" : "what Evaluate found"}, with the gaps and known issues.`,
-						"**For the teams:** what it needs to be built, design notes, what it changes for each team, and what to test with real people.",
-					]),
-					"**Here's what's still open:**",
-					"None of it stops you; it goes to review as known issues and gaps.",
-					bulletsFor(open),
-					skipped ? "Running Evaluate takes a few minutes and would make your recommendation stronger." : "",
-					"**I'd ask four teams to review it:**",
-					bulletsFor(reviewers.map((r) => `**${r.department}:** ${r.evaluates}.`)),
-					`**Publishing gives them a fixed copy:** this idea and the prototype as it is now (version ${version}), to try and comment on. You keep working on yours; when you change it, publish an update. Asking for a decision comes later, when you're ready.`,
-					invitation(skipped, directionId),
-				]
-					.filter(Boolean)
-					.join("\n\n"),
-			},
-		],
-		quickReplies: skipped ? [samplePublishIt, "Evaluate it first", "Not quite"] : [samplePublishIt, "Not quite"],
-	};
-}
-
-/** The invitation Sparks drafts, and where it goes. */
-const invitation = (skipped: boolean, directionId?: string) =>
-	`**Here's an invitation I drafted:**\n\n"I've been working on a way to cut wrong-part returns. It's defined, prototyped and ${skipped ? "not yet evaluated" : "evaluated with AI scenarios, not yet with real customers"}. Could you review it by Friday? You can try the prototype and comment on any part. ${reviewProfileFor(directionId).ask}"\n\nIt goes to ${departmentsInWords(directionId)}, in AutoPartsHUB and by email. Your conversation with me isn't included.`;
-
-export const sampleInviteNotQuiteReply: SparksReply = {
-	id: "review-invite-not-quite",
+/** "Go to Review instead", in Prototype: Sparks's answer there (Review has no conversation). */
+export const sampleReviewStartedReply: SparksReply = {
+	id: "review-started",
 	from: "sparks",
-	parts: [{ kind: "text", text: "What would you change: who gets it, or what it says?" }],
+	parts: [{ kind: "text", text: "On it. The prototype is in your plan, and we'll skip Evaluate. I'm putting your idea together in Review." }],
 };
 
-export const sampleInviteUpdatedReply: SparksReply = {
-	id: "review-open",
-	from: "sparks",
-	parts: [{ kind: "text", text: "Thanks, I've updated the invitation. It still goes only where you said, without your conversation with me." }],
-	quickReplies: [samplePublishIt, "Not quite"],
-};
+/** On Review's empty state, before it's evaluated. */
+export const sampleNotEvaluatedNote = "Evaluating it first is optional, but it makes your recommendation stronger.";
 
-/** Published: the teams have version `version` of the idea and its prototype, and the invitation. */
-export const sampleInviteSentReply = (version: number): SparksReply => ({
-	id: "review-sent",
-	from: "sparks",
-	parts: [
-		{
-			kind: "text",
-			text: `Published. The teams now see version ${version} of your idea and its prototype, and I've sent them the invitation. I'll tell you as their feedback comes in; each team's status is on the right.`,
-		},
-	],
-});
+/** The invitation Sparks drafts for the teams. */
+export const sampleInvitation = (skipped: boolean, directionId?: string) =>
+	`I've been working on a way to cut wrong-part returns. It's defined, prototyped and ${skipped ? "not yet evaluated" : "evaluated with AI scenarios, not yet with real customers"}. Could you review it by Friday? You can try the prototype and comment on any part. ${reviewProfileFor(directionId).ask}`;
 
-/** "Publish update": the teams now see the latest version; what they said about the earlier one stays. */
-export const samplePublishedUpdateReply = (version: number): SparksReply => ({
-	id: "review-update-published",
-	from: "sparks",
-	parts: [
-		{
-			kind: "text",
-			text: `Done. The teams now see version ${version} of your idea and its prototype, and I've told them what changed. Their feedback on the earlier version stays, marked with the version it was about.`,
-		},
-	],
-});
-
-/** After the reviews: ask for a decision now, or keep working (prds/sparks-review.md, "The recommendation"). */
-export const sampleAskDecision = "Draft my recommendation";
-
-/**
- * After the changes from the reviews (`opening` says what changed): asking for a decision is her call, now or later.
- * `stale`: the prototype changed since it was published, so the teams see an earlier version.
- */
-export function sampleDecisionAskReply(opening: string, stale?: number): SparksReply {
+/** A change to a published prototype (its first): the teams still see `published`, until she publishes an update in Review. */
+export function sampleWithTeamsNote(reply: SparksReply, published: number): SparksReply {
+	const note = `The teams still see version ${published}. When you want them to see this one, publish an update in Review.`;
+	let added = false;
 	return {
-		id: "review-ask-decision",
-		from: "sparks",
-		parts: [
-			{
-				kind: "text",
-				text: `${opening}${stale ? `The teams still see the earlier version: select "Publish update" when you want them to see version ${stale}.\n\n` : ""}**Ready to ask for a decision?** I'll draft your recommendation for ${sampleDecisionOwner.role}, ${sampleDecisionOwner.name}. Or keep working, and ask when you're ready.`,
-			},
-		],
-		quickReplies: [sampleAskDecision, "Not yet"],
+		...reply,
+		// After what changed, before anything Sparks asks.
+		parts: reply.parts.map((part) => {
+			if (added || part.kind !== "text") return part;
+			added = true;
+			const [first, ...rest] = part.text.split("\n\n");
+			return { ...part, text: [first, note, ...rest].join("\n\n") };
+		}),
 	};
 }
-
-/** "Not yet": the decision waits; she can ask for it any time. */
-export const sampleDecisionLaterReply: SparksReply = {
-	id: "review-decision-later",
-	from: "sparks",
-	parts: [{ kind: "text", text: "Okay. Keep working on it, and publish updates as you go. When you're ready for a decision, tell me." }],
-	quickReplies: ["Ask for a decision"],
-};
 
 /** The changes Sparks proposes after the reviews: what it would do, and whether it touches the prototype. */
 export function sampleReviewProposals(changes: FitCheckChanges, directionId?: string) {
@@ -383,29 +285,15 @@ export function sampleReviewProposals(changes: FitCheckChanges, directionId?: st
 	return [
 		...(change ? [change.proposal] : []),
 		`Add to the open questions: ${lowerFirst(profile.question(changes))}`,
-		`Use engineering's effort, ${profile.effort.short}, instead of my rough estimate.`,
+		`Use engineering's effort, ${profile.effort.short}, instead of Sparks's rough one.`,
 	];
 }
 
-/** The reviews are in: grouped by topic, where reviewers disagree, and the changes Sparks proposes (hers to accept). */
-export function sampleReviewSummaryReply(changes: FitCheckChanges, directionId?: string): SparksReply {
+/** The reviews in one sentence, and by topic. */
+export const sampleReviewSummary = (changes: FitCheckChanges, directionId?: string) => {
 	const profile = reviewProfileFor(directionId);
-	return {
-		id: "review-summary",
-		from: "sparks",
-		thinking: [
-			"Reading the reviewers' notes…",
-			"Lining up what they agree on…",
-		],
-		parts: [
-			{
-				kind: "text",
-				text: `**The reviews are in.** ${profile.verdict(changes)}\n\n${bulletsFor(profile.topics(changes))}\n\n**Here's what I'd change:**\n\n${bulletsFor(sampleReviewProposals(changes, directionId))}`,
-			},
-		],
-		quickReplies: ["Make the changes", "Not now"],
-	};
-}
+	return { verdict: profile.verdict(changes), topics: profile.topics(changes) };
+};
 
 /** What "Make the changes" does: the prototype change (if any), the open question, engineering's effort. */
 export const sampleReviewChanges = (changes: FitCheckChanges, directionId?: string) => {
@@ -420,47 +308,6 @@ export function sampleRecommendation(evaluation?: Evaluation, directionId?: stri
 	return reviewProfileFor(directionId).recommendation(evaluation);
 }
 
-/** The recommendation, who it goes to and what's still open, then submitting (hers to confirm). */
-export function sampleRecommendationReply(opening: string, recommendation: string, concept: ConceptForReview): SparksReply {
-	const open = concept.knownIssues.length + concept.gaps.length;
-	return {
-		id: "review-recommendation",
-		from: "sparks",
-		thinking: ["Drafting your recommendation…"],
-		parts: [
-			{
-				kind: "text",
-				text: `${opening}**Here's the recommendation I drafted for you:**\n\n${recommendation}\n\nIt goes to ${sampleDecisionOwner.role}, ${sampleDecisionOwner.name}, with the idea and the reviews. It's yours: change it if you'd say it differently. Still open, and listed for them: ${open} known issues and gaps.`,
-			},
-		],
-		quickReplies: ["Looks right, submit it", "Not quite"],
-	};
-}
-
-export const sampleRecommendationNotQuiteReply: SparksReply = {
-	id: "review-recommendation-not-quite",
-	from: "sparks",
-	parts: [{ kind: "text", text: "What would you say instead? Tell me in your own words; it's recorded as yours." }],
-};
-
-export const sampleRecommendationRewrittenReply: SparksReply = {
-	id: "review-recommendation",
-	from: "sparks",
-	parts: [{ kind: "text", text: "Thanks, it's in your words now, on the right." }],
-	quickReplies: ["Looks right, submit it", "Not quite"],
-};
-
-export const sampleSubmittedReply: SparksReply = {
-	id: "review-submitted",
-	from: "sparks",
-	parts: [
-		{
-			kind: "text",
-			text: `Sent to ${sampleDecisionOwner.name}, with the idea, the reviews and your recommendation. The idea shows "Waiting for a decision"; I'll tell you as soon as there's one.`,
-		},
-	],
-};
-
 /** How long the decision takes in the demo. */
 export const sampleDecisionMs = 3500;
 
@@ -468,77 +315,3 @@ export const sampleDecisionMs = 3500;
 export function sampleDecision(evaluation?: Evaluation, directionId?: string): ReviewDecision {
 	return evaluation ? reviewProfileFor(directionId).decision(evaluation) : { kind: "iterate-validate", reason: "Evaluate it first, then bring it back." };
 }
-
-export function sampleDecisionReply(decision: ReviewDecision, directionId?: string): SparksReply {
-	if (decision.kind === "iterate-validate")
-		return {
-			id: "review-decided",
-			from: "sparks",
-			parts: [
-				{
-					kind: "text",
-					text: `**${sampleDecisionOwner.name} asked to iterate:** "${decision.reason}"\n\nIt's in Decisions. The idea goes back to Evaluate, with that reason first.`,
-				},
-			],
-			quickReplies: ["Evaluate it"],
-		};
-	if (decision.kind === "iterate-choice")
-		return {
-			id: "review-decided",
-			from: "sparks",
-			parts: [
-				{
-					kind: "text",
-					text: `**${sampleDecisionOwner.name} asked to go back to the choice:** "${decision.reason}"\n\nIt's in Decisions. The idea goes back to the choice in Plan, with that reason first. What we learned from this prototype and its evaluation stays in your plan.`,
-				},
-			],
-			quickReplies: ["Go back to the choice"],
-		};
-	return {
-		id: "review-decided",
-		from: "sparks",
-		parts: [
-			{
-				kind: "text",
-				text: `**${sampleDecisionOwner.name} advanced it:** "${decision.reason}"\n\nIt's in Decisions, and what we learned is now in Previous experiments, so the next person with a similar idea starts from it.\n\n**Want me to share it with the teams who'll carry it forward?** I'd start with the reviewers' departments: ${departmentsInWords(directionId)}. They'll see it without edit rights, and without your conversation with me.`,
-			},
-		],
-		quickReplies: ["Share it with them", "Not now"],
-	};
-}
-
-export const sampleSharedReply = (directionId?: string): SparksReply => ({
-	id: "review-shared",
-	from: "sparks",
-	parts: [
-		{
-			kind: "text",
-			text: `Shared with ${departmentsInWords(directionId)}, without edit rights. They'll find it in AutoPartsHUB, with the prototype, the decisions and every reason behind them.`,
-		},
-	],
-});
-
-export const sampleShareLaterReply: SparksReply = {
-	id: "review-share-later",
-	from: "sparks",
-	parts: [{ kind: "text", text: 'Okay. Use "Share" at the top whenever you\'re ready.' }],
-};
-
-/** What she might ask in Review (prds/sparks-review.md, "Checks"), and how Sparks answers. */
-export function sampleReviewQuestionReply(text: string, directionId?: string, evaluation?: Evaluation): SparksReply {
-	const t = text.toLowerCase();
-	const say = (answer: string): SparksReply => ({ id: "review-answer", from: "sparks", parts: [{ kind: "text", text: answer }] });
-	if (/approve|sign off|green ?light/.test(t))
-		return say(`The decision belongs to ${sampleDecisionOwner.role}, not to me or you. I can prepare your recommendation so they can decide from the idea alone.`);
-	if (/validated|proven|prove/.test(t))
-		return say(
-			`I'll keep it as the evidence says: ${(evaluation?.hypothesis.outcome ?? "not tested").toLowerCase()}. That isn't validation with real people; the UX team's test with customers would be the real check.`,
-		);
-	if (/who should review|who.*review/.test(t)) {
-		const reviewers = sampleReviewersFor(directionId);
-		const names = reviewers.map((r) => `${inSentence(r.department)} (${r.evaluates})`);
-		return say(`I'd ask ${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}. You choose the people.`);
-	}
-	return say("I can't do that in this demo yet. The idea for review is on the right; the conversation moves on as the reviews and the decision come in.");
-}
-

@@ -47,7 +47,11 @@ Use one `default` button per view for the primary action. Use `secondary`, `outl
 
 Place icons from `lucide-react` as children. The button sizes them to 16px automatically. Mark decorative icons with `aria-hidden="true"`.
 
+Say which side of the label the icon is on with `data-icon="inline-start"` (before) or `data-icon="inline-end"` (after), so that side gets the smaller padding. Skip it on an icon-only button.
+
 <Canvas of={ButtonStories.WithIcon} />
+
+<Canvas of={ButtonStories.WithIconBefore} />
 
 ## Disabled
 

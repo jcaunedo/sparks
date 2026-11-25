@@ -50,6 +50,8 @@ const motionDistance = {
 	large: 40,
 	/** How high the assistant's thinking dot hops (ThinkingIndicator). */
 	thinkingHop: 6,
+	/** How high a small icon hops when something lands in it (Bounce); its second hop is half that. */
+	bounce: 6,
 } as const;
 
 /** Unitless scale factors. */

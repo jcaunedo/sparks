@@ -171,7 +171,26 @@ Gradient ids come from `React.useId()`.
 
 **Why:** a darken on #31373f barely shows (the old 12% black was invisible), and Figma lightens it instead. An opacity (`/90`) on a solid fill lets the page through, which lightens a red instead of darkening it; color-mix gives Figma's exact layered color without new tokens.
 
-**How to apply:** at rest → hover, "New idea" goes from #31373f to #5a5f65, and an outlined button's border from #e0e2e6 to #9aa1ac. `default`, `secondary` and `link` aren't in sparks.ds's set as these variants yet: sync them with the rest of Button (the "Sparks Project header" entry). A local `hover:` override on a Button hides these; there are none today.
+**How to apply:** at rest → hover, "New idea" goes from #31373f to #5a5f65, and an outlined button's border from #e0e2e6 to #9aa1ac. `default`, `secondary` and `link` aren't in sparks.ds's set as these variants yet. A local `hover:` override on a Button hides these; there are none today.
+
+---
+
+## Button shape and spacing (`buttons/button/button.tsx`)
+
+**Rule:** the sparks.ds "Button" (38:124) look is in the component: semibold text, and per size the corners, side padding and icon gap. An icon beside the label takes `data-icon='inline-start'` or `data-icon='inline-end'` (shadcn's names), which gives its side the smaller padding. `outline` has `text-foreground shadow-xs`.
+
+- `default` (Figma lg · 36): 12px corners, 14px each side, 10px on an icon's side, 6px to the icon.
+- `sm` (Figma md · 32): `text-sm`, 12px corners, 12px each side, 8px on an icon's side, 5px to the icon.
+- `lg` (Figma xl · 40): `text-base`, 12px corners, 18px each side, 16px before a left icon and 12px after a right one, 8px to the icon.
+- `icon` (36px): 12px corners.
+
+```tsx
+<Button variant='outline'><Play aria-hidden data-icon='inline-start' /> Run again</Button>
+```
+
+**Why:** Button kept shadcn's look (medium, 16px sides, 6px corners, 8px gap) and each place added sparks.ds's by hand. Several added only part of it, so "Run again", "Fix in the prototype", "Evaluate" and "Add to Review" didn't match "Share" or "Publish". CSS can't tell a leading icon from a trailing one (`:first-child` ignores the text), so the icon says it.
+
+**How to apply:** don't add `rounded-button-*`, `px-*`, `font-*` or `shadow-xs` to a Button with a label; a shadcn resync must not bring back `rounded-md font-medium px-4`. "Run again" measures 111 × 36px, 600, 10px / 14px. A 28px ghost button (`size-7`, `h-7`) sets `rounded-button-sm` (10px): 28 isn't a size yet (SIZE-SCALE.md). The AutoParts Co. shop in the prototypes keeps its own lighter buttons (`shopButton`, `shopButtonSm` in `fit-check-prototype.tsx`): it's the retailer's brand, not Sparks's.
 
 ---
 
@@ -194,6 +213,7 @@ Gradient ids come from `React.useId()`.
 - **Border:** full accent when the box holds text (`data-has-value`) **and** on `focus-within`. Figma has no focus state; the strong border is the keyboard focus indicator, since the textarea itself has no outline.
 - **Shadow:** `shadow-composer` (`0 16px 30px -12px`, black at 12%; ~~6%~~) while the box is empty, `shadow-none` once it holds text: Figma's `Default` has it and `HasValue` doesn't. It's a raw shadow in Figma, not an effect style, so it lives in `theme.css` as `--shadow-composer`; don't swap in `shadow-lg` or `shadow-2xl`, which are darker and tighter.
 - **Main button:** voice (`AudioLines`) while empty, Send (`ArrowUp`) once there's text. The icons overlap as they swap, with `iconSwapVariants` (`iconSwapReducedVariants` under reduced motion) inside `AnimatePresence`; press uses `pressPattern`. CSS owns the hover (`brightness-95`) and the border color; Motion owns scale and opacity.
+- **Attached files (not in Figma yet):** `attachments` show above the text, 8px from it, as 28px `rounded-full bg-background-subtle` chips (14px paperclip, `text-sm`, 20px remove button). They make the box sendable with no text, always: the main button is Send while there are any (~~only with `attachmentsAlone`~~). The textarea carries `data-has-attachments` while files wait: `useEnterShortcut` skips it, so Enter there never picks a quick reply over the files.
 - Icons are 18px, Figma's instance size; the round buttons are Button `ghost`/`icon` (36px) with `rounded-full`.
 
 **Why:** the colors aren't Figma variables, so a resync that only reads bound variables would find nothing to map and could swap in the nearest existing token (`sky-500`, `brand`, `rounded-card`), which are visibly different. Copying Figma's 14px into `p-3.5` makes the box taller and shifts the content when the border changes from 1px to 2px; keeping one padding for both states does the same.
@@ -236,13 +256,13 @@ Gradient ids come from `React.useId()`.
 
 **Rule:** sparks.ds "clarification-card" (node 55:2585). Panel: ~~`bg-background-subtle`~~ `bg-(--corn-50)` in Default (palettes/corn/50, #fffbeb, light yellow, a primitive with no semantic token yet) and `bg-background-subtle` in Edit, `rounded-card` (16px), `py-4 pr-4 pl-5`, 8px between rows; question `text-base font-semibold` and answer `text-base`, both `text-foreground`, 4px apart; `badge` on its own line between the question and the answer, in a `pt-1` wrapper (Figma "badge container"), so 8px below the question and 4px above the answer; sparks.ds draws it as the "Assumption" badge, `flat` `amber` at `xxs` (20px). ~~4px from each (not in Figma yet).~~ Every "Assumption" label is that same xxs badge: the clarification card, ~~the summary cards (`SectionCard`: Problem, brief, Success criteria, between the part's name and its text) and the comparison;~~ (the summaries are text now, and say an assumption in words); 24px to the pen (lucide `Pen`, Figma's glyph, in a 32px ghost icon button, `rounded-button-md`, `text-icon`: colors/icon/foreground); source line `text-xs text-muted-foreground`. The answer buttons (Figma "ctas") are part of the component, ~~10px~~ 16px under the panel (`gap-4`, spacing/4) and 10px apart, on the right (`justify-end`), in reverse order so the first reply (the "yes") is last, at the right edge, like Save; reversed in the DOM, not with `flex-row-reverse`, so Tab follows what's on screen. A Sparks reply without a card shows its quick replies the same way. In Edit, the question is 8px above the field (`gap-2`; 4px above the answer in Default), and the field is `rounded-input`, `border-border`, `px-[11px] py-[7px]`, ~~10px~~ 12px (`gap-3`, spacing/3) above ~~Save and Cancel~~ Cancel and Save, on the right (`justify-end`), 8px apart, Save last; ~~the pen stays in place but `invisible`;~~ the pen is removed (not hidden) and the panel's right padding becomes 20px (`pr-5`), so the field runs the full width (542px at Figma's 582); the badge, the source line and the answer buttons hide. Measured against Figma: ~~Default 180px tall (panel 134), 208px with the badge, Edit 166px 170px;~~ Default 186px tall (panel 134), 214px with the badge (Figma 214), Edit 176px (Figma 176); the width follows the container (Figma 584).
 
-The buttons are UCL `Button` with overrides, because `Button` isn't synced with sparks.ds yet (CLAUDE.md → "Figma"): answer buttons `variant='outline'` at 36px with `rounded-button-lg px-3.5 text-sm font-semibold text-foreground shadow-xs` (Figma Outlined lg: 8px + 6px label padding); ~~Save `variant='neutral' size='sm'` and Cancel `variant='outline' size='sm'` with `rounded-button-md px-3 text-sm font-semibold` (Figma 32px, 4px + 8px label padding).~~ Save `variant='neutral'` and Cancel `variant='outline'` at 36px, the same size as the answer buttons, with `rounded-button-lg px-3.5 text-sm font-semibold` (Cancel adds `text-foreground shadow-xs`). Check: Edit measures ~~170px~~ 176px tall at 582px wide, the field 542px; a `size='sm'` or an `invisible` pen brings back 166px and a 490px field.
+The buttons are UCL `Button` ~~with overrides, because `Button` isn't synced with sparks.ds yet~~ as is ("Button shape and spacing"); the classes below are what it now has built in: answer buttons `variant='outline'` at 36px with `rounded-button-lg px-3.5 text-sm font-semibold text-foreground shadow-xs` (Figma Outlined lg: 8px + 6px label padding); ~~Save `variant='neutral' size='sm'` and Cancel `variant='outline' size='sm'` with `rounded-button-md px-3 text-sm font-semibold` (Figma 32px, 4px + 8px label padding).~~ Save `variant='neutral'` and Cancel `variant='outline'` at 36px, the same size as the answer buttons, with `rounded-button-lg px-3.5 text-sm font-semibold` (Cancel adds `text-foreground shadow-xs`). Check: Edit measures ~~170px~~ 176px tall at 582px wide, the field 542px; a `size='sm'` or an `invisible` pen brings back 166px and a 490px field.
 
-**Why:** Figma draws the field's 1px border inside its 12 × 8px padding; CSS adds it outside, so `px-3 py-2` came out 2px taller (66px for two lines, Figma 64). The `Button` overrides stand in for sparks.ds's sizes and weights until `Button` is synced.
+**Why:** Figma draws the field's 1px border inside its 12 × 8px padding; CSS adds it outside, so `px-3 py-2` came out 2px taller (66px for two lines, Figma 64).
 
 A Sparks reply without a clarification card shows its quick replies with the same look (`SparksReplyView`).
 
-**How to apply:** keep the answer buttons in the component (sparks.ds has them in State=Default). When `Button` is synced with sparks.ds, replace the overrides (here and on the workspace's quick replies) with its Outlined/Solid · Neutral sizes and re-measure against the numbers above. Keep `px-[11px] py-[7px]` on the field unless it gets an inside border (e.g. a ring instead of a border).
+**How to apply:** keep the answer buttons in the component (sparks.ds has them in State=Default). Keep `px-[11px] py-[7px]` on the field unless it gets an inside border (e.g. a ring instead of a border).
 
 ---
 
@@ -260,7 +280,7 @@ A Sparks reply without a clarification card shows its quick replies with the sam
 
 **Rule:** when a reply is added, the workspace scrolls the `li` of Dana's message it answers (`sent`) to the top of the conversation with `scrollIntoViewSmoothly(item, { align: "start" })`, and gives the newest new reply `minHeight` equal to the scroller's height less its 56px top padding, her message and the ~~16px gap~~ 32px below it (`viewHeight - scrollPadding - sentHeight`). Every message, Sparks's or Dana's, has 32px below it: the list's `gap-4` plus `mb-4` on each `li`; change the two together, since `sentHeight` adds the 32.
 
-The scroller is the whole conversation area, edge to edge (`px-8`, ~~`pt-14`~~ no top padding: Figma 27:1932 starts the conversation right under the header, whose 28px bottom padding is the space above it; the 728px column centered inside it), so the scrollbar sits at the page's right edge and text scrolls up to the header; ~~`scroll-pt-14` keeps a message scrolled to the top 56px below the header~~ a message scrolled to the top sits right under the header. The message box is 24px from the bottom (`pb-6`, ~~`pb-14`~~). The 24px above the message box is padding outside the scroller (`pt-6` on the box's wrapper), so text is cut 24px above the box, not at its edge. The scrollbar is `scrollbar-subtle` (`theme.css`: `scrollbar-width: thin`, a `--border` thumb on no track). The view never follows the bottom while text streams (prds/sparks.md, "The concept workspace"). The newest new reply has `paddingBottom: viewHeight / 2` (inside its `minHeight`, border-box), so scrolling down a long reply by hand stops with its end at the middle of the scroller, never past it. In `scrollIntoViewSmoothly`, the interruption listeners (wheel, touch, pointer, key) are added on the next animation frame.
+The scroller is the whole conversation area, edge to edge (~~`px-8`~~ `px-6`, the header's 24px sides, ~~`pt-14`~~ no top padding: Figma 27:1932 starts the conversation right under the header, whose 28px bottom padding is the space above it; the 728px column centered inside it), so the scrollbar sits at the page's right edge and text scrolls up to the header; ~~`scroll-pt-14` keeps a message scrolled to the top 56px below the header~~ a message scrolled to the top sits right under the header. The message box is 24px from the bottom (`pb-6`, ~~`pb-14`~~). The 24px above the message box is padding outside the scroller (`pt-6` on the box's wrapper), so text is cut 24px above the box, not at its edge. The scrollbar is `scrollbar-subtle` (`theme.css`: `scrollbar-width: thin`, a `--border` thumb on no track). The view never follows the bottom while text streams (prds/sparks.md, "The concept workspace"). The newest new reply has `paddingBottom: viewHeight / 2` (inside its `minHeight`, border-box), so scrolling down a long reply by hand stops with its end at the middle of the scroller, never past it. In `scrollIntoViewSmoothly`, the interruption listeners (wheel, touch, pointer, key) are added on the next animation frame.
 
 **Why:** her message at the top keeps what she said next to its answer (prds/sparks.md; it was the answer's start until the user changed it). Without the `minHeight`, her message can't reach the top while the reply is short (the checking line): the container can't scroll that far. Subtracting her message's height leaves no empty space to scroll past. Adding the listeners in the same event that sends (Enter's keydown, which React handles before it reaches `window`) stopped the scroll before it began. A "stick to bottom" follower, as before, scrolls the answer's start out of view while Dana reads it.
 
@@ -330,15 +350,15 @@ Exception: the pencil on Dana's answers in Sparks opens its tooltip above ("Chan
 
 ## Prototype comment pins (`sparks/prototype/prototype-comments.tsx`)
 
-**Rule:** a pin is `size-9 rounded-full rounded-bl-none p-[3px] shadow-md`, white (`bg-background`), blue (`bg-primary`) while its popover is open, with the author's `Avatar` filling it; it sits `-translate-y-full` at the point, so its square bottom-left corner marks the spot. The pins are in a layer beside the screens (`wrapperRef`), and only the screens (`contentRef`) are observed for changes.
+**Rule:** a pin is `size-9 rounded-full rounded-bl-none p-[3px] shadow-md`, white (`bg-background`), blue (`bg-primary`) while its popover is open, with the author's `Avatar` filling it; it sits `-translate-y-full` at the point, so its square bottom-left corner marks the spot. The pins are in a layer beside the screens (`wrapperRef`), and only the screens (`contentRef`) are observed for changes. `contentRef` is `isolate`, so the screens' own z-indexes (the sticky header `z-20`, the bottom bar `z-10`) stay under the pins; positions are measured again when the device scrolls. A thread's popover focuses itself (`onOpenAutoFocus`), and doesn't give focus back to its pin when another is opening (`onCloseAutoFocus`). A shop screen says which one it is (`ShopScreen` `view`, `part`): a new screen of a prototype passes them, or its comments can't be opened on it.
 
-**Why:** the square corner is the pin's point: rounding it or centering the pin on the spot puts the comment somewhere else. Observing the pin layer too would re-place the pins on every re-place, a loop.
+**Why:** the square corner is the pin's point: rounding it or centering the pin on the spot puts the comment somewhere else. Observing the pin layer too would re-place the pins on every re-place, a loop. Without `isolate`, the pins on "Save vehicle" were there but painted behind the bottom bar. Focus going back to the first pin closed the second thread as it opened, and focus on "Mark as resolved" opened its tooltip over the comment.
 
-**How to apply:** check that a pin's bottom-left corner is on the spot clicked (0px off in the headless check).
+**How to apply:** check that a pin's bottom-left corner is on the spot clicked (0px off in the headless check), that the two pins on "Save vehicle" are visible on Review, and that from another screen, selecting one comment in the panel and then another opens each in turn.
 
 ## Side panels share one frame (`sparks/workspace/side-panel.tsx`)
 
-**Rule:** Comments is a `SidePanel`, drawn as Sparks "Sparks Project" → "Plan summary" (63:12460): a column on the right edge, the screen's full height, beside the header (`SparksWorkspace`'s root is a row: the column with the header and `main`, then the panel's `motion.aside`, `h-full`, its width from `useSidePanelWidth`: ~~`w-[480px]`~~ 380px to start, 300px at least, half the window at most, changed by dragging `SidePanelResizer` on its left edge: an 8px `separator` over the border (`-start-1 w-2`, `cursor-col-resize`, pointer capture), a 2px `bg-primary` line on hover, focus or drag; ←/→ 16px, Shift 64px, Home/End). The panel: `border-s border-border`, `bg-[color-mix(in_srgb,var(--background-subtle)_50%,var(--background))]` (Figma's unbound #f9fafa, the same mix as the bottom of the workspace), `pt-7`, the title row `px-8` (lg semibold `text-foreground`; buttons 8px apart, `sidePanelButtonClasses`: ghost 36px, 18px icon, `text-icon` at full opacity; the close button last, an `X`), `gap-6`, then the content `px-8 pb-7`, which scrolls. No card inside. Comments' sections: titles `text-lg font-semibold`, `gap-6`, each after the first with `border-t border-border pt-6`. Esc closes from inside. Opening it from "Comments" focuses the panel itself (`tabIndex={-1}`, `outline-none`), not its close button: a `Tooltip` opens on focus, so "Close" showed as soon as it opened. ~~`rounded-card bg-background-subtle`, a 60px row (`px-[21px] py-3`) …, the close button last (`PanelRight`), then `px-6 pb-6` around a white `rounded-avatar-square p-8` card that scrolls … 480px on the right in every step (`sidePanelColumn` in `workspace.tsx`: `w-[512px] pe-8 pb-6`).~~
+**Rule:** Comments and Library are each a `SidePanel`, in one `motion.aside` (`key='side-panel'`; `sidePanel` says which, one at a time, sharing the width), drawn as Sparks "Sparks Project" → "Plan summary" (63:12460): a column on the right edge, the screen's full height, beside the header (`SparksWorkspace`'s root is a row: the column with the header and `main`, then the panel's `motion.aside`, `h-full`, its width from `useSidePanelWidth`: ~~`w-[480px]`~~ 380px to start, 300px at least, half the window at most, changed by dragging `SidePanelResizer` on its left edge: an 8px `separator` over the border (`-start-1 w-2`, `cursor-col-resize`, pointer capture), a 2px `bg-primary` line on hover, focus or drag; ←/→ 16px, Shift 64px, Home/End). The panel: `border-s border-border`, `bg-[color-mix(in_srgb,var(--background-subtle)_50%,var(--background))]` (Figma's unbound #f9fafa, the same mix as the bottom of the workspace), `pt-7`, the title row `px-8` (lg semibold `text-foreground`; buttons 8px apart, `sidePanelButtonClasses`: ghost 36px, 18px icon, `text-icon` at full opacity; the close button last, an `X`), `gap-6`, then the content `px-8 pb-7`, which scrolls. No card inside. Comments' sections: titles `text-lg font-semibold`, `gap-6`, each after the first with `border-t border-border pt-6`. Esc closes from inside. Opening it from "Comments" focuses the panel itself (`tabIndex={-1}`, `outline-none`), not its close button: a `Tooltip` opens on focus, so "Close" showed as soon as it opened. ~~`rounded-card bg-background-subtle`, a 60px row (`px-[21px] py-3`) …, the close button last (`PanelRight`), then `px-6 pb-6` around a white `rounded-avatar-square p-8` card that scrolls … 480px on the right in every step (`sidePanelColumn` in `workspace.tsx`: `w-[512px] pe-8 pb-6`).~~
 
 **Why:** Figma's side panel is a full-height column of the screen, not a card inside the content area; and two panels that look or close differently read as two different things. Changes go in `SidePanel`, not in one panel. There's no token for #f9fafa, so the color is the mix the workspace's background already uses.
 
@@ -358,7 +378,7 @@ Exception: the pencil on Dana's answers in Sparks opens its tooltip above ("Chan
 
 ## Quick replies and the Enter key (`chat/quick-replies/quick-replies.tsx`, `lib/hooks/use-enter-shortcut.ts`)
 
-**Rule:** the first reply (the "continue") is last on screen, with `<CornerDownLeft aria-hidden />` after its label, `pe-2.5` (10px on the key's side, Figma's 8px padding plus the icon's 2px; 14px on the label's), `aria-keyshortcuts='Enter'`. Enter picks it only when focus is on the page (`body`) or in the empty message box (`data-slot='prompt-composer-input'`), with no modifier, not repeating, not while an IME composes. ClarificationCard and the workspace's own replies both render `QuickReplies`, never their own buttons. While the replies are out of view, Enter scrolls to them instead of picking (`scrollMetrics` in `quick-replies.tsx`): the next question can come in below the view.
+**Rule:** the first reply (the "continue") is last on screen, with `<CornerDownLeft aria-hidden data-icon='inline-end' />` after its label (10px on the key's side, Figma's 8px padding plus the icon's 2px; 14px on the label's), `aria-keyshortcuts='Enter'`. Enter picks it only when focus is on the page (`body`) or in the empty message box (`data-slot='prompt-composer-input'`), with no modifier, not repeating, not while an IME composes. ClarificationCard and the workspace's own replies both render `QuickReplies`, never their own buttons. While the replies are out of view, Enter scrolls to them instead of picking (`scrollMetrics` in `quick-replies.tsx`): the next question can come in below the view. A key pressed before the replies turned on doesn't count (`event.timeStamp < enabledAt` in `useEnterShortcut`): without it, under reduced motion, the Enter that sends her message also answers the next question, whose replies are already there when the event reaches `document`.
 
 **Why:** Enter already means something on a button (press it), in a field (save, send) and in the message box with text (send); the shortcut takes only the Enter no one else uses. The message box swallows an empty Enter (`preventDefault`), so the hook recognizes the empty box by its slot instead of trusting `defaultPrevented` there. Two copies of the buttons would drift, as the card's and the workspace's did before.
 
@@ -378,7 +398,7 @@ Exception: the pencil on Dana's answers in Sparks opens its tooltip above ("Chan
 
 ## Empty states (`feedback/empty-state/empty-state.tsx`)
 
-**Rule:** every view, tab or filter with nothing to show uses `EmptyState`, and only its copy changes: optional icon, title (`lg` semibold, foreground), description (`base`, `muted-foreground`), 8px apart, and an optional ~~`sm` primary~~ button 16px below, sparks.ds "Button" Solid · Neutral (`variant='neutral'`, dark), lg · 36: `size` default (36px) with `rounded-button-lg px-3.5 font-semibold` (`emptyStateButtonClasses`), as the Sparks header's Share and Publish (with an optional outlined second button 8px before it, the same size plus `shadow-xs`, the main action last, as Cancel before Save). Don't set `size='lg'`: UCL's `lg` is 40px, Figma's lg is 36px (SIZE-SCALE.md). It's ported from verita-ucl's `EmptyState`, with the same layout and props. sparks.ds has no empty-state design.
+**Rule:** every view, tab or filter with nothing to show uses `EmptyState`, and only its copy changes: optional icon, title (`lg` semibold, foreground), description (`base`, `muted-foreground`), 8px apart, and an optional ~~`sm` primary~~ button 16px below, sparks.ds "Button" Solid · Neutral (`variant='neutral'`, dark), lg · 36: `size` default (36px), ~~with `rounded-button-lg px-3.5 font-semibold` (`emptyStateButtonClasses`),~~ as the Sparks header's Share and Publish (with an optional outlined second button 8px before it, the same size, the main action last, as Cancel before Save). Don't set `size='lg'`: UCL's `lg` is 40px, Figma's lg is 36px (SIZE-SCALE.md). It's ported from verita-ucl's `EmptyState`, with the same layout and props. sparks.ds has no empty-state design.
 
 **Why:** one empty state everywhere, so an empty tab never looks like a broken blank panel and every empty view reads the same. Without a Figma source, this entry is the reference: a later edit shouldn't restyle it per screen.
 
@@ -405,19 +425,19 @@ Exception: the pencil on Dana's answers in Sparks opens its tooltip above ("Chan
 **Rule:** there's no side panel for the plan, no "Blueprint" button in the concept's header and no plan document: on Plan, before and after it's done, `SparksWorkspace` shows Plan's conversation, centered, with the message box (prds/sparks.md, "The finished plan"). Plan gets no `preview`; the conversation column hides only for a step not reached yet:
 
 ```tsx
-const conversationHidden = Boolean(peeked?.upcoming) || !conversation; // `conversation={false}`: Evaluate only
+const conversationHidden = Boolean(peeked?.upcoming) || !conversation; // `conversation={false}`: Evaluate and Review
 const preview = peeked?.upcoming ? <EmptyState … /> : previewProp;
 ```
 
 **Why:** a view that changed format after "Generate prototype" (the former `PlanDocument`, with "Edit plan", versions and "Where it stands") was more to learn and more moving parts for the demo; Dana changes the plan by changing her answers instead ("Changing an answer" below). sparks.ds "Sparks Project" (32:1145) and Sparks → "Sparks Project" (55:7660) still draw the "Blueprint" button and the side panel, so a resync from them would bring them back.
 
-**How to apply:** a resync of the concept's header keeps Comments, notifications, Share and Publish only. Don't add a plan panel to `sidePanelColumn` or pass Plan a `preview`. In the stories, set the step before adding the reply that starts it (`setStep` then `setMessages`): `WorkspacePrototype` stamps new replies with `stepRef`, and React may compute the new messages at once.
+**How to apply:** a resync of the concept's header keeps Library, Comments, notifications and Share, plus Publish on Review only ("One dark button per step"). Don't add a plan panel to `sidePanelColumn` or pass Plan a `preview`. In the stories, set the step before adding the reply that starts it (`setStep` then `setMessages`): `WorkspacePrototype` stamps new replies with `stepRef`, and React may compute the new messages at once.
 
 ---
 
 ## Evaluate: no conversation, agents on the real prototype, all at once (`sparks/validate/evaluation-prototype.tsx`, `validate-panel.tsx`, `sample-validate.ts`)
 
-**Rule:** Evaluate is the one step without a conversation (prds/sparks-validate.md, "Evaluate's screen"; Figma Sparks "Evaluate", 72:660): the story passes `conversation={step !== "validate"}`, and the preview is `EvaluationPrototype` and `ValidatePanel` side by side (`flex gap-4`, each `min-w-0 basis-0`), 24px around them (`px-6 pb-6` in `SparksWorkspace`). The agents find their places by the prototype's own ids: each step's `at.element` in `sampleStops` is a `data-point` (what "Edit element" uses) or a `data-agent` (only for agents):
+**Rule:** Evaluate ~~is the one step~~ and Review ("Review: the idea and the prototype" below) are the steps without a conversation (prds/sparks-validate.md, "Evaluate's screen"; Figma Sparks "Evaluate", 72:660): the story passes `conversation={step !== "validate" && step !== "review"}`, and the preview is ~~`EvaluationPrototype` and `ValidatePanel`~~ `ValidatePanel` (left) and `EvaluationPrototype` (right) side by side, Figma's order swapped so "Add to Review" is at the top right like every step's button (`flex gap-4`, each `min-w-0 basis-0`), 24px around them (`px-6 pb-6` in `SparksWorkspace`). The agents find their places by the prototype's own ids: each step's `at.element` in `sampleStops` is a `data-point` (what "Edit element" uses) or a `data-agent` (only for agents):
 
 ```tsx
 const targetIn = (root, element) => root?.querySelector(`[data-point="${element}"], [data-agent="${element}"]`);
@@ -450,6 +470,78 @@ const prototypeDeviceClasses = (device: PrototypeDevice) =>
 **Why:** the bezel makes the prototype read as a device, as in Figma Sparks "Evaluate" (72:660). A fixed width with a capped height made it look too wide; scaling keeps a phone's proportions and the 375px the shop's screens are built for. Anything that measures inside a scaled phone in screen pixels divides by the scale: comment pins (`prototype-comments.tsx`: `k`) and Evaluate's scrolling to an element. `--gray-800` is a palette token on purpose: `border-neutral` and `border-foreground-prominent` turn light in dark mode, and a device stays dark.
 
 **How to apply:** a new place that shows the prototype uses `prototypeDeviceClasses` (and `FitPhone` for a phone), never its own border or a `max-h`. Changing the bezel's width changes `phoneSize` and the phone's `w-[…]`/`h-[…]` with it, so the screen stays 375 × 812.
+
+---
+
+## Quick replies beside a preview: one per row (`chat/quick-replies`, `sparks/workspace/workspace.tsx`)
+
+**Rule:** in the conversation's column beside a preview (Prototype), quick replies sit one per row, on the right, the main one last. In Plan (the conversation on its own) they stay in a row.
+
+```tsx
+<QuickReplies replies={reply.quickReplies} onReply={onQuickReply} onePerRow={narrow} /> // narrow={Boolean(preview)}
+```
+
+**Why:** in the 480px column, three or four replies wrapped unevenly (one, then two, then one). sparks.ds "ctas" draws only the row, so a resync could put it back.
+
+---
+
+## Review: the idea and the prototype (`sparks/review/review-panel.tsx`, `review-next.tsx`)
+
+**Rule:** Review has no conversation: `ReviewPanel` (left) and `PrototypePanel` (right) side by side, `flex gap-4`, each `min-w-0 basis-0`, as Evaluate's panels: a 68px header (`px-5`), then a `rounded-[12px] bg-background p-8` card (`mx-5 mb-6`). What Dana does there is `ReviewNextStep`, one step at a time at the top of the card, in a bordered box, with outlined buttons; what only she sees of the idea before publishing is `PublishingPart`, after Known issues. The teams' page (`PublishedIdea`) has the same two panels and the same `ReviewDocument`, and gets neither: its box at the top is their review. A change to the frame goes in both:
+
+```tsx
+<ReviewDocument concept={concept} publishing={next?.kind === "publish" && !building ? <PublishingPart next={next} /> : undefined} … />
+```
+
+Without `onPointingChange`, `PrototypePanel` has no "Edit element", and without `onTextChange`, the prototype's text isn't editable (`EditableText`): in Review, Evaluate and the teams' page it can only be tried and commented on.
+
+**Why:** everything the conversation said about the idea is in the idea, so it was said twice; and Dana checks what the teams will get, next to the prototype they'll get. An editable text in those places would look like a change and save nothing.
+
+---
+
+## Pages have 24px around (`navigation/app-header`, every layout in `autopartshub/`)
+
+**Rule:** every page's content sits 24px from the window's left, right and bottom (`px-6 pb-6`), the same as the header's sides (`AppHeader` `px-6`, sparks.ds "header-autopartshub" 32:1145): the home, the Sparks start page, Plan, Prototype, Evaluate, Review, a step not reached yet, the reviewers' page and the prototype full screen. A centered column (1232px, 728px) keeps its width and has at least 24px. The header keeps Figma's 28px top and bottom.
+
+**Why:** the header moved from 32px to 24px; a page left at 32px puts its content 8px off the header. Older Sparks frames in Figma draw 32px (and 48px above the content), so a resync from them would bring it back.
+
+**How to apply:** check at 1200px wide: the header's first and last items, and the page's outer edges, are 24px from the window.
+
+---
+
+## One dark button per step (`sparks/shared/panel-action.tsx`, `sparks/workspace/workspace.tsx`: `publish`)
+
+**Rule:** each step's way forward is one dark button (`PanelAction`, Button `neutral`, 36px, 12px corners) at the top right of its panel: "Evaluate" in Prototype (last in the toolbar, after full screen), "Add to Review" in Evaluate. Review's is "Publish", in the header after Share, and only on Review: `publish={step === "review" ? … : undefined}`. Disabled with a `hint`, its reason shows in a tooltip on a focusable wrapper (`span tabIndex={0}`), since a disabled button gets no hover or focus.
+
+```tsx
+<PanelAction label='Add to Review' disabled hint='Wait for the evaluation to finish, or stop it.' />
+```
+
+**Why:** Dana isn't an expert at building things: the next thing to do is always at the top right, and Publish shows only where she can check what the teams will get. sparks.ds "Sparks Project" draws Publish in the header whatever the step, so a resync could show it in every step.
+
+---
+
+## The strip doesn't follow what it selected (`sparks/validate/evaluation-prototype.tsx`: `focus.fromScreen`)
+
+**Rule:** a finding selected by the screen in focus (`onScreenFindings`) is passed back with `fromScreen: true`, and the strip ignores it; only a finding Dana selects moves the strip, and then "go to the first open finding" doesn't run.
+
+```tsx
+const selectedMarker = focus?.fromScreen ? undefined : markers.find((m) => m.id === focus?.id);
+```
+
+**Why:** without it, when a run ended on a screen with its own finding ("Complete fit data": the fit list), going to the first finding and selecting the screen's finding undid each other without end, and Evaluate crashed (React "Maximum update depth exceeded").
+
+---
+
+## "Fix in the prototype" opens the finding's page (`sparks/prototype/prototype-panel.tsx`: `openAt`)
+
+**Rule:** `openAt` sets the screen, audience, device and part when its `key` is new, and is dropped (`opened`) as soon as she uses the arrows or the audience switcher. The content's key includes `opened.key`, never the version, so a change shows on the page she's on.
+
+```tsx
+<React.Fragment key={`${audience}-${screen ?? "start"}-${opened?.key ?? ""}`}>{children(audience, screen, opened?.part)}</React.Fragment>
+```
+
+**Why:** two findings can be on the same screen with different parts (a part that fits, one with no fit data), so the screen alone wouldn't reopen it; and keying by version would send her back to the first page at each change.
 
 ---
 
@@ -513,14 +605,34 @@ const prototypeDeviceClasses = (device: PrototypeDevice) =>
 
 1. **Centered steps:** `AppHeader`'s `nav` sits between two sides that each take `flex-1` (`min-w-0`), so the steps stay centered on the page whatever the logo and actions measure (Figma "Left"/"Right" are `flex 1 0 0`). Without `nav`, the header keeps its plain space-between layout.
 2. **Step pills (`StepNavItem`):** `h-9 rounded-full border border-transparent px-3 text-base font-medium`, 6px apart (`gap-1.5`). Current: `bg-linear-to-b from-(--sapphire-400) to-(--sapphire-500) text-brand-foreground`, the sapphire gradient from Sparks → "Sparks Project" (27:1932; Figma draws it with raw `#4c8dff` → `#0063f7`, which are exactly those two steps). Others: `bg-neutral-muted text-foreground`. A step not reached yet is `disabled` (links: `aria-disabled`): `text-muted-foreground` (sparks.ds "Sparks Project", 39:1598: `colors/foreground/muted`; ~~`text-foreground-subtle`~~), no hover, no click. Hover (not in Figma): `color-mix(… neutral-muted 92%, black)`, only on steps that can be selected. ~~⚠️ sparks.ds's "header-autopartshub" component still draws the current pill dark (`tone/neutral`) with foreground text on every step: the screen's look was chosen over it, so a resync from that component must not bring the dark pill back.~~ sparks.ds's component now draws the sapphire pill too. It shows a new concept, so its other steps are the not-reached look; a step already reached keeps `text-foreground`, which Figma doesn't draw.
-3. **~~Back button and~~ Share** uses Button `outline` with header-only overrides: `rounded-button-lg shadow-xs` (12px, Figma radius/button/lg and shadow-xs), `h-9 px-3.5 font-semibold` (1px border + 14px). **Publish**, last, is Button `neutral` (dark) with the same `headerButtonClasses` plus `text-neutral-foreground` (the classes set `text-foreground` for Share). Unavailable, it stays dark at 50% and its reason shows in a tooltip on a focusable wrapper (`span tabIndex={0}`), since a disabled button gets no hover or focus. ~~Back is `h-9 w-[38px]` with an 18px `text-icon` arrow.~~
-4. **Close button:** Button `ghost` `size='icon'` (36px) with `rounded-button-lg text-icon [&_svg]:size-[18px]`: Figma "Button" (Type=Icon, Style=Ghost, lg · 36), radius/button/lg, an 18px × in colors/icon/foreground. `aria-label='Close concept'`.
+3. **~~Back button and~~ Share** uses Button `outline` as is (~~with header-only overrides~~; "Button shape and spacing"). **Publish**, last, on Review only ("One dark button per step"), is Button `neutral` (dark) as is. Unavailable, it stays dark at 50% and its reason shows in a tooltip on a focusable wrapper (`span tabIndex={0}`), since a disabled button gets no hover or focus. ~~Back is `h-9 w-[38px]` with an 18px `text-icon` arrow.~~
+4. **Close button:** Button `ghost` `size='icon'` (36px) with `text-icon [&_svg]:size-[18px]`: Figma "Button" (Type=Icon, Style=Ghost, lg · 36), radius/button/lg, an 18px × in colors/icon/foreground. `aria-label='Close concept'`.
 5. **Concept name:** `Typography as='h1' size='xl' weight='semibold'` (20/30, Figma "xl -semibold") in `text-foreground-prominent`. ~~`size='lg'`~~. Figma uses raw black, not a variable; foreground-prominent is the closest text token.
 6. **Avatar (AutoPartsHUB and the Sparks start page):** 36px, `<Avatar size='lg' className='size-9'>` (`UserAvatar`), between Avatar's `default` (32) and `lg` (40); `lg` keeps the larger initial. Not `lg` alone: it makes the header 96px, and Figma's set is 92 throughout.
 
-**Why:** UCL's Button `outline` has 8px corners, no shadow and medium text, and sparks.ds now has its own button. Syncing Button would change every outline button, so the overrides stay local until that sync. The pills come from Figma's "badge" instances, but they're navigation, so `StepNav` renders a `nav` > `ol` with `aria-current="step"`.
+**Why:** ~~UCL's Button `outline` has 8px corners, no shadow and medium text, so the overrides stay local until Button is synced.~~ Button has sparks.ds's look now. The pills come from Figma's "badge" instances, but they're navigation, so `StepNav` renders a `nav` > `ol` with `aria-current="step"`.
 
-**How to apply:** when Button is synced from sparks.ds (it now has a "Buttons" page, node 38:94), drop the overrides from the header and from the Sparks layouts' `OutlineIconButton` and "New idea", and use the matching variant and size. Done, Skipped and Needs a check marks on the pills aren't in Figma yet (prds/sparks.md, "Step states"); add them to `StepNavItem` when they are. Figma's "Sparks Project" has no "Concept" button yet (prds/sparks.md, "The concept workspace").
+**How to apply:** Done, Skipped and Needs a check marks on the pills aren't in Figma yet (prds/sparks.md, "Step states"); add them to `StepNavItem` when they are. Figma's "Sparks Project" has no "Concept" button yet (prds/sparks.md, "The concept workspace").
+
+---
+
+## No "Comments" on the Sparks start page (`autopartshub/header-actions.tsx`)
+
+**Rule:** `HeaderActions` (the home, the Sparks start page) is notifications and the avatar. "Comments" is only in an idea's header and the reviewers' page. New comments are a `comments` notification, one per idea.
+
+**Why:** sparks.ds "header-autopartshub" → "Sparks" (32:1146) still draws Comments before the bell, but outside an idea there's nothing for it to open (prds/sparks.md, "New comments").
+
+**How to apply:** a resync of the start page's header doesn't bring it back.
+
+---
+
+## Step nav's sliding pill (`navigation/step-nav/step-nav.tsx`)
+
+**Rule:** the gradient pill is one element in the row, moved with `x` and `width` to the current item's `offsetLeft`/`offsetWidth` on `layoutSpring`. Not a `layoutId` in each item, as Tabs. The row is `isolate`, and stacks three layers: every item's gray fill (`before:`, `-z-20`), the pill (`-z-10`), the labels. The current label's color changes `motionDuration.instant` later.
+
+**Why:** the row is centered in the header, so it moves when Comments or Library opens; with a `layoutId` the pill animated that too, sliding after its own label (and `layoutDependency` stopped it from sliding at all). With the fill on the button itself, the pill went over or under the pills in between depending on their order. Without the delay, the label is white on light gray until the pill arrives.
+
+**How to apply:** check Plan → Review and back (the pill passes under every label), and that opening Comments moves the pill and its label together.
 
 ---
 
@@ -532,8 +644,13 @@ const prototypeDeviceClasses = (device: PrototypeDevice) =>
 - ~~**With the Concept panel open (no preview):** the conversation and the message box move to a 630px column 24px from the left (`w-[654px] ps-6`, content `max-w-[630px]`), Sparks's replies with no inset and Dana's messages 160px clear on the left (`ps-40`); the panel takes the rest, 40px from the column and 24px from the right and bottom (`flex-1 ps-10 pe-6 pb-6`): 1010 × 1001 at 1728 × 1117, as Figma 55:7660. Beside a preview, the panel stays `w-[440px]` on the right.~~ A panel open with no preview leaves the conversation centered in its 728px column, insets included; the panel is 480px on the right ("Side panels share one frame").
 - ~~**Concept panel (`workspace/concept-panel.tsx`):** `rounded-card bg-background-subtle`, a 60px row (`px-[21px] py-3`) with "Concept" (lg semibold, `text-foreground`), then "Jump to a section" (an 18px `Menu`, opening a `DropdownMenu` of the sections under their step) and the close button (an 18px `PanelRight`), both ghost icon buttons, 36px, 12px apart, `opacity-60`, then `px-6 pb-6` around a white card, `rounded-avatar-square` (12px) `p-8`, its sections `gap-10` with an `hr` between them, each a title (lg semibold) 8px above its content. Wide (open in Plan, `wide`), the card has `[&_.text-sm]:text-base`: every 14px line in the sections reads at 16px, Figma's base, while the 440px panel beside a preview keeps 14px. At 480px in every step the sections keep their own 14px (`wide` removed). The sections' components stay `text-sm` (they're also the conversation's compact summaries).~~ The finished plan panel is gone: "Plan becomes a document".
 - **Column insets:** with no preview beside it (the conversation centered in its 728px column), Sparks's replies, the introduction included, keep ~~144px clear on the right (`pe-36`)~~ 64px clear on the right (`pe-16`, 664px wide, as Figma's "Sparks Project" 27:1932 draws the reply's text and its card), and Dana's messages ~~144px clear on the left (`ps-36`)~~ 64px clear on the left (`ps-16`, with `UserMessage` at `max-w-full` instead of its 80%, at most 664px), the same inset as the replies'. Beside a preview (Prototype, Evaluate, Review) the column is 480px and has no insets.
-- **The conversation beside a preview is 15px:** in the 480px column, every `text-base` inside it reads at 15px (`[&_.text-base]:text-[15px]` on the column, not on each component; ~~14px, `text-sm`~~). 15px has no type token: it's a size between `sm` and `base` chosen for the narrow column, and only the font size changes (the line height stays `text-base`'s 1.5): Sparks's messages, Dana's, the cards and the message box. Centered (no preview), it stays 16px. Larger text (a card's `text-lg` title) keeps its size. One class on the column, so a new part in the conversation follows without its own rule.
-- **Plan → Prototype eases (MOTION.md → "Step change"):** at rest the classes size the conversation column (`min-w-0 flex-1` centered in Plan, `w-[480px] shrink-0` beside a preview). Only while it shifts (`shift`, set when the two-column layout starts or ends) does a layout effect set its width inline, from `<main>`'s width to 480px (or back), and ease it with `animateElement` (Motion's `animate`) on `easeOutTransition`, then clear the inline width. Meanwhile `<main>` is `overflow-hidden` and the preview keeps its final width (`shift.mainWidth - conversationWidth`, `flex: none`) and fades in, so it's pushed in from the right edge instead of being squeezed. Not for a step's empty state (the conversation is hidden there), and instant under reduced motion. ✗ Don't drive the width with Motion's `animate` prop at rest: it left the column at its content's width in Plan, on the left instead of centered. ✗ Don't use Motion's `layout`: it scales the text while it moves.
+- **The conversation beside a preview is 15px:** in the 480px column, every `text-base` inside it reads at 15px (`[&_.text-base]:text-[15px]` on the column, not on each component; ~~14px, `text-sm`~~). 15px has no type token: it's a size between `sm` and `base` chosen for the narrow column, and only the font size changes (the line height stays `text-base`'s 1.5): Sparks's messages, Dana's, the cards and the message box. Centered (no preview), it stays 16px. Larger text (a card's `text-lg` title) keeps its size. One class on the column, so a new part in the conversation follows without its own rule. The same class list takes the 24px above a heading in Sparks's messages down to the 12px between paragraphs (`[&_[data-slot=assistant-message]_p]:mt-0`): in the narrow column it read as a double space. Centered (Plan), it stays 24px.
+- **Plan → Prototype eases (MOTION.md → "Step change"):** at rest the classes size the conversation column (`min-w-0 flex-1` centered in Plan, `w-[480px] shrink-0` beside a preview). Only while it shifts (`shift`, set when the two-column layout starts or ends) does a layout effect set its width inline, from `<main>`'s width to 480px (or back), on `easeOutTransition`, then clear the inline width. Meanwhile `<main>` is `overflow-hidden` and the preview keeps its final width (`shift.mainWidth - conversationWidth`, `flex: none`) and fades in, so it's pushed in from the right edge instead of being squeezed. Not for a step's empty state (the conversation is hidden there), and instant under reduced motion. ✗ Don't drive the width with Motion's `animate` prop at rest: it left the column at its content's width in Plan, on the left instead of centered. ✗ Don't use Motion's `layout`: it scales the text while it moves. ✗ Don't pass the column to Motion's `animate` either: it keeps the values it animated on an element and writes them again with the next animation, so a width (or an opacity of 0) from one shift came back in another. `animate(0, 1, { onUpdate })` writes the styles (`draw`), and the effect's cleanup clears them.
+- **Every other change of step (MOTION.md → "Step change"; `trading` in `workspace.tsx`):** the preview is a `PreviewLayer` keyed by what it shows (`layerId`) in `AnimatePresence mode='popLayout'`; `custom` says whether the one leaving fades or is hidden at once (`usePresenceData`; without it, the step she left showed for a frame over the next). It fades on top (`z-10`, `inert`). `draw` writes the styles of each part: `glidingPanelRef`, a `bg-background-subtle` panel between the two places (`panelLeftIn`: change it if the panels' widths, gap or sides change), what's in it (`[data-layer-content]`, its `margin-left`), the conversation, the panel on the left, and the phone (`[data-phone]`: `FitPhone`, and Evaluate's screen in focus). The phone is a picture (`pictureOf`, a copy of its markup) gliding over the real one, which follows it and takes over as the picture fades. Two phones crossfading in place, as before, read as a glitch.
+  - Cleanup clears only the styles it set: clearing `width` on every element took away the phone's own inline size.
+  - The copy keeps the ids inside its `svg`s: without them, the AutoParts logo lost its gradient halfway.
+  - The phone's size (`FitPhone`) and Evaluate's stage are measured in a layout effect, before the first paint, and the strip is placed (`track.set`) the first time; a screen that starts at another size or place makes the phone land in the wrong spot.
+  - Check at 1516px, Prototype → Evaluate: the panel's left edge goes 480 → 766 with its right edge at 1492 in every frame, only one phone shows at a time, and afterwards no inline style is left on `<main>`'s children.
 - **No scrollbar flash on the way to Prototype:** the new reply's `minHeight` is the view less her message (`sentHeight`), and her message is measured with a `ResizeObserver` (`sentId` effect), not once when it's sent: "Generate a prototype…" fits one line in Plan's wide column and wraps to two at 480px, and a height measured once left the conversation 24px taller than the view, so it scrolled and the scrollbar showed, then faded. While `shift` is on, the scroller also hides its scrollbar (`[scrollbar-width:none]`). Check: during the shift, the scroller's `scrollHeight` equals its `clientHeight` (688 at 1720 × 940).
 
 - **Space below Dana's messages:** 32px between her message and Sparks's reply (the list's `gap-4` plus `mb-4` on her `li`), the same as below Sparks's replies. Figma's "Sparks Project" frame (27:1932) shows 16px there; 32px was chosen over it, so each exchange reads as its own block.

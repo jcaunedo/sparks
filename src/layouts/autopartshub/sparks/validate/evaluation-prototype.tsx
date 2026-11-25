@@ -2,12 +2,11 @@ import * as React from "react";
 import { BarChart3, Check, LayoutTemplate, Type, Wrench, type LucideIcon } from "lucide-react";
 import { AnimatePresence, motion, useAnimationControls } from "motion/react";
 
-import { Button } from "@/components/buttons/button";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/overlays/tooltip";
 import { layoutSpring, motionDistance, motionDuration, standardTransition, useMotionPreference } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 
 import { phoneSize, PrototypeNote, prototypeDeviceClasses, ScreenArrow, type PrototypeAudience } from "../prototype/prototype-panel";
+import { PanelAction } from "../shared/panel-action";
 import { VersionsMenu } from "../shared/versions-menu";
 import type { EvaluationFinding, PrototypeStop } from "./validate-panel";
 
@@ -52,7 +51,7 @@ type EvaluationPrototypeProps = {
 	onRestore?: (id: string) => void;
 	/** "Add to Review": her go-ahead (prds/sparks-validate.md, "Go ahead or keep improving"). Disabled while it runs. */
 	onAddToReview?: () => void;
-	/** Why "Add to Review" can't be used now (the prototype changed after the last run): disabled, with this in its tooltip. */
+	/** Why "Add to Review" can't be used now (a run is going, or the prototype changed after the last one): disabled, with this in its tooltip. */
 	addToReviewBlocked?: string;
 	agents: EvaluationAgent[];
 	/**
@@ -72,8 +71,12 @@ type EvaluationPrototypeProps = {
 	markers?: EvaluationMarker[];
 	/** All the markers show (a finished run); otherwise each drops when an agent finds it. */
 	revealMarkers?: boolean;
-	/** A finding selected in the evaluation: the strip slides to its screen, and its marker pops. */
-	focus?: { id: string; key: number };
+	/**
+	 * A finding selected in the evaluation: the strip slides to its screen, and its marker pops. `fromScreen`: selected by
+	 * the screen in focus (`onScreenFindings`), so the strip stays where it is (DESIGN.md → "The strip doesn't follow what
+	 * it selected").
+	 */
+	focus?: { id: string; key: number; fromScreen?: boolean };
 	onMarkerSelect?: (id: string) => void;
 	/**
 	 * The screen in focus once the run is done (or when the strip moves to another): the findings marked on it, so the
@@ -195,7 +198,7 @@ function AgentNote({ note, pulse, below, className }: { note: string; pulse: num
 }
 
 /**
- * Evaluate's left panel: the path and its versions (the title is the menu, as in Prototype) and "Add to Review"; then
+ * Evaluate's right panel: the path and its versions (the title is the menu, as in Prototype) and "Add to Review"; then
  * the strip of the prototype's screens, the one in focus in the middle, in a phone with a dark bezel (or a monitor),
  * the others smaller and faded on either side; under it, the way to the others. While it runs, the strip goes through
  * the journey, and every agent with a place on the screen in focus comes in, at its own moment and pace, works there
@@ -232,7 +235,11 @@ function EvaluationPrototype({
 	const itemRefs = React.useRef(new Map<string, HTMLDivElement>());
 	const scrollerRefs = React.useRef(new Map<string, HTMLDivElement>());
 	const track = useAnimationControls();
-	const [index, setIndex] = React.useState(0);
+	// It opens on the finding selected before she left (a fix made in Prototype), if there's one.
+	const selectedMarker = focus?.fromScreen ? undefined : markers.find((m) => m.id === focus?.id);
+	// Otherwise, with a finished run, on its first open finding.
+	const opensOn = selectedMarker ?? (revealMarkers ? markers.find((m) => !m.fixed) : undefined);
+	const [index, setIndex] = React.useState(() => Math.max(0, opensOn ? screens.findIndex((s) => keyOf(s.at) === keyOf(opensOn.at)) : 0));
 	const [stage, setStage] = React.useState({ w: 0, h: 0 });
 	// Only the agents at work have a pose; the others aren't shown.
 	const [poses, setPoses] = React.useState<Record<string, Pose>>({});
@@ -266,7 +273,9 @@ function EvaluationPrototype({
 	React.useLayoutEffect(() => {
 		const node = stageRef.current;
 		if (!node) return;
-		const observer = new ResizeObserver(() => setStage({ w: node.clientWidth, h: node.clientHeight }));
+		const measure = () => setStage({ w: node.clientWidth, h: node.clientHeight });
+		measure();
+		const observer = new ResizeObserver(measure);
 		observer.observe(node);
 		return () => observer.disconnect();
 	}, []);
@@ -279,8 +288,13 @@ function EvaluationPrototype({
 		const item = screens[i] && itemRefs.current.get(keyOf(screens[i].at));
 		return item ? stage.w / 2 - (item.offsetLeft + item.offsetWidth / 2) : 0;
 	};
-	React.useEffect(() => {
-		void track.start({ x: centerOf(index) }, resolve({ ...layoutSpring }));
+	const placed = React.useRef(false);
+	React.useLayoutEffect(() => {
+		if (!stage.w) return;
+		// It opens with its screen in the middle already; from then on it slides.
+		if (!placed.current) track.set({ x: centerOf(index) });
+		else void track.start({ x: centerOf(index) }, resolve({ ...layoutSpring }));
+		placed.current = true;
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [index, stage.w, deviceH, screens.length]);
 
@@ -430,16 +444,15 @@ function EvaluationPrototype({
 
 	// A finding selected in the evaluation: the strip goes to its screen.
 	React.useEffect(() => {
-		const marker = markers.find((m) => m.id === focus?.id);
-		if (marker && !busy) goTo(marker.at);
+		if (selectedMarker && !busy) goTo(selectedMarker.at);
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [focus?.key]);
 	// Once a run is done (all its markers show), the strip goes to the first open finding; a story that opens on a
-	// finished run starts there.
+	// finished run starts there. A finding she selected comes first.
 	const revealedBefore = React.useRef(false);
 	React.useEffect(() => {
 		const first = markers.find((m) => !m.fixed);
-		if (revealMarkers && !revealedBefore.current && first && !busy) goTo(first.at);
+		if (revealMarkers && !revealedBefore.current && first && !busy && !selectedMarker) goTo(first.at);
 		revealedBefore.current = revealMarkers;
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [revealMarkers]);
@@ -523,25 +536,7 @@ function EvaluationPrototype({
 					) : null}
 				</div>
 				{onAddToReview ? (
-					addToReviewBlocked && !running ? (
-						// Disabled, with why: the tooltip sits on a wrapper, since a disabled button gets no pointer events.
-						<Tooltip>
-							<TooltipTrigger asChild>
-								<span tabIndex={0} className='shrink-0 rounded-button-lg outline-none focus-visible:ring-2 focus-visible:ring-ring'>
-									<Button variant='neutral' className='pointer-events-none rounded-button-lg' disabled>
-										Add to Review
-									</Button>
-								</span>
-							</TooltipTrigger>
-							<TooltipContent side='bottom' sideOffset={6}>
-								{addToReviewBlocked}
-							</TooltipContent>
-						</Tooltip>
-					) : (
-						<Button variant='neutral' className='shrink-0 rounded-button-lg' disabled={running} onClick={onAddToReview}>
-							Add to Review
-						</Button>
-					)
+					<PanelAction label='Add to Review' onClick={onAddToReview} disabled={running || Boolean(addToReviewBlocked)} hint={addToReviewBlocked} />
 				) : null}
 			</div>
 
@@ -595,7 +590,7 @@ function EvaluationPrototype({
 								{/* The device: a phone with a dark bezel, or a monitor. Only the one in focus can be used, and not while an
 								    agent works it. */}
 								{/* The phone takes its scaled size in the strip; inside, it's the real-size device, scaled. */}
-								<div className='shrink-0' style={phone ? { width: phoneSize.width * fit, height: deviceH } : undefined}>
+								<div data-phone={phone && inFocus ? "" : undefined} className='shrink-0' style={phone ? { width: phoneSize.width * fit, height: deviceH } : undefined}>
 								<div
 									data-device
 									inert={!inFocus || busy}

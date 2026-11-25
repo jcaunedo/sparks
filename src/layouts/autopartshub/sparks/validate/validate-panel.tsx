@@ -64,7 +64,7 @@ type EvaluationFinding = {
 	method: string;
 	/** The suggested fix, when Sparks has one. */
 	fix?: string;
-	/** The prototype can make the fix: "Fix this in the prototype" offers it. */
+	/** The prototype can make the fix: "Fix in the prototype" offers it. */
 	fixable?: boolean;
 	/**
 	 * The suggestion is another direction (the flag can't say whether a part fits; the fit check does): the suggestion
@@ -139,7 +139,10 @@ type ValidatePanelProps = {
 	currentVersion?: number;
 	/** Findings fixed in the prototype since this run, by id: the version that fixed them. */
 	fixedSince?: Record<string, number>;
-	/** "Fix this in the prototype" on a finding: the change is made right away, as a new version. */
+	/**
+	 * "Fix in the prototype" on a finding or on a scenario that ran into it ("Change the fix in the prototype" once it's
+	 * fixed): Prototype opens on its page, with Sparks's plan in the conversation. Without it (a run is going), no button.
+	 */
 	onFix?: (findingId: string) => void;
 	/**
 	 * A suggestion that's another direction (`EvaluationFinding.direction`): "Try "…"" builds it as another path, "Open "…""
@@ -191,36 +194,42 @@ function FindingNumber({ number, severity, fixed, placed }: { number: number; se
 }
 
 /**
- * A finding's suggested fix, the same on the finding and on a scenario that ran into it: "Suggested fix: …" with "Fix
- * this in the prototype" when the prototype can make it, "Suggestion: …" alone when it needs a decision first.
+ * A finding's suggested fix, the same on the finding and on a scenario that ran into it: "Suggested fix: …" with "Fix in
+ * the prototype" when the prototype can make it, "Suggestion: …" alone when it needs a decision first. Fixed since the
+ * run (`fixed`): only the way back to its fix.
  */
 function FindingFix({
 	finding,
+	fixed = false,
 	onFix,
 	directionAction,
 	className,
 }: {
 	finding: EvaluationFinding;
+	fixed?: boolean;
 	onFix?: (findingId: string) => void;
 	directionAction?: ValidatePanelProps["directionAction"];
 	className?: string;
 }) {
-	if (!finding.fix) return null;
+	if (!finding.fix || (fixed && !onFix)) return null;
 	const tryDirection = finding.direction && directionAction?.(finding.direction.id);
 	return (
 		<div className={cn("flex flex-col items-start gap-2", className)}>
-			<span className='text-base text-foreground'>
-				{finding.fixable ? "Suggested fix" : "Suggestion"}: {finding.fix}
-			</span>
+			{fixed ? null : (
+				<span className='text-base text-foreground'>
+					{finding.fixable ? "Suggested fix" : "Suggestion"}: {finding.fix}
+				</span>
+			)}
 			{finding.fixable ? (
-				// The same button as "Run again": outlined, 36px, with its icon.
-				<Button variant='outline' className='rounded-button-lg bg-background shadow-xs' onClick={() => onFix?.(finding.id)}>
-					<WandSparkles aria-hidden /> Fix this in the prototype
-				</Button>
+				onFix ? (
+					<Button variant='outline' onClick={() => onFix(finding.id)}>
+						<WandSparkles aria-hidden data-icon='inline-start' /> {fixed ? "Change the fix in the prototype" : "Fix in the prototype"}
+					</Button>
+				) : null
 			) : finding.direction && tryDirection ? (
 				// Another direction: tried as another path beside this one, which stays as it is.
-				<Button variant='outline' className='rounded-button-lg bg-background shadow-xs' onClick={tryDirection.onClick}>
-					<GitBranchPlus aria-hidden /> {tryDirection.built ? "Open" : "Try"} "{finding.direction.name}"
+				<Button variant='outline' onClick={tryDirection.onClick}>
+					<GitBranchPlus aria-hidden data-icon='inline-start' /> {tryDirection.built ? "Open" : "Try"} "{finding.direction.name}"
 				</Button>
 			) : null}
 		</div>
@@ -331,21 +340,22 @@ function ScenarioRow({
 										)}{" "}
 										· {finding.title}
 									</span>
-									{fixedLater ? <FixedSinceBadge version={fixedLater} /> : <FindingFix finding={finding} onFix={onFix} directionAction={directionAction} />}
+									{fixedLater ? <FixedSinceBadge version={fixedLater} /> : null}
+									<FindingFix finding={finding} fixed={Boolean(fixedLater)} onFix={onFix} directionAction={directionAction} />
 								</div>
 							))
 						: null}
 					{status === "done" ? (
 						<div className='flex flex-wrap items-center gap-1 pt-1'>
 							{onWatch ? (
-								<Button variant='ghost' size='sm' className='-ms-3 gap-1.5 rounded-button-md' onClick={onWatch}>
-									<Play aria-hidden />
+								<Button variant='ghost' size='sm' className='-ms-2' onClick={onWatch}>
+									<Play aria-hidden data-icon='inline-start' />
 									Watch it on the prototype
 								</Button>
 							) : null}
-							<Button variant='ghost' size='sm' aria-expanded={open} aria-controls={id} className={cn("gap-1 rounded-button-md", !onWatch && "-ms-3")} onClick={() => setOpen((value) => !value)}>
+							<Button variant='ghost' size='sm' aria-expanded={open} aria-controls={id} className={cn(!onWatch && "-ms-3")} onClick={() => setOpen((value) => !value)}>
 								Step through
-								<ChevronDown aria-hidden className={cn("transition-transform", open && "rotate-180")} />
+								<ChevronDown aria-hidden data-icon='inline-end' className={cn("transition-transform", open && "rotate-180")} />
 							</Button>
 						</div>
 					) : null}
@@ -373,7 +383,7 @@ function ScenarioRow({
  * Evaluate's results, beside the prototype (Figma Sparks "Evaluate", 72:660; prds/sparks-validate.md, "The results"):
  * "Evaluation" and "Run" (Stop while it runs) on top, then, on a card, the run's progress (folding to "Evaluated in
  * 22s"), Sparks's read, the hypothesis, the measures, the findings (numbered as their markers on the prototype, with "Fix
- * this in the prototype"), the scenarios (each watched on the prototype or stepped through), assumptions, whether
+ * in the prototype"), the scenarios (each watched on the prototype or stepped through), assumptions, whether
  * AutoParts Co. can build it, design and accessibility, what changes for teams, and what only real people can tell us.
  * While it runs, each part comes in as it's done, in that order.
  */
@@ -422,6 +432,8 @@ function ValidatePanel({
 	React.useLayoutEffect(() => {
 		if (finished && scrollerRef.current) scrollerRef.current.scrollTop = 0;
 	}, [finished]);
+	// A finding selected already as Evaluate opens is there from the start; it scrolls only to one selected after.
+	const opened = React.useRef(false);
 	// A finding selected on the prototype (its marker, or the screen it's on) comes to the top of the card: the first one
 	// with the "Findings" heading above it, so the two panels show the same thing.
 	React.useEffect(() => {
@@ -429,8 +441,11 @@ function ValidatePanel({
 		if (!row || !evaluation) return;
 		const first = evaluation.findings[0]?.id === selectedFinding?.id;
 		const target = first && findingsRef.current ? findingsRef.current : row;
-		return scrollIntoViewSmoothly(target, { reducedMotion: Boolean(prefersReducedMotion), align: "start" });
+		return scrollIntoViewSmoothly(target, { reducedMotion: Boolean(prefersReducedMotion) || !opened.current, align: "start" });
 	}, [selectedFinding?.key]);
+	React.useEffect(() => {
+		opened.current = true;
+	}, []);
 
 	const header = (
 		<div className='flex h-[68px] shrink-0 items-center justify-between gap-3 px-5'>
@@ -438,13 +453,13 @@ function ValidatePanel({
 				Evaluation
 			</Typography>
 			{running ? (
-				<Button variant='outline' className='rounded-button-lg bg-background shadow-xs' onClick={onStop}>
-					<Square aria-hidden /> Stop
+				<Button variant='outline' onClick={onStop}>
+					<Square aria-hidden data-icon='inline-start' /> Stop
 				</Button>
 			) : onRun ? (
 				// After a change to the prototype, running it again is the next thing to do: it stands out.
-				<Button variant={changedSince ? "neutral" : "outline"} className={cn("rounded-button-lg", !changedSince && "bg-background shadow-xs")} onClick={onRun}>
-					<Play aria-hidden /> {evaluation ? "Run again" : "Run"}
+				<Button variant={changedSince ? "neutral" : "outline"} onClick={onRun}>
+					<Play aria-hidden data-icon='inline-start' /> {evaluation ? "Run again" : "Run"}
 				</Button>
 			) : null}
 		</div>
@@ -471,7 +486,7 @@ function ValidatePanel({
 			<p className='text-base text-foreground'>{evaluation.readText}</p>
 			{evaluation.sinceLast ? <p className='text-sm text-muted-foreground'>Since the last run: {evaluation.sinceLast}</p> : null}
 			{evaluation.read === "Needs another look" && onBackToChoice ? (
-				<Button variant='outline' className='mt-1 w-fit rounded-button-lg shadow-xs' onClick={onBackToChoice}>
+				<Button variant='outline' className='mt-1 w-fit' onClick={onBackToChoice}>
 					Go back to the choice
 				</Button>
 			) : null}
@@ -564,7 +579,7 @@ function ValidatePanel({
 							) : (
 								<div className='flex items-start gap-3'>{content}</div>
 							)}
-							{finding.status === "open" && !fixedLater ? <FindingFix finding={finding} onFix={onFix} directionAction={directionAction} className='ps-9' /> : null}
+							{finding.status === "open" ? <FindingFix finding={finding} fixed={Boolean(fixedLater)} onFix={onFix} directionAction={directionAction} className='ps-9' /> : null}
 						</li>
 					);
 				})}
@@ -675,8 +690,8 @@ function ValidatePanel({
 							))}
 						</ul>
 						{onWatch && expert.notes.some((note) => note.at) && finished ? (
-							<Button variant='ghost' size='sm' className='-ms-3 w-fit gap-1.5 rounded-button-md' onClick={() => onWatch(expert.id)}>
-								<Play aria-hidden />
+							<Button variant='ghost' size='sm' className='-ms-2 w-fit' onClick={() => onWatch(expert.id)}>
+								<Play aria-hidden data-icon='inline-start' />
 								Watch it on the prototype
 							</Button>
 						) : null}

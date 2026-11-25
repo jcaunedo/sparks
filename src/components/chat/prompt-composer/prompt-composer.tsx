@@ -1,9 +1,10 @@
 import * as React from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { ArrowUp, AudioLines, Mic, Plus } from "lucide-react";
+import { ArrowUp, AudioLines, Mic, Paperclip, Plus, X } from "lucide-react";
 
 import { Button } from "@/components/buttons/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from "@/components/overlays/dropdown-menu";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/overlays/tooltip";
 import {
 	iconSwapReducedVariants,
 	iconSwapVariants,
@@ -24,7 +25,7 @@ type PromptComposerProps = Omit<React.ComponentProps<"textarea">, "onSubmit"> & 
 	onAttach?: () => void;
 	/**
 	 * The "+" button's menu: `DropdownMenuItem`s (and `DropdownMenuSeparator`s), e.g. sparks.ds "select-prompt-add" (77:6726:
-	 * Attach, Add from library, Connect, Initial prompt). With it, "+" opens the menu instead of calling `onAttach`.
+	 * Attach files, Add from library, Add a connection, Initial prompt). With it, "+" opens the menu instead of calling `onAttach`.
 	 */
 	addMenu?: React.ReactNode;
 	/** The mic button: dictate into the box. */
@@ -44,6 +45,10 @@ type PromptComposerProps = Omit<React.ComponentProps<"textarea">, "onSubmit"> & 
 	 * is on offer.
 	 */
 	onCancel?: () => void;
+	/** Files attached to the message, by name: shown above the text, each with a remove button. They're sent with it. */
+	attachments?: string[];
+	/** Removing one of `attachments`. Without it, they can't be removed. */
+	onAttachmentRemove?: (index: number) => void;
 };
 
 /** A key named in the hint. */
@@ -75,6 +80,8 @@ function PromptComposer({
 	suggestion,
 	onSuggestionAccept,
 	onCancel,
+	attachments = [],
+	onAttachmentRemove,
 	placeholder,
 	disabled,
 	ref,
@@ -84,12 +91,14 @@ function PromptComposer({
 	const isControlled = value !== undefined;
 	const [innerValue, setInnerValue] = React.useState(String(defaultValue ?? ""));
 	const currentValue = isControlled ? String(value) : innerValue;
-	const hasValue = currentValue.trim().length > 0;
+	const hasAttachments = attachments.length > 0;
+	// There's something to send: text, or files, which can go on their own.
+	const hasValue = currentValue.trim().length > 0 || hasAttachments;
 	const swapVariants = prefersReducedMotion ? iconSwapReducedVariants : iconSwapVariants;
 	const hintId = React.useId();
 	const inputRef = React.useRef<HTMLTextAreaElement | null>(null);
 	// The suggestion is on offer while the box is empty.
-	const offering = Boolean(suggestion) && !hasValue && !disabled;
+	const offering = Boolean(suggestion) && !currentValue.trim() && !disabled;
 
 	// Tab took the suggestion: the caret goes to its end, ready to edit.
 	const acceptSuggestion = () => {
@@ -125,9 +134,50 @@ function PromptComposer({
 				className,
 			)}
 		>
+			{/* Not in Figma yet: the attached files, above the text, 8px from it. */}
+			{hasAttachments ? (
+				<ul aria-label='Attached files' className='flex flex-wrap gap-2 pb-2'>
+					{attachments.map((name, index) => (
+						<li
+							key={`${name}-${index}`}
+							className='flex h-7 max-w-full min-w-0 items-center gap-1.5 rounded-full bg-background-subtle ps-2.5 pe-1 text-sm text-foreground [&>svg]:size-3.5 [&>svg]:shrink-0 [&>svg]:text-icon-muted'
+						>
+							<Paperclip aria-hidden />
+							<span className='min-w-0 truncate'>{name}</span>
+							{onAttachmentRemove ? (
+								<Tooltip>
+									<TooltipTrigger asChild>
+										<Button
+											type='button'
+											variant='ghost'
+											size='icon'
+											aria-label={`Remove ${name}`}
+											className='size-5 rounded-full [&_svg]:size-3.5'
+											disabled={disabled}
+											onClick={() => {
+												onAttachmentRemove(index);
+												// The button goes with the file: focus goes back to the box.
+												inputRef.current?.focus();
+											}}
+										>
+											<X aria-hidden />
+										</Button>
+									</TooltipTrigger>
+									<TooltipContent side='bottom' sideOffset={6}>
+										Remove
+									</TooltipContent>
+								</Tooltip>
+							) : null}
+						</li>
+					))}
+				</ul>
+			) : null}
+
 			{/* Figma "input": min 48px tall, 5px side inset; grows with its content. */}
 			<textarea
 				data-slot='prompt-composer-input'
+				// With files waiting, Enter in the empty box is the box's, not the quick replies' (`useEnterShortcut`).
+				data-has-attachments={hasAttachments || undefined}
 				ref={(element) => {
 					inputRef.current = element;
 					if (typeof ref === "function") ref(element);

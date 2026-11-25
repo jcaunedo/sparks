@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Bell, Building2, CheckCheck, CircleAlert, CircleCheck, Megaphone, TriangleAlert } from "lucide-react";
+import { Bell, Building2, CheckCheck, CircleAlert, CircleCheck, Megaphone, MessageCircle, TriangleAlert } from "lucide-react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/data-display/avatar";
 import { Button } from "@/components/buttons/button";
@@ -16,10 +16,14 @@ import { HeaderIconButton } from "./header-icon-button";
  * and All, newest first; "Clear all" empties it. Kept simple: it isn't in Figma yet (after a typical notifications panel).
  */
 
-/** One notification. `kind` sets what leads it: a person's avatar, a department, or an icon for what happened. */
+/**
+ * One notification. `kind` sets what leads it: a person's avatar, a department, or an icon for what happened. `comments`:
+ * the new comments on one idea, counted in one notification ("3 new comments on …"); its link opens the idea with Comments
+ * open.
+ */
 type AppNotification = {
 	id: string;
-	kind: "person" | "department" | "success" | "warning" | "error" | "update";
+	kind: "person" | "department" | "comments" | "success" | "warning" | "error" | "update";
 	title: string;
 	/** One line under the title; it's cut with an ellipsis when it's longer. */
 	description: string;
@@ -41,6 +45,7 @@ type NotificationsPopoverProps = {
 };
 
 const kindIcon = {
+	comments: { icon: MessageCircle, className: "bg-neutral-muted text-foreground" },
 	success: { icon: CircleCheck, className: "bg-success-muted text-success" },
 	warning: { icon: TriangleAlert, className: "bg-warning-muted text-warning" },
 	error: { icon: CircleAlert, className: "bg-destructive-muted text-destructive" },
@@ -89,6 +94,7 @@ function NotificationsPopover({ notifications, now }: NotificationsPopoverProps)
 	// Read and cleared are hers to change here; the list itself comes in through props.
 	const [read, setRead] = React.useState<Set<string>>(() => new Set());
 	const [cleared, setCleared] = React.useState(false);
+	const [open, setOpen] = React.useState(false);
 	const items = cleared ? [] : notifications.map((n) => ({ ...n, unread: n.unread && !read.has(n.id) }));
 	const unread = items.filter((n) => n.unread);
 	const markRead = (id: string) => setRead((current) => new Set(current).add(id));
@@ -101,7 +107,11 @@ function NotificationsPopover({ notifications, now }: NotificationsPopoverProps)
 					<li key={notification.id}>
 						<Row
 							href={notification.href}
-							onClick={() => markRead(notification.id)}
+							onClick={() => {
+								markRead(notification.id);
+								// It opens what it's about: the popover doesn't stay over it.
+								if (notification.href) setOpen(false);
+							}}
 							className='flex w-full items-center gap-3 rounded-lg px-2 py-2.5 text-start outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring'
 						>
 							{/* The unread dot (the bell's sky), or its space, so the rows line up. */}
@@ -133,7 +143,7 @@ function NotificationsPopover({ notifications, now }: NotificationsPopoverProps)
 	);
 
 	return (
-		<Popover>
+		<Popover open={open} onOpenChange={setOpen}>
 			<PopoverTrigger asChild>
 				<HeaderIconButton label='Notifications' dot={unread.length > 0}>
 					<Bell aria-hidden />

@@ -67,14 +67,22 @@ export const WithSuggestionAndCancel: Story = {
 	},
 };
 
-/** "+" opens a menu (sparks.ds "select-prompt-add", 77:6726): attach, add from the library, connect, the initial prompt. */
+/** Files attached to the message, above the text. The main button is Send: they can go with no text. */
+export const WithAttachments: Story = {
+	args: {
+		attachments: ["returns-report-q3.pdf", "store-calls-october.xlsx"],
+		onAttachmentRemove: fn(),
+	},
+};
+
+/** "+" opens a menu (sparks.ds "select-prompt-add", 77:6726): attach files, add from the library, add a connection, the initial prompt. */
 export const WithAddMenu: Story = {
 	args: {
 		addMenu: (
 			<>
 				<DropdownMenuItem>
 					<Paperclip aria-hidden />
-					Attach
+					Attach files
 				</DropdownMenuItem>
 				<DropdownMenuItem>
 					<Folder aria-hidden />
@@ -82,7 +90,7 @@ export const WithAddMenu: Story = {
 				</DropdownMenuItem>
 				<DropdownMenuItem>
 					<Zap aria-hidden />
-					Connect
+					Add a connection
 				</DropdownMenuItem>
 				<DropdownMenuSeparator />
 				<DropdownMenuItem>

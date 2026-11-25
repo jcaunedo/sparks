@@ -10,8 +10,8 @@ type OutlineIconButtonProps = React.ComponentProps<typeof Button> & {
 
 /**
  * Sparks's outline icon button: the start page's search. Figma "Button"
- * (Type=Icon, Style=Outlined, lg · 36): 36px tall, radius/button/lg (12px), shadow-xs, an 18px icon.
- * Layout-only until Button is synced from sparks.ds's "Button" set (ARCHITECTURE.md → "Layout-only parts").
+ * (Type=Icon, Style=Outlined, lg · 36): 36px (Button's own look), an 18px icon in colors/icon/foreground.
+ * Layout-only until Button's icon type is synced from sparks.ds's "Button" set (ARCHITECTURE.md → "Layout-only parts").
  */
 function OutlineIconButton({ label, className, children, ...props }: OutlineIconButtonProps) {
 	return (
@@ -20,7 +20,7 @@ function OutlineIconButton({ label, className, children, ...props }: OutlineIcon
 			size='icon'
 			aria-label={label}
 			title={label}
-			className={cn("rounded-button-lg text-icon shadow-xs [&_svg]:size-[18px]", className)}
+			className={cn("text-icon [&_svg]:size-[18px]", className)}
 			{...props}
 		>
 			{children}

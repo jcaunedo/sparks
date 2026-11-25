@@ -2,11 +2,14 @@ import * as React from "react";
 import { CircleCheck, CircleDashed, Clock, ExternalLink, Eye, LoaderCircle, MessageSquare } from "lucide-react";
 import { motion } from "motion/react";
 
+import { ActivityFeed } from "@/components/chat/activity-feed";
 import { Badge } from "@/components/data-display/badge";
 import { Button } from "@/components/buttons/button";
 import { Typography } from "@/components/typography/typography";
 import { fadeVariants, revealVariants, scrollIntoViewSmoothly, useMotionPreference } from "@/lib/motion";
 import { cn } from "@/lib/utils";
+
+import { PublishingPart, ReviewNextStep, type ReviewNext } from "./review-next";
 
 /*
  * Review (prds/sparks-review.md): the concept prepared for review from the spec (nothing new, every statement keeping
@@ -73,8 +76,14 @@ type ReviewPanelProps = {
 	concept: ConceptForReview;
 	status: ReviewStatus;
 	reviewers: Reviewer[];
-	/** Dana's recommendation, once drafted. */
+	/** Dana's recommendation, once she sends it. */
 	recommendation?: string;
+	/** What Review is waiting for, at the top: what she does there, one thing at a time. Not for the teams. */
+	next?: ReviewNext;
+	/** The views are all in, before the decision is asked for: the badge says so. */
+	reviewsIn?: boolean;
+	/** Sparks putting it together, as `ActivityFeed` shows it: done, it folds to "Put together in 18s". */
+	progress?: React.ComponentProps<typeof ActivityFeed>;
 	/**
 	 * While Sparks puts it together (prds/sparks-review.md, "Putting it together"): whether the writing has begun (before
 	 * that, the panel is blank), and how many parts are written so far, in the order of `reviewPartTitles`. The next one
@@ -90,10 +99,11 @@ type ReviewPanelProps = {
 	className?: string;
 };
 
-/** The parts of the idea for review, in order (prds/sparks-review.md, "What's reviewed"). Dana's recommendation joins after Gaps once she drafts it. */
+/** The parts of the idea for review, in order (prds/sparks-review.md, "What's reviewed"). What's still open (Gaps, Known issues) comes right after the summary. Dana's recommendation joins after it once she sends it. */
 const reviewPartTitles = [
 	"Summary",
 	"Gaps",
+	"Known issues",
 	"What we believe (hypothesis)",
 	"What people need to do (user stories), and how to know it’s done (acceptance criteria)",
 	"The prototype",
@@ -102,7 +112,6 @@ const reviewPartTitles = [
 	"The evidence",
 	"What it needs to be built",
 	"Design notes",
-	"Known issues",
 	"For the UX team to test with real people",
 	"What it changes for teams",
 	"Decisions",
@@ -119,6 +128,7 @@ function Part({
 	items,
 	reveal = false,
 	action,
+	below,
 	marked = false,
 	children,
 }: {
@@ -127,6 +137,8 @@ function Part({
 	reveal?: boolean;
 	/** On the heading's right, e.g. a reviewer's "Comment". */
 	action?: React.ReactNode;
+	/** Right under the heading, e.g. a reviewer's comments on it. */
+	below?: React.ReactNode;
 	/** Marked for a moment: a comment on it was just opened. */
 	marked?: boolean;
 	children?: React.ReactNode;
@@ -150,6 +162,7 @@ function Part({
 				</Typography>
 				{action}
 			</div>
+			{below}
 			{children}
 			{items?.length ? (
 				<ul className='flex list-disc flex-col gap-1 ps-5 text-sm text-foreground'>
@@ -260,6 +273,7 @@ function reviewPartBody(concept: ConceptForReview): Record<(typeof reviewPartTit
 			),
 		},
 		Gaps: { items: concept.gaps },
+		"Known issues": { items: concept.knownIssues },
 		"What we believe (hypothesis)": { children: <p className='text-sm text-foreground'>{concept.hypothesis}</p> },
 		"What people need to do (user stories), and how to know it’s done (acceptance criteria)": {
 			children: (
@@ -283,7 +297,6 @@ function reviewPartBody(concept: ConceptForReview): Record<(typeof reviewPartTit
 		"The evidence": { items: concept.evidence },
 		"What it needs to be built": { items: concept.build },
 		"Design notes": { items: concept.design },
-		"Known issues": { items: concept.knownIssues },
 		"For the UX team to test with real people": { items: concept.realPeople },
 		"What it changes for teams": { items: concept.teams },
 		Decisions: { items: concept.decisions },
@@ -296,7 +309,7 @@ function reviewPartBody(concept: ConceptForReview): Record<(typeof reviewPartTit
 /**
  * The idea for review, part by part (prds/sparks-review.md, "What's reviewed"): the same document in Dana's Review
  * panel and on the page the teams open (`PublishedIdea`). `shown`: the parts written so far, while Sparks writes it,
- * each coming in (`reveal`). `partAction`: something on each part's heading, e.g. a reviewer's "Comment".
+ * each coming in (`reveal`). `partAction`: something on each part's heading, e.g. a reviewer's "Comment"; `partBelow`: under it.
  */
 function ReviewDocument({
 	concept,
@@ -304,29 +317,35 @@ function ReviewDocument({
 	shown = reviewPartTitles.length,
 	reveal = false,
 	partAction,
+	partBelow,
 	marked,
+	publishing,
 }: {
 	concept: ConceptForReview;
 	/** A part marked for a moment (a comment on it was just opened). */
 	marked?: string;
-	/** Dana's recommendation, after Gaps, once drafted. */
+	/** Only for Dana, before she publishes: who reviews it and the invitation, after what's still open. */
+	publishing?: React.ReactNode;
+	/** Dana's recommendation, after Known issues, once sent. */
 	recommendation?: string;
 	shown?: number;
 	reveal?: boolean;
 	partAction?: (title: string) => React.ReactNode;
+	partBelow?: (title: string) => React.ReactNode;
 }) {
 	const body = reviewPartBody(concept);
 	return (
 		<>
 			{reviewPartTitles.slice(0, shown).map((title) => (
 				<React.Fragment key={title}>
-					<Part title={title} reveal={reveal} action={partAction?.(title)} marked={marked === title} {...body[title]} />
-					{title === "Gaps" && recommendation ? (
+					<Part title={title} reveal={reveal} action={partAction?.(title)} below={partBelow?.(title)} marked={marked === title} {...body[title]} />
+					{title === "Known issues" && recommendation ? (
 						<Part title='Recommendation'>
 							<p className='text-sm text-foreground'>{recommendation}</p>
 							<span className='text-xs text-muted-foreground'>Dana's recommendation</span>
 						</Part>
 					) : null}
+					{title === "Known issues" ? publishing : null}
 				</React.Fragment>
 			))}
 		</>
@@ -334,11 +353,12 @@ function ReviewDocument({
 }
 
 /**
- * The concept for review beside the conversation in Review (prds/sparks-review.md): where it stands (ready, in review,
- * waiting for a decision, advanced), the reviewers' status and views, then every part of "What's reviewed", one
- * heading each, in order. Not in Figma yet.
+ * The idea for review, on Review's left, with the prototype on its right (prds/sparks-review.md, "Review's screen"): on
+ * top, where it stands and "See what the teams see"; on a card, what Sparks put together in (its progress), the next step
+ * (`ReviewNextStep`), the reviewers once it's published, then every part of "What's reviewed", one heading each, in
+ * order. The same frame as Evaluate's panel. Not in Figma yet.
  */
-function ReviewPanel({ concept, status, reviewers, recommendation, building: build, published, onOpenPublished, focusPart, className }: ReviewPanelProps) {
+function ReviewPanel({ concept, status, reviewers, recommendation, next, reviewsIn = false, progress, building: build, published, onOpenPublished, focusPart, className }: ReviewPanelProps) {
 	const building = Boolean(build);
 	// A comment on a part was opened: that part comes into view, at the top, and is marked for a moment.
 	const documentRef = React.useRef<HTMLDivElement>(null);
@@ -377,7 +397,7 @@ function ReviewPanel({ concept, status, reviewers, recommendation, building: bui
 		}
 		wasBuilding.current = building;
 	}, [building, prefersReducedMotion]);
-	// While it's put together, the conversation shows the progress: no badge.
+	// While it's put together, its progress shows at the top: no badge.
 	const banner = building ? null : status.kind === "advanced" ? (
 			<Badge variant='flat' tone='green' size='sm' className='w-fit'>
 				Advanced · {status.date}
@@ -388,7 +408,7 @@ function ReviewPanel({ concept, status, reviewers, recommendation, building: bui
 			</Badge>
 		) : status.kind === "in-review" ? (
 			<Badge variant='flat' tone='blue' size='sm' className='w-fit'>
-				{published ? `Published · version ${published}` : "In review"}
+				{reviewsIn ? "The reviews are in" : published ? `Published · version ${published}` : "In review"}
 			</Badge>
 		) : (
 			<Badge variant='flat' tone='neutral' size='sm' className='w-fit'>
@@ -396,28 +416,22 @@ function ReviewPanel({ concept, status, reviewers, recommendation, building: bui
 			</Badge>
 		);
 	return (
-		<section aria-label='Idea for review' className={cn("flex min-h-0 flex-1 flex-col rounded-card bg-background-subtle p-4", className)}>
-			<div className='flex flex-col gap-1 pb-3'>
-				<Typography as='h2' size='lg' weight='semibold' className='text-foreground-prominent'>
+		<section aria-label='Idea for review' className={cn("flex min-h-0 flex-1 flex-col rounded-card bg-background-subtle", className)}>
+			{/* The same header as Evaluate's panels: 68px. */}
+			<div className='flex h-[68px] shrink-0 items-center gap-3 px-5'>
+				<Typography as='h2' size='lg' weight='medium' className='shrink-0 text-foreground-prominent'>
 					Idea for review
 				</Typography>
-				<div className='flex min-h-8 flex-wrap items-center gap-2'>
-					{banner}
-					{building ? null : <span className='text-xs text-muted-foreground'>{concept.evidenceStatus.split(".")[0]}</span>}
-					{/* What the teams see: the published version's page, in its own tab, as a link would open it. */}
-					{published && onOpenPublished ? (
-						<Button variant='link' className='ms-auto h-auto gap-1 p-0 text-sm font-medium' onClick={onOpenPublished}>
-							See what the teams see
-							<ExternalLink aria-hidden className='size-3.5' />
-							<span className='sr-only'>(opens in a new tab)</span>
-						</Button>
-					) : null}
-				</div>
+				{banner}
+				{/* What the teams see: the published version's page, in its own tab, as a link would open it. */}
+				{published && onOpenPublished ? (
+					<Button variant='link' className='ms-auto h-auto min-w-0 gap-1 p-0 text-sm font-medium' onClick={onOpenPublished}>
+						<span className='truncate'>See what the teams see</span>
+						<ExternalLink aria-hidden className='size-3.5' />
+						<span className='sr-only'>(opens in a new tab)</span>
+					</Button>
+				) : null}
 			</div>
-			{/* Blank until the first part: the steps are in the conversation. */}
-			{blank ? (
-				<div className='min-h-0 flex-1' />
-			) : (
 			<motion.div
 				variants={prefersReducedMotion ? fadeVariants : revealVariants}
 				initial={openedBuilding ? "initial" : false}
@@ -428,19 +442,13 @@ function ReviewPanel({ concept, status, reviewers, recommendation, building: bui
 				}}
 				ref={documentRef}
 				aria-busy={building || undefined}
-				className='scrollbar-subtle flex min-h-0 flex-1 flex-col gap-4 scroll-pt-4 overflow-y-auto rounded-md bg-background p-4'
+				className='scrollbar-subtle mx-5 mb-6 flex min-h-0 flex-1 flex-col gap-4 scroll-pt-4 overflow-y-auto rounded-[12px] bg-background p-8'
 			>
-				{status.kind === "advanced" ? (
-					<div className='flex flex-col gap-1 rounded-md bg-background-subtle p-3 text-sm'>
-						<span className='font-semibold text-foreground'>
-							Advanced by {status.owner}, {status.date}
-						</span>
-						<span className='text-foreground'>"{status.reason}"</span>
-					</div>
-				) : null}
+				{progress ? <ActivityFeed {...progress} /> : null}
+				{next && !building ? <ReviewNextStep next={next} /> : null}
 
 				{reviewers.length ? (
-					<section aria-label='Reviewers' className='flex flex-col gap-2'>
+					<section aria-label='Reviewers' className='flex flex-col gap-2 pb-2'>
 						<Typography as='h3' size='base' weight='semibold' className='text-foreground-prominent'>
 							Reviewers
 						</Typography>
@@ -449,13 +457,13 @@ function ReviewPanel({ concept, status, reviewers, recommendation, building: bui
 				) : null}
 
 				{/* The parts written so far, each coming in as it's written; then the one being written. */}
-				<ReviewDocument concept={concept} recommendation={recommendation} shown={shown} reveal={building} marked={marked} />
-				{building && shown < reviewPartTitles.length ? <PartInProgress ref={writingRef} title={reviewPartTitles[shown]} /> : null}
+				{blank ? null : <ReviewDocument concept={concept} recommendation={recommendation} shown={shown} reveal={building} marked={marked} publishing={next?.kind === "publish" && !building ? <PublishingPart next={next} /> : undefined} />}
+				{building && !blank && shown < reviewPartTitles.length ? <PartInProgress ref={writingRef} title={reviewPartTitles[shown]} /> : null}
 				{building && shown >= reviewPartTitles.length ? <div ref={writingRef} aria-hidden className='-mt-4 h-px shrink-0' /> : null}
 			</motion.div>
-			)}
 		</section>
 	);
 }
 
 export { ReviewDocument, ReviewerList, ReviewPanel, reviewPartTitles, viewTone, type ConceptForReview, type IdeaComment, type ReviewPanelProps, type ReviewStatus, type Reviewer };
+export type { ReviewNext };

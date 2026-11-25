@@ -6,6 +6,7 @@ import { Button } from "@/components/buttons/button";
 import { Popover, PopoverAnchor, PopoverContent, PopoverTrigger } from "@/components/overlays/popover";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/overlays/tooltip";
 import { formatRelativeDate } from "@/lib/relative-date";
+import { scrollContainerOf } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 
 import { handlePeopleKeys, matchPeople, PeopleList, type PeopleOption } from "../shared/people-list";
@@ -31,7 +32,24 @@ type PrototypeCommentReply = { id: string; text: string; createdAt: string; auth
  * Where a comment sits: an element she can point at (`point`, so the pin comes back when its screen does), or else the
  * element she clicked (`node`, shown while it's on screen); `fx`/`fy` place it inside that element (0–1).
  */
-type CommentAnchor = { point?: string; node?: HTMLElement; fx: number; fy: number; /** What she clicked, in words ("Add your vehicle"), when it says something. */ where?: string };
+type CommentAnchor = {
+	point?: string;
+	/** Which of the elements with that `point` on the screen, when there are several (each part's fit message in the cart). */
+	nth?: number;
+	node?: HTMLElement;
+	fx: number;
+	fy: number;
+	/**
+	 * The screen it's on (its place in the prototype's screens) and the part that screen shows, so it opens there and its
+	 * pin shows only there. Without `view`, a screen that can't be opened on directly: it shows with its element.
+	 */
+	view?: number;
+	part?: string;
+	/** Where it is on that screen (0–1), for an element with no `point` once the screen has been left and opened again. */
+	screenAt?: { fx: number; fy: number };
+	/** What she clicked, in words ("Add your vehicle"), when it says something. */
+	where?: string;
+};
 
 /** Where comments are being added: the audience and device shown. A pin shows only where it was added. */
 type CommentScope = { key: string; audience: string; audienceLabel: string; device: "phone" | "desktop" };
@@ -70,6 +88,18 @@ type PrototypeCommentsProps = {
 	openId?: string;
 	onOpenChange?: (id: string | undefined) => void;
 	children: React.ReactNode;
+};
+
+/** The screen on show in the prototype, with its `view` and `part` (`ShopScreen`). */
+const screenIn = (content: Element | null | undefined) => {
+	const root = content?.querySelector<HTMLElement>("[data-view]") ?? undefined;
+	return { root, view: root ? Number(root.dataset.view) : undefined, part: root?.dataset.part };
+};
+
+/** Whether the screen on show is the comment's. */
+const onCommentScreen = (content: Element | null | undefined, comment: Pick<CommentAnchor, "view" | "part">) => {
+	const screen = screenIn(content);
+	return comment.view === undefined || (screen.view === comment.view && (!comment.part || screen.part === comment.part));
 };
 
 /** What an element says, for "where" a comment is: its own text or name, first line, when it's short enough to name it. */
@@ -329,7 +359,7 @@ function ThreadAction({ label, onClick, children }: { label: string; onClick: ()
 	return (
 		<Tooltip>
 			<TooltipTrigger asChild>
-				<Button variant='ghost' size='icon' aria-label={label} className='size-7 text-icon' onClick={onClick}>
+				<Button variant='ghost' size='icon' aria-label={label} className='size-7 rounded-button-sm text-icon' onClick={onClick}>
 					{children}
 				</Button>
 			</TooltipTrigger>
@@ -363,6 +393,8 @@ function PrototypeComments({
 	const [openIdState, setOpenIdState] = React.useState<string | undefined>(undefined);
 	const openId = onOpenChange ? openIdProp : openIdState;
 	const setOpenId = onOpenChange ?? setOpenIdState;
+	const openIdNow = React.useRef(openId);
+	openIdNow.current = openId;
 	const [positions, setPositions] = React.useState<Record<string, { x: number; y: number } | null>>({});
 	// Resolved comments leave the prototype, unless one is opened (from the Comments panel).
 	const shown = comments.filter((comment) => comment.scope.key === scope.key && (!comment.resolved || comment.id === openId));
@@ -372,18 +404,23 @@ function PrototypeComments({
 		const content = contentRef.current;
 		const wrapper = wrapperRef.current;
 		if (!content || !wrapper) return null;
-		const element =
-			anchor.node?.isConnected && content.contains(anchor.node)
-				? anchor.node
-				: anchor.point
-					? content.querySelector<HTMLElement>(`[data-point="${CSS.escape(anchor.point)}"]`)
-					: null;
+		if (!onCommentScreen(content, anchor)) return null;
+		let { fx, fy } = anchor;
+		let element: HTMLElement | null | undefined = anchor.node?.isConnected && content.contains(anchor.node) ? anchor.node : null;
+		if (!element && anchor.point) {
+			const matches = content.querySelectorAll<HTMLElement>(`[data-point="${CSS.escape(anchor.point)}"]`);
+			element = matches[anchor.nth ?? 0] ?? matches[0];
+		}
+		if (!element && anchor.screenAt && anchor.view !== undefined) {
+			element = screenIn(content).root;
+			({ fx, fy } = anchor.screenAt);
+		}
 		if (!element) return null;
 		const rect = element.getBoundingClientRect();
 		const origin = wrapper.getBoundingClientRect();
 		// The phone can be scaled to fit (`FitPhone`): pins sit in its own, unscaled pixels.
 		const k = origin.width / (wrapper.offsetWidth || origin.width || 1) || 1;
-		return { x: Math.round((rect.left - origin.left + anchor.fx * rect.width) / k), y: Math.round((rect.top - origin.top + anchor.fy * rect.height) / k) };
+		return { x: Math.round((rect.left - origin.left + fx * rect.width) / k), y: Math.round((rect.top - origin.top + fy * rect.height) / k) };
 	}, []);
 
 	const measure = React.useCallback(() => {
@@ -407,12 +444,28 @@ function PrototypeComments({
 		resize.observe(content);
 		const mutations = new MutationObserver(schedule);
 		mutations.observe(content, { subtree: true, childList: true, characterData: true, attributes: true });
+		// What's pinned to the bottom of the screen stays while the rest scrolls, and so does its pin.
+		const scroller = scrollContainerOf(content);
+		scroller.addEventListener("scroll", schedule, { passive: true });
 		return () => {
 			cancelAnimationFrame(frame);
+			scroller.removeEventListener("scroll", schedule);
 			resize.disconnect();
 			mutations.disconnect();
 		};
 	}, [measure]);
+	// The comment opened comes into view inside the device, once its screen is there.
+	const openPlaced = Boolean(openId && positions[openId]);
+	React.useEffect(() => {
+		const wrapper = wrapperRef.current;
+		const pin = openPlaced ? wrapper?.querySelector<HTMLElement>("[data-comment-pin][aria-expanded=true]") : undefined;
+		if (!wrapper || !pin) return;
+		const scroller = scrollContainerOf(wrapper);
+		const p = pin.getBoundingClientRect();
+		const s = scroller.getBoundingClientRect();
+		const k = s.height / (scroller.offsetHeight || s.height || 1) || 1;
+		if (p.top < s.top + 24 || p.bottom > s.bottom - 24) scroller.scrollTop += (p.top - s.top - s.height / 3) / k;
+	}, [openId, openPlaced]);
 	// Turning "Add comment" off drops a comment she hadn't added.
 	React.useEffect(() => {
 		if (!active) setDraft(null);
@@ -432,8 +485,14 @@ function PrototypeComments({
 			"clientX" in event
 				? { fx: (event.clientX - rect.left) / (rect.width || 1), fy: (event.clientY - rect.top) / (rect.height || 1) }
 				: { fx: 0.5, fy: 0.5 };
+		// Its screen, and where on it, so it opens there later.
+		const { root, view, part } = screenIn(contentRef.current);
+		const r = root?.getBoundingClientRect();
+		const screenAt = r && { fx: (rect.left + at.fx * rect.width - r.left) / (r.width || 1), fy: (rect.top + at.fy * rect.height - r.top) / (r.height || 1) };
+		const point = element === pointable ? pointable.dataset.point : undefined;
+		const nth = point ? [...contentRef.current.querySelectorAll(`[data-point="${CSS.escape(point)}"]`)].indexOf(element) : undefined;
 		setOpenId(undefined);
-		setDraft({ point: pointable?.dataset.point, node: element, where: describe(element, element === pointable), ...at });
+		setDraft({ point, nth, node: element, view, part, screenAt, where: describe(element, element === pointable), ...at });
 	};
 
 	return (
@@ -444,7 +503,8 @@ function PrototypeComments({
 				// Clicking into text she can type over would focus it: not while commenting.
 				onMouseDownCapture={(event) => active && contentRef.current?.contains(event.target as Node) && event.preventDefault()}
 				onKeyDownCapture={(event) => (event.key === "Enter" ? start(event) : undefined)}
-				className={cn("h-full", active && "cursor-crosshair [&_*]:cursor-crosshair")}
+				// `isolate`: the screens' own stacking (the sticky header and bottom bar) stays under the pins.
+				className={cn("isolate h-full", active && "cursor-crosshair [&_*]:cursor-crosshair")}
 			>
 				{children}
 			</div>
@@ -463,7 +523,20 @@ function PrototypeComments({
 							/>
 						</PopoverTrigger>
 						{/* The thread: the comment, its replies, a box to reply; resolve or reopen, and delete her own. */}
-						<PopoverContent side='bottom' align='start' sideOffset={8} aria-label={`${comment.author.name}'s comment`} className='flex w-80 flex-col gap-3 p-0'>
+						<PopoverContent
+							side='bottom'
+							align='start'
+							sideOffset={8}
+							aria-label={`${comment.author.name}'s comment`}
+							className='flex w-80 flex-col gap-3 p-0 outline-none'
+							// Focus on the thread, not on its first button, whose tooltip would cover the comment and take the first Esc.
+							onOpenAutoFocus={(event) => {
+								event.preventDefault();
+								(event.currentTarget as HTMLElement).focus();
+							}}
+							// Another one is opening: this one doesn't take focus back to its pin, which would close that one.
+							onCloseAutoFocus={(event) => openIdNow.current && openIdNow.current !== comment.id && event.preventDefault()}
+						>
 							<div className='flex flex-col gap-3 px-4 pt-4'>
 								{comment.resolved ? (
 									<p className='flex items-center gap-1.5 text-xs font-medium text-success'>
@@ -566,4 +639,4 @@ function PrototypeComments({
 	);
 }
 
-export { MentionText, PrototypeComments, type CommentMention, type CommentScope, type PrototypeComment, type PrototypeCommentAuthor, type PrototypeCommentReply, type PrototypeCommentsProps };
+export { MentionText, onCommentScreen, PrototypeComments, type CommentMention, type CommentScope, type PrototypeComment, type PrototypeCommentAuthor, type PrototypeCommentReply, type PrototypeCommentsProps };

@@ -67,7 +67,8 @@ const fitCheck: ReviewProfile = {
 			{
 				story: "As a customer buying online, I add my vehicle once, so every part can say whether it fits.",
 				criteria: [
-					"Given no saved vehicle, when I open the shop, then I'm asked to add one: year, make, model, trim and engine.",
+					"Given no saved vehicle, when I open the shop, then I'm asked to add one: with its VIN, a past repair invoice, or its year, make, model, trim and engine.",
+					"Given a vehicle read from a VIN or an invoice, then I'm asked if it's mine before it's saved.",
 					'Given I save a vehicle, then it shows at the top of every page with "Change".',
 				],
 			},
@@ -79,24 +80,20 @@ const fitCheck: ReviewProfile = {
 					`Given a part with no fit data for my vehicle, then the page says "We're not sure this fits" and why${changes.unsureHelp ? ', with "See the fit list" and "Ask a store"' : ""}.`,
 				],
 			},
-			{
-				story: "As a store associate, I can tell a customer on the phone whether a part fits their saved vehicle.",
-				criteria: ["Given a customer's phone number, when I look them up, then I see their saved vehicle.", "When I pick a part, then I see whether it fits."],
-			},
 		];
 	},
 	prototype: (changes) => prototypeLines("fit-check", changes),
 	reviewers: [
 		ux(),
 		eng,
-		{ id: "stores", department: "Stores", evaluates: "what changes at the counter and on fit calls", status: "invited" },
+		{ id: "stores", department: "Stores", evaluates: "what changes on fit calls", status: "invited" },
 		{ id: "catalog", department: "Catalog team", evaluates: "the fit data it depends on", status: "invited" },
 	],
 	views: (changes) => ({
 		ux: changes.fitAbovePrice
 			? { view: "Advance", why: "The fit message is easy to see now. Test it with customers before building." }
 			: { view: "Advance with changes", why: "Move the fit message above the price: customers in a hurry miss it." },
-		eng: { view: "Advance", why: "Saved vehicles are there. About 6 weeks for the web team, after the holiday freeze." },
+		eng: { view: "Advance", why: "Saved vehicles are there; reading VINs and invoices is new. About 6 weeks for the web team, after the holiday freeze." },
 		stores: { view: "Advance", why: "As it is works for us. Fewer fit calls would help a lot." },
 		catalog: { view: "Advance with changes", why: "We can fill the fit data gaps for older vehicles, but we need a date and someone to own it." },
 	}),
@@ -208,10 +205,6 @@ const checkoutCheck: ReviewProfile = {
 				'Given an item that doesn\'t fit, then checkout says so and offers the part that fits, with "Swap".',
 				'Given an item with no fit data for my vehicle, then checkout says "We\'re not sure this fits" and why.',
 			],
-		},
-		{
-			story: "As a store associate, I can see what checkout flagged on a customer's order.",
-			criteria: ["Given an order number, when I look it up, then I see the vehicle checked, what was flagged and what the customer did."],
 		},
 	],
 	prototype: (changes) => prototypeLines("checkout-check", changes),

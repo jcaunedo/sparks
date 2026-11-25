@@ -1,4 +1,5 @@
 import * as React from "react";
+import { Folder, LayoutGrid, Zap } from "lucide-react";
 
 import { CareLogo } from "@/components/brand/care-logo";
 import { FlowLogo } from "@/components/brand/flow-logo";
@@ -16,6 +17,7 @@ import {
 import { Typography } from "@/components/typography/typography";
 
 import { AutoPartsHubShell, type AutoPartsHubUser } from "../autopartshub";
+import { LibraryAssetInfo, LibrarySearch, searchAssets, type LibraryAsset } from "../library/library-assets";
 import type { NotificationsPopoverProps } from "../notifications-popover";
 
 /* Product content: each app's name (for link labels) and logo. */
@@ -42,7 +44,11 @@ type AutoPartsHubHomeProps = {
 	user: AutoPartsHubUser;
 	/** The user's apps, in display order. */
 	apps: HomeApp[];
-	/** The tab open on arrival: "Apps" by default; "My library" when Sparks's "Add from library" opens the home. */
+	/** "My library": her files, links and notes, newest first; the same as in Sparks's "Add from library". */
+	library?: LibraryAsset[];
+	/** The clock its times are counted from (stories pin it); defaults to now. */
+	now?: number;
+	/** The tab open on arrival: "Apps" by default. */
 	defaultTab?: HomeTab;
 	/** The bell's notifications (the same in every AutoPartsHUB header). */
 	notifications?: NotificationsPopoverProps;
@@ -55,11 +61,11 @@ type HomeTab = "apps" | "library" | "connections";
  * AutoPartsHUB home: a welcome line and the user's apps, with tabs for their library and
  * connections. Figma: Sparks → "AutoPartsHUB" (node 7:1021).
  */
-function AutoPartsHubHome({ user, apps, defaultTab = "apps", notifications }: AutoPartsHubHomeProps) {
+function AutoPartsHubHome({ user, apps, library = [], now, defaultTab = "apps", notifications }: AutoPartsHubHomeProps) {
 	return (
 		<AutoPartsHubShell user={user} notifications={notifications}>
-			{/* Figma: content 1232px wide, centered (248px each side at 1728); 32px between blocks. 24px top (not Figma's 48: DESIGN.md → "Canvas top padding"), 48px bottom. */}
-			<div className='mx-auto flex w-full max-w-[1296px] flex-1 flex-col gap-8 px-8 py-6'>
+			{/* Figma: content 1232px wide, centered (248px each side at 1728); 32px between blocks. 24px all around (DESIGN.md → "Pages have 24px around"). */}
+			<div className='mx-auto flex w-full max-w-[1280px] flex-1 flex-col gap-8 px-6 py-6'>
 				<div className='flex flex-col'>
 					<Typography as='h1' size='3xl' weight='semibold'>
 						Welcome back, {user.firstName}
@@ -72,9 +78,18 @@ function AutoPartsHubHome({ user, apps, defaultTab = "apps", notifications }: Au
 				{/* Keyed on the tab asked for, so a link to another tab opens on it. */}
 				<Tabs key={defaultTab} defaultValue={defaultTab} className='flex-1 gap-6'>
 					<TabsList variant='line' size='lg'>
-						<TabsTrigger value='apps'>Apps</TabsTrigger>
-						<TabsTrigger value='library'>My library</TabsTrigger>
-						<TabsTrigger value='connections'>Connections</TabsTrigger>
+						<TabsTrigger value='apps'>
+							<LayoutGrid aria-hidden />
+							Apps
+						</TabsTrigger>
+						<TabsTrigger value='library'>
+							<Folder aria-hidden />
+							My library
+						</TabsTrigger>
+						<TabsTrigger value='connections'>
+							<Zap aria-hidden />
+							Connections
+						</TabsTrigger>
 					</TabsList>
 
 					<TabsContent value='apps'>
@@ -99,17 +114,19 @@ function AutoPartsHubHome({ user, apps, defaultTab = "apps", notifications }: Au
 							})}
 						</ul>
 					</TabsContent>
-					{/*
-					 * Content not designed yet: each shows its empty state, centered in the rest of the screen
-					 * (at least as tall as a row of cards).
-					 */}
+					{/* Not designed yet: the same list as Sparks's "Add from library", to search. */}
 					<TabsContent value='library' className='flex'>
-						<EmptyState
-							className='min-h-[220px] flex-1'
-							title='Nothing in your library yet'
-							description="Files, notes and research you add will show up here."
-						/>
+						{library.length ? (
+							<HomeLibrary assets={library} now={now} />
+						) : (
+							<EmptyState
+								className='min-h-[220px] flex-1'
+								title='Nothing in your library yet'
+								description='Files, notes and research you add will show up here.'
+							/>
+						)}
 					</TabsContent>
+					{/* Content not designed yet: its empty state, centered in the rest of the screen (at least as tall as a row of cards). */}
 					<TabsContent value='connections' className='flex'>
 						<EmptyState
 							className='min-h-[220px] flex-1'
@@ -120,6 +137,34 @@ function AutoPartsHubHome({ user, apps, defaultTab = "apps", notifications }: Au
 				</Tabs>
 			</div>
 		</AutoPartsHubShell>
+	);
+}
+
+/** "My library": a search, and the list on a card. */
+function HomeLibrary({ assets, now }: { assets: LibraryAsset[]; now?: number }) {
+	const [query, setQuery] = React.useState("");
+	const shown = searchAssets(assets, query);
+	return (
+		<div className='flex min-w-0 flex-1 flex-col gap-4'>
+			<LibrarySearch className='w-full max-w-[400px]' value={query} onChange={(event) => setQuery(event.target.value)} />
+			{shown.length ? (
+				<ul aria-label='My library' className='flex flex-col divide-y divide-border rounded-card border border-border bg-background px-5'>
+					{shown.map((asset) => (
+						<li key={asset.id} className='flex items-center gap-3 py-3'>
+							<LibraryAssetInfo asset={asset} now={now} />
+						</li>
+					))}
+				</ul>
+			) : (
+				<EmptyState
+					className='min-h-[220px] flex-1'
+					title={`Nothing matches "${query.trim()}"`}
+					description='Try another word, or a type such as "pdf" or "note".'
+					secondaryButtonLabel='Clear search'
+					secondaryButtonProps={{ onClick: () => setQuery("") }}
+				/>
+			)}
+		</div>
 	);
 }
 

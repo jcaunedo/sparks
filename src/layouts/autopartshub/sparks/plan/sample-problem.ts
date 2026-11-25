@@ -17,6 +17,11 @@ export const sampleProblem: ProblemDraft = {
 			source: "sparks",
 			basis: "Your message",
 		},
+		app: {
+			text: "AutoParts Co. online store, search results\nhttps://shop.autopartsco.example/search",
+			source: "sparks",
+			basis: "Your message and product ecosystem",
+		},
 		who: {
 			text: "Do-it-yourself customers buying online, most often for vehicles more than 10 years old.",
 			source: "sparks",
@@ -59,7 +64,7 @@ export function sampleProblemSummaryFrom(problem: ProblemDraft): string {
 		.join("\n\n");
 }
 
-const { statement, who, why } = sampleProblem.parts;
+const { statement, app, who, why } = sampleProblem.parts;
 
 /**
  * Step 1, the reply to her description: thanks, her idea kept for later in a few words, and her description expanded the
@@ -96,10 +101,11 @@ export const sampleProblemStatementReply: SparksReply = {
  * After a correction (her words after "Not quite", or an edit on the card): what changed and why it matters, in its own
  * paragraph before the next question (prds/sparks-plan-problem.md, "Correcting a suggestion").
  */
-export type ProblemCorrectable = "statement" | "who" | "why";
+export type ProblemCorrectable = "statement" | "app" | "who" | "why";
 const problemChanges: Record<ProblemCorrectable, string> = {
 	statement:
 		"Thanks, I've changed the problem to your words. Everything else in your plan builds on it, so it should say it the way you see it.",
+	app: "Thanks, I've changed the app. The prototype will start from what's live there, so it has to be the right one.",
 	who: "Thanks, I've changed who it affects. It decides whose orders and returns I look at from here, so I'd rather go with what you know.",
 	why: "Thanks, I've changed why it matters. What success looks like comes from it later, so it should be in your words.",
 };
@@ -107,12 +113,100 @@ const problemChanges: Record<ProblemCorrectable, string> = {
 /** The same, when her words started "Add…": added to Sparks's answer, not replacing it. */
 const problemAdditions: Record<ProblemCorrectable, string> = {
 	statement: "Thanks, I've added that to the problem. Everything else in your plan builds on it.",
+	app: "Thanks, I've added that to the app. The prototype will start from what's live there.",
 	who: "Thanks, I've added that to who it affects. It decides whose orders and returns I look at from here.",
 	why: "Thanks, I've added that to why it matters. What success looks like comes from it later.",
 };
 
-/** Step 2: Sparks names the concept (`name`) and checks who has the problem. */
-function problemWhoReply(opening: string, name = sampleProblem.parts.name.text): SparksReply {
+/** The other answer to "Which app does this improve?": nothing is live yet. */
+export const sampleProblemNewApp = "It's a new app";
+/** What that answer puts on the card, and in the plan. */
+export const sampleProblemNewAppText = "A new app, with nothing live yet";
+
+/**
+ * Step 2: Sparks names the concept (`name`) and asks which live app it improves, with its guess and the address: the
+ * prototype starts from it (prds/sparks-plan-problem.md, "The live app").
+ */
+function problemAppReply(opening: string, name = sampleProblem.parts.name.text): SparksReply {
+	return {
+		id: "problem-app",
+		from: "sparks",
+		thinking: ["Looking under the hood of AutoParts Co.'s apps…"],
+		parts: [
+			{
+				kind: "text",
+				text: `${opening}I've named this idea "${name}". You can rename it any time.\n\nNext, the app you want to improve. I'll start the prototype from what's already live there. You mentioned search results, so my guess is the online store.`,
+			},
+			{
+				kind: "suggestion",
+				suggestion: { part: "app", question: "Which app does this improve?", text: app.text, basis: app.basis },
+			},
+		],
+		quickReplies: ["Yes, that's the one", "Not quite", sampleProblemNewApp],
+	};
+}
+export const sampleProblemAppReply = problemAppReply("Good. ");
+/** Step 2 with another name: for a problem off the demo's script, named from her words. */
+export const sampleProblemAppReplyFor = (name: string) => problemAppReply("Good. ", name);
+
+/** The answer that opens the file picker instead of being sent. */
+const attachFiles = "Attach files";
+/** The answer that opens "Add from library" instead of being sent. */
+const addFromLibrary = "Add from library";
+
+/** Step 3: anything that supports the idea, optional (prds/sparks-plan-problem.md, "Supporting material"). */
+function problemEvidenceReply(opening: string): SparksReply {
+	return {
+		id: "problem-evidence",
+		from: "sparks",
+		parts: [
+			{
+				kind: "text",
+				text: `${opening}**Do you have anything that supports your idea?**\n\nA report, a document, customer feedback or a link all help. Attach files, add from your library, or paste a link or notes in the message box. It's optional, and I'll keep what you add with this idea, marked as yours.`,
+			},
+		],
+		quickReplies: ["Nothing to add", attachFiles, addFromLibrary],
+		attachReply: attachFiles,
+		libraryReply: addFromLibrary,
+	};
+}
+export const sampleProblemEvidenceReply = problemEvidenceReply("Got it. I'll start from what's live there today.\n\n");
+export const sampleProblemEvidenceNewAppReply = problemEvidenceReply(
+	"Got it. With nothing live yet, I'll start from AutoParts Co.'s design system.\n\n",
+);
+
+/** What she answered there: "Nothing to add" (or a typed no) adds nothing; the rest are her words (a link, notes). */
+export const sampleProblemAddedWords = (text: string) =>
+	!text.trim() || /^\s*(nothing to add|nothing|none|no|nope|not (?:now|really)|skip)[\s.!]*$/i.test(text) ? undefined : text.trim();
+
+/** "a", "b" and "c", in quotes. */
+const fileNames = (files: string[]) => {
+	const names = files.map((file) => `"${file}"`);
+	return names.length < 2 ? names.join("") : `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}`;
+};
+
+/**
+ * Files she sent on their own, when Sparks didn't ask for any (prds/sparks.md, "The message box"): it keeps them and goes
+ * back to what it was waiting for: her description (`start`), a question card (`card`) or another answer (`waiting`).
+ */
+export function sampleFilesAddedReply(files: string[], waiting: "start" | "card" | "waiting" | "none"): SparksReply {
+	const next = {
+		start: "\n\n**What problem do you want to solve?**\nDescribe it in your own words.",
+		card: " Back to the question:",
+		waiting: " Whenever you're ready, we can go on.",
+		none: "",
+	}[waiting];
+	return { id: "files-added", from: "sparks", parts: [{ kind: "text", text: `Thanks, I've added ${fileNames(files)} to this idea, marked as yours.${next}` }] };
+}
+
+/** Step 4: Sparks says what she added, then checks who has the problem. */
+export function sampleProblemWhoReplyAfter(files: string[], words?: string): SparksReply {
+	const list = fileNames(files);
+	const opening = files.length
+		? `Thanks, I've added ${list}${words ? " and your note" : ""} to this idea, marked as yours. `
+		: words
+			? "Thanks, I've added that to this idea, marked as yours. "
+			: "No problem. ";
 	return {
 		id: "problem-who",
 		from: "sparks",
@@ -120,7 +214,7 @@ function problemWhoReply(opening: string, name = sampleProblem.parts.name.text):
 		parts: [
 			{
 				kind: "text",
-				text: `${opening}I've named this idea "${name}". You can rename it any time. Next, who runs into this most. My guess comes from what customers ask stores about fit.`,
+				text: `${opening}Next, who runs into this most. My guess comes from what customers ask stores about fit.`,
 			},
 			{
 				kind: "suggestion",
@@ -130,11 +224,9 @@ function problemWhoReply(opening: string, name = sampleProblem.parts.name.text):
 		quickReplies: ["Yes, that's right", "Not quite"],
 	};
 }
-export const sampleProblemWhoReply = problemWhoReply("Good. ");
-/** Step 2 with another name: for a problem off the demo's script, named from her words. */
-export const sampleProblemWhoReplyFor = (name: string) => problemWhoReply("Good. ", name);
+export const sampleProblemWhoReply = sampleProblemWhoReplyAfter([]);
 
-/** Step 3: why it matters, with the one number that sizes it and the assumption called out. */
+/** Step 5: why it matters, with the one number that sizes it and the assumption called out. */
 function problemWhyReply(opening: string): SparksReply {
 	return {
 		id: "problem-why",
@@ -161,7 +253,7 @@ function problemWhyReply(opening: string): SparksReply {
 export const sampleProblemWhyReply = problemWhyReply("");
 
 /**
- * Step 4: what's been tried, then the problem as it stands, whole, built from what she confirmed; then Sparks goes on to
+ * Step 6: what's been tried, then the problem as it stands, whole, built from what she confirmed; then Sparks goes on to
  * Clarify (prds/sparks-plan-problem.md, "Finishing this part").
  */
 export function sampleProblemDoneReply(problem: ProblemDraft, opening = ""): SparksReply {
@@ -202,7 +294,8 @@ const problemNextReply: SparksReply = {
  */
 export function sampleProblemCorrectedReply(part: ProblemCorrectable, problem: ProblemDraft, name?: string, added = false): SparksReply {
 	const opening = `${(added ? problemAdditions : problemChanges)[part]}\n\n`;
-	if (part === "statement") return problemWhoReply(opening, name);
+	if (part === "statement") return problemAppReply(opening, name);
+	if (part === "app") return problemEvidenceReply(opening);
 	if (part === "who") return problemWhyReply(opening);
 	return sampleProblemDoneReply(problem, opening);
 }

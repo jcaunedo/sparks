@@ -219,7 +219,7 @@ function DirectionCard({
 					variant='outline'
 					size='lg'
 					aria-label={`${action.label}: ${title}`}
-					className='w-full rounded-button-xl text-base font-semibold text-foreground shadow-xs'
+					className='w-full'
 					onClick={action.onClick}
 				>
 					{action.label}

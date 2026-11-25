@@ -42,7 +42,7 @@ function UserActions({ initials, photo = false }: { initials: string; photo?: bo
 				size='icon'
 				aria-label='Notifications'
 				title='Notifications'
-				className='rounded-button-lg text-icon [&_svg]:size-[18px]'
+				className='text-icon [&_svg]:size-[18px]'
 			>
 				<Bell aria-hidden />
 			</Button>
@@ -64,10 +64,6 @@ export const AutoPartsHub: Story = {
 	},
 };
 
-// Figma "Sparks Project" Share button: outline, with radius/button/lg (12px), shadow-xs and semibold text.
-// Header-only overrides until Button is synced from sparks.ds (DESIGN.md → "Sparks Project header").
-const headerButtonClasses = "rounded-button-lg shadow-xs";
-
 /** Figma "Button" (Type=Icon, Style=Ghost, lg · 36) with the ×: closes the concept's tab. */
 function CloseButton() {
 	return (
@@ -76,7 +72,7 @@ function CloseButton() {
 			size='icon'
 			aria-label='Close idea'
 			title='Close idea'
-			className='rounded-button-lg text-icon [&_svg]:size-[18px]'
+			className='text-icon [&_svg]:size-[18px]'
 		>
 			<X aria-hidden />
 		</Button>
@@ -131,7 +127,7 @@ export const SparksProjectWithShare: Story = {
 		nav: <ProjectSteps current={3} />,
 		children: (
 			<>
-				<Button variant='outline' className={`${headerButtonClasses} h-9 px-3.5 font-semibold`}>
+				<Button variant='outline'>
 					Share
 				</Button>
 				<CloseButton />

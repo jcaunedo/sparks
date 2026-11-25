@@ -31,6 +31,8 @@ export {
   staggerContainerVariants,
   iconSwapVariants,
   iconSwapReducedVariants,
+  bounceVariants,
+  bounceReducedVariants,
   pendingIconVariants,
   pendingIconReducedVariants,
   pendingSurfaceVariants,
@@ -46,6 +48,8 @@ export {
 } from "./patterns";
 
 export { scrollContainerOf, scrollIntoViewSmoothly, scrollMetrics } from "./scroll";
+
+export { stepChangeAt, stepChangeTransition } from "./step-change";
 
 export { useExpandClip } from "./expand-clip";
 

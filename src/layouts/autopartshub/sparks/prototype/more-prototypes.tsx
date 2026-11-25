@@ -22,6 +22,8 @@ import {
 	PartLayout,
 	PartRow,
 	pillClass,
+	shopButton,
+	shopButtonSm,
 	PrototypeFrame,
 	screenBody,
 	screenTitle,
@@ -100,9 +102,9 @@ function fitForVehicle(part: FitPart, vehicle: Pick<FitVehicle, "year" | "make" 
 const flagScreens = ["the search results", "a flagged part", "the cart"];
 
 /** Search results mark parts that come back a lot; the part page says how often, with the fit list to check. */
-function FlagReturnsPrototype({ data, openOn, openPart: _openPart, ...view }: PrototypeProps) {
+function FlagReturnsPrototype({ data, openOn, openPart: opensPart, ...view }: PrototypeProps) {
 	const flagged = openOn ? data.parts.find((p) => p.oftenReturned)?.id : undefined;
-	const [partId, setPartId] = React.useState<string | undefined>(flagged);
+	const [partId, setPartId] = React.useState<string | undefined>(openOn === 1 ? (opensPart ?? flagged) : flagged);
 	const [cart, setCart] = React.useState<string[]>(openOn === 2 && flagged ? [flagged] : []);
 	const [screen, setScreen] = React.useState<"results" | "part" | "cart" | "ordered">(openOn === 2 ? "cart" : openOn === 1 ? "part" : "results");
 	// Open or closed by her; until then, open when she asked for the fit list right away.
@@ -245,7 +247,11 @@ function FlagReturnsPrototype({ data, openOn, openPart: _openPart, ...view }: Pr
 	}
 	return (
 		<PrototypeFrame {...view}>
-			<ShopScreen screen={`${screen}-${partId ?? ""}`}>
+			<ShopScreen
+				screen={`${screen}-${partId ?? ""}`}
+				view={screen === "ordered" ? undefined : screen === "cart" ? 2 : screen === "part" && part ? 1 : 0}
+				part={screen === "part" ? part?.id : undefined}
+			>
 				{header}
 				{body}
 			</ShopScreen>
@@ -257,7 +263,7 @@ function FlagReturnsPrototype({ data, openOn, openPart: _openPart, ...view }: Pr
 /* Fit check at checkout                                                                                               */
 /* ------------------------------------------------------------------------------------------------------------------ */
 
-const checkoutScreens = ["the shop", "the cart", "the fit check at checkout", "the store staff order lookup"];
+const checkoutScreens = ["the shop", "the cart", "the fit check at checkout"];
 
 /** The vehicle another one is picked as at checkout: year, make and model. */
 const otherVehicleSteps = vehicleSteps.slice(0, 3);
@@ -308,14 +314,15 @@ function CheckoutCustomer({ data, openOn }: { data: FitCheckData; openOn?: numbe
 							<Button
 								variant='outline'
 								size='sm'
-								className='h-9 rounded-full px-4'
+								// It wraps on the phone: the swap's name, price and difference can be longer than a line.
+								className={cn(shopButtonSm, "h-auto min-h-9 max-w-full rounded-[18px] px-4 py-2 text-left whitespace-normal")}
 								onClick={() => setCart((c) => (c.includes(swap.id) ? c.filter((cid) => cid !== item.id) : c.map((cid) => (cid === item.id ? swap.id : cid))))}
 							>
 								Swap for {swap.name}, {swap.price}
 								{swapPriceDiff ? ` (${priceDifference(swap.price, item.price)})` : ""}
 							</Button>
 						) : null}
-						<Button variant='ghost' size='sm' className='h-9 rounded-full px-4' onClick={() => setCart((c) => c.filter((cid) => cid !== item.id))}>
+						<Button variant='ghost' size='sm' className={cn(shopButtonSm, "h-9 rounded-full px-4")} onClick={() => setCart((c) => c.filter((cid) => cid !== item.id))}>
 							Remove it
 						</Button>
 					</div>
@@ -334,7 +341,7 @@ function CheckoutCustomer({ data, openOn }: { data: FitCheckData; openOn?: numbe
 
 	if (screen === "checkout")
 		return (
-			<ShopScreen screen='checkout'>
+			<ShopScreen screen='checkout' view={2}>
 				{header}
 				<div className={screenBody}>
 					<BackLink onClick={() => setScreen("cart")} />
@@ -414,7 +421,7 @@ function CheckoutCustomer({ data, openOn }: { data: FitCheckData; openOn?: numbe
 
 	if (screen === "cart")
 		return (
-			<ShopScreen screen='cart'>
+			<ShopScreen screen='cart' view={1}>
 				{header}
 				<div className={screenBody}>
 					<BackLink onClick={() => setScreen("shop")} />
@@ -449,7 +456,7 @@ function CheckoutCustomer({ data, openOn }: { data: FitCheckData; openOn?: numbe
 		);
 
 	return (
-		<ShopScreen screen='shop'>
+		<ShopScreen screen='shop' view={0}>
 			{header}
 			<div className='flex flex-col gap-6 px-4 pt-6 pb-8 @3xl:px-10'>
 				<EditableText as='h2' id='shop-title' className={screenTitle}>
@@ -462,7 +469,7 @@ function CheckoutCustomer({ data, openOn }: { data: FitCheckData; openOn?: numbe
 								<Button
 									variant='outline'
 									size='sm'
-									className='h-9 w-full rounded-full'
+									className={cn(shopButtonSm, "h-9 w-full rounded-full")}
 									disabled={cart.includes(p.id)}
 									onClick={() => setCart((c) => [...c, p.id])}
 								>
@@ -479,55 +486,10 @@ function CheckoutCustomer({ data, openOn }: { data: FitCheckData; openOn?: numbe
 	);
 }
 
-/** At the counter: an order, with what checkout flagged and what the customer did about it. */
-function CheckoutStaff({ data, openOn }: { data: FitCheckData; openOn?: number }) {
-	const [found, setFound] = React.useState(openOn !== undefined);
-	const lookUp = useButton("look-up", "Look up");
-	return (
-		<div className='flex flex-col gap-4 p-4'>
-			<div className='sticky top-0 z-10 -mx-4 -mt-4 flex items-center justify-between gap-3 border-b border-border bg-background px-4 pt-4 pb-3'>
-				{/* The store's own logo (sparks.ds "AutoParts Logo"), then which screen this is. */}
-				<span className='flex items-center gap-2 text-sm font-medium text-foreground-prominent'>
-					<AutoPartsLogo className='h-5' />
-					<span aria-hidden>·</span> Counter
-				</span>
-				<span className='text-xs text-muted-foreground'>Store 214</span>
-			</div>
-			<EditableText as='h2' id='staff-title' className='text-lg font-semibold text-foreground-prominent'>
-				Order lookup
-			</EditableText>
-			<div className='flex gap-2'>
-				<div className='flex h-9 flex-1 items-center gap-2 rounded-input border border-border px-2.5 text-sm text-foreground'>
-					<Search className='size-4 text-icon' aria-hidden />
-					Order 48213 · {data.customer.name}
-				</div>
-				<Button {...lookUp.props} onClick={() => setFound(true)}>
-					{lookUp.label}
-				</Button>
-			</div>
-			{found ? (
-				<div className='flex flex-col gap-3 rounded-md border border-border p-3 text-sm'>
-					<span className='text-foreground'>
-						Checked at checkout against: <span className='font-semibold'>{vehicleName(data.vehicle)} {data.vehicle.trim} {data.vehicle.engine}</span>
-					</span>
-					<ul className='flex flex-col gap-2'>
-						<li className='flex items-center gap-2 text-foreground'>
-							<Check className='size-4 text-success' aria-hidden /> Front brake pads, ceramic: fits
-						</li>
-						<li className='flex items-center gap-2 text-foreground'>
-							<Check className='size-4 text-success' aria-hidden /> Oil filter, FL-500S: swapped in for FL-400S, which didn't fit
-						</li>
-					</ul>
-				</div>
-			) : null}
-		</div>
-	);
-}
-
-function CheckoutCheckPrototype({ data, audience, openOn, openPart: _openPart, ...view }: PrototypeProps) {
+function CheckoutCheckPrototype({ data, audience: _audience, openOn, openPart: _openPart, ...view }: PrototypeProps) {
 	return (
 		<PrototypeFrame {...view}>
-			{audience === "staff" ? <CheckoutStaff data={data} openOn={openOn} /> : <CheckoutCustomer data={data} openOn={openOn} />}
+			<CheckoutCustomer data={data} openOn={openOn} />
 		</PrototypeFrame>
 	);
 }
@@ -636,7 +598,7 @@ function FitDataReturn({ data }: { data: FitCheckData }) {
 							className='h-9 rounded-input border border-border bg-background px-2.5 text-sm font-normal text-foreground outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50'
 						/>
 					</label>
-					<Button variant='outline' className='rounded-button-lg' onClick={() => setFound(true)}>
+					<Button variant='outline' className={cn(shopButton, "px-4")} onClick={() => setFound(true)}>
 						Find account
 					</Button>
 				</div>
@@ -659,10 +621,10 @@ function FitDataReturn({ data }: { data: FitCheckData }) {
 
 	return (
 		<div className='flex flex-col gap-4 p-4'>
-			<div className='sticky top-0 z-10 -mx-4 -mt-4 flex items-center justify-between gap-3 border-b border-border bg-background px-4 pt-4 pb-3'>
+			<div className='sticky top-0 z-10 -mx-4 -mt-4 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 border-b border-border bg-background px-4 pt-3 pb-2'>
 				{/* The store's own logo (sparks.ds "AutoParts Logo"), then which screen this is. */}
 				<span className='flex items-center gap-2 text-sm font-medium text-foreground-prominent'>
-					<AutoPartsLogo className='h-5' />
+					<AutoPartsLogo className='h-7.5' />
 					<span aria-hidden>·</span> Counter
 				</span>
 				<span className='text-xs text-muted-foreground'>Store 214</span>
@@ -674,7 +636,7 @@ function FitDataReturn({ data }: { data: FitCheckData }) {
 						variant='outline'
 						size='sm'
 						aria-pressed={i === index}
-						className={cn("rounded-button-md", i === index && "border-border-defined")}
+						className={cn(shopButtonSm, i === index && "border-border-defined")}
 						onClick={() => {
 							setIndex(i);
 							setReason(undefined);
@@ -706,7 +668,7 @@ function FitDataReturn({ data }: { data: FitCheckData }) {
 							variant='outline'
 							size='sm'
 							aria-pressed={reason === r}
-							className={cn("rounded-button-md", reason === r && "border-border-defined")}
+							className={cn(shopButtonSm, reason === r && "border-border-defined")}
 							onClick={() => {
 								setReason(r);
 								reset();
@@ -756,7 +718,7 @@ function FitDataWeeklyList({ data }: { data: FitCheckData }) {
 			.map((note) => ({ id: note.id, partId: note.partId, vehicles: [note.vehicle], stores: [note.store] }));
 	return (
 		<div className='flex flex-col gap-4 p-4'>
-			<div className='sticky top-0 z-10 -mx-4 -mt-4 flex items-center justify-between gap-3 border-b border-border bg-background px-4 pt-4 pb-3'>
+			<div className='sticky top-0 z-10 -mx-4 -mt-4 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 border-b border-border bg-background px-4 pt-3 pb-2'>
 				<span className='flex items-center gap-1.5 text-sm font-black tracking-tight text-foreground-prominent'>
 					<ClipboardList className='size-4' aria-hidden /> Catalog · Fit data
 				</span>
@@ -807,7 +769,7 @@ function FitDataWeeklyList({ data }: { data: FitCheckData }) {
 											Fit data fixed
 										</Badge>
 									) : (
-										<Button variant='outline' size='sm' className='rounded-button-md shadow-xs' onClick={() => setFixed((f) => [...f, row.id])}>
+										<Button variant='outline' size='sm' className={cn(shopButtonSm, "shadow-xs")} onClick={() => setFixed((f) => [...f, row.id])}>
 											Fix fit data
 										</Button>
 									)}

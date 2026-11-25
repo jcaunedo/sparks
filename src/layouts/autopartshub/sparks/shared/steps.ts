@@ -19,7 +19,7 @@ const sparksSteps = [
 		upcoming: {
 			title: "See what holds up",
 			description:
-				"After Prototype, AI agents, each with the profile of a different customer or store staff member, try your prototype in realistic scenarios, and Sparks checks it against AutoParts Co.'s data, engineering and design system. You see what works, what to fix, and how it does against your target.",
+				"After Prototype, AI agents, each with the profile of a different person who'd use it, try your prototype in realistic scenarios, and Sparks checks it against AutoParts Co.'s data, engineering and design system. You see what works, what to fix, and how it does against your target.",
 		},
 	},
 	{
@@ -28,7 +28,7 @@ const sparksSteps = [
 		upcoming: {
 			title: "Bring in the teams who decide",
 			description:
-				"Last, the teams who need to weigh in, like UX, Engineering and Stores, review your idea and give their view. You send your recommendation, and the decision owner decides whether it moves forward.",
+				"Last, you check what the teams will see and publish it. Those who need to weigh in, like UX, Engineering and Stores, try your idea and give their view. Then you send your recommendation, and the decision owner decides whether it moves forward.",
 		},
 	},
 ] as const;

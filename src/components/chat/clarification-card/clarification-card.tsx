@@ -120,7 +120,6 @@ function ClarificationCard({
 									{/* Figma Button Outlined, 36px, shadow-xs. */}
 									<Button
 										variant='outline'
-										className='rounded-button-lg px-3.5 text-sm font-semibold text-foreground shadow-xs'
 										onClick={cancel}
 									>
 										Cancel
@@ -129,7 +128,6 @@ function ClarificationCard({
 									    answer buttons. */}
 									<Button
 										variant='neutral'
-										className='rounded-button-lg px-3.5 text-sm font-semibold'
 										disabled={!value.trim()}
 										onClick={save}
 									>
@@ -139,7 +137,7 @@ function ClarificationCard({
 							</div>
 						) : (
 							// A blank line in the answer starts a new paragraph.
-							<p className='whitespace-pre-line'>{answer}</p>
+							<p className='whitespace-pre-line wrap-anywhere'>{answer}</p>
 						)}
 					</div>
 					{onEdit && !editing ? (

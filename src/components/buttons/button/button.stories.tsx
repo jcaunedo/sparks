@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Play } from "lucide-react";
 
 import { Button } from "./button";
 
@@ -70,7 +70,19 @@ export const WithIcon: Story = {
 		children: (
 			<>
 				Continue
-				<ArrowRight aria-hidden='true' />
+				<ArrowRight aria-hidden='true' data-icon='inline-end' />
+			</>
+		),
+	},
+};
+
+export const WithIconBefore: Story = {
+	args: {
+		variant: "outline",
+		children: (
+			<>
+				<Play aria-hidden='true' data-icon='inline-start' />
+				Run again
 			</>
 		),
 	},
