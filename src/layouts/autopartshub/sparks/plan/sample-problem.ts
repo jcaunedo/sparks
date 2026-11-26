@@ -13,7 +13,7 @@ export const sampleProblem: ProblemDraft = {
 	parts: {
 		name: { text: "Wrong-part returns", source: "sparks" },
 		statement: {
-			text: "Customers shopping for parts online can't tell for sure whether a part fits their exact vehicle. Whether it fits depends on details like the year, make, model, trim and engine, and it's easy to get one of them wrong or not know it at all. So they order the part that looks right, only find out it doesn't fit when they go to install it, and have to send it back and start over.\n\nThat costs on several fronts. Returns keep rising. Stores spend time on calls from customers asking \"will this fit?\", before and after they buy. And some of the customers who end up with the wrong part lose confidence and stop buying from us. The problem to solve is helping customers know a part fits their vehicle before they buy it.",
+			text: "Customers shopping for parts online can't tell for sure whether a part fits their exact vehicle. Whether it fits depends on details like the year, make, model, trim and engine, and it's easy to get one of them wrong or not know it at all. So they order the part that looks right, only find out it doesn't fit when they go to install it, and have to send it back and start over.\n\nThat has a cost on several fronts. Each part that doesn't fit is a return to handle. It often brings a call to the store asking \"will this fit?\", before or after buying. And a customer who gets the wrong part trusts us less next time. The problem to solve is helping customers know a part fits their vehicle before they buy it.",
 			source: "sparks",
 			basis: "Your message",
 		},
@@ -67,9 +67,9 @@ export function sampleProblemSummaryFrom(problem: ProblemDraft): string {
 const { statement, app, who, why } = sampleProblem.parts;
 
 /**
- * Step 1, the reply to her description: thanks, her idea kept for later in a few words, and her description expanded the
- * way an expert would describe it, from her words alone; the data comes later, where it helps (prds/sparks-plan-problem.md,
- * "Describing it as an expert").
+ * Step 1, the reply to her description: thanks, and her description expanded the way an expert would describe it, from
+ * her words and general knowledge of the domain only (no numbers, trends or company data); the data comes later, where it
+ * helps (prds/sparks-plan-problem.md, "Initial prompt improvement").
  */
 export const sampleProblemStatementReply: SparksReply = {
 	id: "problem-statement",
@@ -234,7 +234,7 @@ function problemWhyReply(opening: string): SparksReply {
 		parts: [
 			{
 				kind: "text",
-				text: `${opening}Last, why it matters. The returns cost shipping, handling and store time (business performance, Aug–Oct 2026). You agreed that some of those customers don't come back. No data shows that yet, so I've marked it as an assumption we'll check later.`,
+				text: `${opening}Last, why it matters. The returns cost shipping, handling and store time (business performance, Aug–Oct 2026). You agreed that a customer who gets the wrong part trusts us less next time. No data shows that yet, so I've marked it as an assumption we'll check later.`,
 			},
 			{
 				kind: "suggestion",
