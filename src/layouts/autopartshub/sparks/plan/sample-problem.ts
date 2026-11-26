@@ -153,6 +153,8 @@ export const sampleProblemAppReplyFor = (name: string) => problemAppReply("Good.
 const attachFiles = "Attach files";
 /** The answer that opens "Add from library" instead of being sent. */
 const addFromLibrary = "Add from library";
+/** After she's added something: nothing more, go on. */
+const evidenceDone = "That's all";
 
 /** Step 3: anything that supports the idea, optional (prds/sparks-plan-problem.md, "Supporting material"). */
 function problemEvidenceReply(opening: string): SparksReply {
@@ -177,7 +179,9 @@ export const sampleProblemEvidenceNewAppReply = problemEvidenceReply(
 
 /** What she answered there: "Nothing to add" (or a typed no) adds nothing; the rest are her words (a link, notes). */
 export const sampleProblemAddedWords = (text: string) =>
-	!text.trim() || /^\s*(nothing to add|nothing|none|no|nope|not (?:now|really)|skip)[\s.!]*$/i.test(text) ? undefined : text.trim();
+	!text.trim() || /^\s*(nothing (?:else )?to add|nothing(?: else)?|none|no|nope|not (?:now|really)|skip|that's all|that is all|all done|done)[\s.!]*$/i.test(text)
+		? undefined
+		: text.trim();
 
 /** "a", "b" and "c", in quotes. */
 const fileNames = (files: string[]) => {
@@ -199,14 +203,38 @@ export function sampleFilesAddedReply(files: string[], waiting: "start" | "card"
 	return { id: "files-added", from: "sparks", parts: [{ kind: "text", text: `Thanks, I've added ${fileNames(files)} to this idea, marked as yours.${next}` }] };
 }
 
-/** Step 4: Sparks says what she added, then checks who has the problem. */
-export function sampleProblemWhoReplyAfter(files: string[], words?: string): SparksReply {
+/**
+ * Step 3, again, once she's added something (files, things from My library, a link or notes): Sparks says what it kept
+ * and asks if there's anything else, and where she can add more later (prds/sparks-plan-problem.md, "Supporting
+ * material"). Only once: what she adds then, or "That's all", goes on to who it affects.
+ */
+export function sampleProblemEvidenceMoreReply(files: string[], words?: string): SparksReply {
+	const added = files.length ? `${fileNames(files)}${words ? " and your note" : ""}` : "that";
+	return {
+		id: "problem-evidence-more",
+		from: "sparks",
+		parts: [
+			{
+				kind: "text",
+				text: `Thanks, I've added ${added} to this idea, marked as yours.\n\n**Anything else to add?**\n\nYou can always add more later: with "+" in the message box, or in the idea's library, from the folder at the top.`,
+			},
+		],
+		quickReplies: [evidenceDone, attachFiles, addFromLibrary],
+		attachReply: attachFiles,
+		libraryReply: addFromLibrary,
+	};
+}
+
+/** Step 4: Sparks says what she added, then checks who has the problem. `afterMore`: she's said "That's all". */
+export function sampleProblemWhoReplyAfter(files: string[], words?: string, afterMore = false): SparksReply {
 	const list = fileNames(files);
-	const opening = files.length
-		? `Thanks, I've added ${list}${words ? " and your note" : ""} to this idea, marked as yours. `
-		: words
-			? "Thanks, I've added that to this idea, marked as yours. "
-			: "No problem. ";
+	const opening = afterMore
+		? "Good. "
+		: files.length
+			? `Thanks, I've added ${list}${words ? " and your note" : ""} to this idea, marked as yours. `
+			: words
+				? "Thanks, I've added that to this idea, marked as yours. "
+				: "No problem. ";
 	return {
 		id: "problem-who",
 		from: "sparks",

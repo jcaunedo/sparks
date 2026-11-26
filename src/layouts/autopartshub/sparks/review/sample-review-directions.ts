@@ -34,6 +34,11 @@ export type ReviewProfile = {
 	/** What the invitation asks of engineering. */
 	ask: string;
 	openQuestions: string[];
+	/**
+	 * Once it's advanced and shared: what someone on the team who builds it flags as unclear (an acceptance criterion),
+	 * and the clarification Sparks proposes: the words it replaces in the criterion, and where they come from.
+	 */
+	buildFlag?: { part: string; text: string; from: string; to: string; why: string };
 	/** The recommendation once it's been evaluated. */
 	recommendation: (evaluation: Evaluation) => string;
 	decision: (evaluation: Evaluation) => ReviewDecision;
@@ -83,25 +88,20 @@ const fitCheck: ReviewProfile = {
 		];
 	},
 	prototype: (changes) => prototypeLines("fit-check", changes),
-	reviewers: [
-		ux(),
-		eng,
-		{ id: "stores", department: "Stores", evaluates: "what changes on fit calls", status: "invited" },
-		{ id: "catalog", department: "Catalog team", evaluates: "the fit data it depends on", status: "invited" },
-	],
+	// The UX team, engineering and the catalog team (the fit data it depends on). Not stores.
+	reviewers: [ux(), eng, { id: "catalog", department: "Catalog team", evaluates: "the fit data it depends on", status: "invited" }],
 	views: (changes) => ({
 		ux: changes.fitAbovePrice
 			? { view: "Advance", why: "The fit message is easy to see now. Test it with customers before building." }
 			: { view: "Advance with changes", why: "Move the fit message above the price: customers in a hurry miss it." },
 		eng: { view: "Advance", why: "Saved vehicles are there; reading VINs and invoices is new. About 6 weeks for the web team, after the holiday freeze." },
-		stores: { view: "Advance", why: "As it is works for us. Fewer fit calls would help a lot." },
 		catalog: { view: "Advance with changes", why: "We can fill the fit data gaps for older vehicles, but we need a date and someone to own it." },
 	}),
-	verdict: (changes) => `All four teams would advance it, ${changes.fitAbovePrice ? "one" : "two"} of them with changes.`,
+	verdict: (changes) => `All three teams would advance it, ${changes.fitAbovePrice ? "one" : "two"} of them with changes.`,
 	topics: (changes) => [
 		changes.fitAbovePrice
 			? "**The fit message:** everyone's fine with it as it is; the UX team wants it tested with customers before the build."
-			: "**The fit message:** the UX team wants it above the price, so customers in a hurry see it; stores are fine with it as it is.",
+			: "**The fit message:** the UX team wants it above the price, so customers in a hurry see it.",
 		"**Building it:** engineering confirms saved vehicles, and gives about 6 weeks for the web team, after the holiday freeze.",
 		"**Fit data:** the catalog team can fill the gaps for older vehicles, but needs a date and an owner.",
 	],
@@ -118,8 +118,15 @@ const fitCheck: ReviewProfile = {
 	effort: { short: "about 6 weeks", line: "Effort: about 6 weeks for the web team, after the holiday freeze (from engineering)." },
 	ask: "From engineering, I'd most like your view on the fit data.",
 	openQuestions: ["Do professional mechanics need more than one saved vehicle?"],
+	buildFlag: {
+		part: "What people need to do (user stories), and how to know it’s done (acceptance criteria)",
+		text: 'What counts as "no fit data"? No fit list at all, or a list with my model but not my trim or engine? They\'re different checks.',
+		from: "Given a part with no fit data for my vehicle,",
+		to: "Given a part whose fit list has my vehicle's model but not its trim or engine, or that has no fit list at all,",
+		why: 'From the prototype: its "We\'re not sure this fits" message says the fit data doesn\'t cover the vehicle\'s trim and engine.',
+	},
 	recommendation: (evaluation) =>
-		`I'd recommend advancing, with real-user testing first. The simulation and business data support the hypothesis: "doesn't fit" returns are likely to drop ${rangeOf(evaluation)}, against a target of 25%. That's based on simulated scenarios, so the UX team's test of the fit message with real customers should come before the build. All four reviewing teams support it.`,
+		`I'd recommend advancing, with real-user testing first. The simulation and business data support the hypothesis: "doesn't fit" returns are likely to drop ${rangeOf(evaluation)}, against a target of 25%. That's based on simulated scenarios, so the UX team's test of the fit message with real customers should come before the build. All three reviewing teams support it.`,
 	decision: () => ({
 		kind: "advance",
 		reason: "Advance. The case is clear and honest about what's still simulated. Test the fit message with customers first, as recommended.",
@@ -253,6 +260,13 @@ const checkoutCheck: ReviewProfile = {
 		kind: "advance",
 		reason: "Advance, with the live test first. If online sales drop, we stop and look again at checking the fit earlier.",
 	}),
+	buildFlag: {
+		part: "What people need to do (user stories), and how to know it’s done (acceptance criteria)",
+		text: 'What counts as "no fit data"? No fit list at all, or a list with my model but not my trim or engine? They\'re different checks.',
+		from: "Given an item with no fit data for my vehicle,",
+		to: "Given an item whose fit list has my vehicle's model but not its trim or engine, or that has no fit list at all,",
+		why: 'From the prototype: its "We\'re not sure this fits" message says the fit data doesn\'t cover the vehicle\'s trim and engine.',
+	},
 };
 
 const fitData: ReviewProfile = {

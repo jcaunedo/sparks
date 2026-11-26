@@ -9,7 +9,8 @@ import { Typography } from "@/components/typography/typography";
 import { fadeVariants, revealVariants, scrollIntoViewSmoothly, useMotionPreference } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 
-import { PublishingPart, ReviewNextStep, type ReviewNext } from "./review-next";
+import { PrototypeComments, type CommentMention, type CommentScope, type PrototypeComment, type PrototypeCommentAuthor } from "../prototype/prototype-comments";
+import { ReviewNextStep, type ReviewNext } from "./review-next";
 
 /*
  * Review (prds/sparks-review.md): the concept prepared for review from the spec (nothing new, every statement keeping
@@ -43,6 +44,8 @@ type ConceptForReview = {
 	why: string[];
 	evidence: string[];
 	build: string[];
+	/** What the build has to record so the success criteria can be measured once it's live, drafted from them. */
+	tracking: string[];
 	design: string[];
 	knownIssues: string[];
 	realPeople: string[];
@@ -56,14 +59,62 @@ type ConceptForReview = {
  * A comment on a part of the idea ("Gaps", "Success criteria"…), by a reviewer on the published version, optionally
  * flagging the part as unclear. Listed in Dana's Comments panel and on the reviewers' page.
  */
-type IdeaComment = {
-	id: string;
+type IdeaComment = PrototypeComment & {
+	/** The part it's on, its pin's `point` ("Gaps"), or "Idea for review" off the parts. */
 	part: string;
-	text: string;
-	createdAt: string;
-	author: { name: string; avatarSrc?: string; role?: string };
 	unclear?: boolean;
+	/** How Dana addressed it, once she has (prds/sparks.md, "Feedback"): everyone sees it under the comment. */
+	addressed?: string;
 };
+
+/** Comments on the idea have one scope: the idea, whatever the prototype shows. */
+const ideaCommentScope: CommentScope = { key: "idea", audience: "idea", audienceLabel: "Idea", device: "desktop" };
+
+/** Where a comment on a part sits, for one made outside the page (sample data): pinned to the part, `fx`/`fy` inside it. */
+const ideaCommentAt = (part: string, fx = 0.94, fy = 0.12) => ({ point: part, fx, fy, scope: ideaCommentScope, where: part });
+
+/**
+ * Comments on the idea: everyone's, hers to add (`author`) with "Add comment" on (`adding`), threads opened from the
+ * Comments panel (`openId`). The same as on the prototype (`PrototypeComments`).
+ */
+type IdeaCommentsProps = {
+	items: IdeaComment[];
+	onChange: (comments: IdeaComment[]) => void;
+	author: PrototypeCommentAuthor;
+	adding?: boolean;
+	mentionable?: CommentMention[];
+	openId?: string;
+	onOpenChange?: (id: string | undefined) => void;
+};
+
+/**
+ * The idea with its comments pinned on it (prds/sparks-review.md, "Comments on the idea"), exactly as on the prototype:
+ * with "Add comment" on, a click (or Enter) drops a pin and opens the box; each pin opens its thread, to reply, resolve
+ * or delete her own. A pin on a part (`data-point`) follows it. Without `comments`, just the idea.
+ */
+function IdeaCommentLayer({ comments, children }: { comments?: IdeaCommentsProps; children: React.ReactNode }) {
+	if (!comments) return <>{children}</>;
+	const { items, onChange } = comments;
+	return (
+		<PrototypeComments
+			active={Boolean(comments.adding)}
+			author={comments.author}
+			scope={ideaCommentScope}
+			comments={items}
+			onAdd={(comment) => onChange([...items, { ...comment, part: comment.point ?? "Idea for review" }])}
+			onDelete={(id) => onChange(items.filter((item) => item.id !== id))}
+			onUpdate={(comment) => onChange(items.map((item) => (item.id === comment.id ? { ...item, ...comment } : item)))}
+			mentionable={comments.mentionable}
+			openId={comments.openId}
+			onOpenChange={comments.onOpenChange}
+			// Selecting text in the idea offers "Add comment" too, with the text quoted.
+			selectable
+		>
+			{children}
+		</PrototypeComments>
+	);
+}
+
 
 /** Where the concept is in Review. */
 type ReviewStatus =
@@ -96,6 +147,8 @@ type ReviewPanelProps = {
 	onOpenPublished?: () => void;
 	/** A part to bring into view (a comment on it was opened), with a key that changes each time it's asked. */
 	focusPart?: { part: string; key: number };
+	/** Comments on the idea (prds/sparks-review.md, "Comments on the idea"): pinned on it, as on the prototype. */
+	comments?: IdeaCommentsProps;
 	className?: string;
 };
 
@@ -111,6 +164,7 @@ const reviewPartTitles = [
 	"Why this direction",
 	"The evidence",
 	"What it needs to be built",
+	"What to track",
 	"Design notes",
 	"For the UX team to test with real people",
 	"What it changes for teams",
@@ -118,6 +172,35 @@ const reviewPartTitles = [
 	"Open questions",
 	"What comes later",
 ] as const;
+
+type ReviewPartTitle = (typeof reviewPartTitles)[number];
+
+/**
+ * The same parts, in the order the team who builds it reads them (prds/sparks-review.md, "After the decision"): what to
+ * build first, next to the prototype; then why, and how it was decided (`buildContextTitles`).
+ */
+const buildPartTitles = [
+	"What people need to do (user stories), and how to know it’s done (acceptance criteria)",
+	"The prototype",
+	"What it needs to be built",
+	"What to track",
+	"Design notes",
+	"Open questions",
+	"Known issues",
+	"For the UX team to test with real people",
+	"What it changes for teams",
+] as const satisfies readonly ReviewPartTitle[];
+
+const buildContextTitles = [
+	"Summary",
+	"Success criteria",
+	"What we believe (hypothesis)",
+	"Why this direction",
+	"The evidence",
+	"Gaps",
+	"Decisions",
+	"What comes later",
+] as const satisfies readonly ReviewPartTitle[];
 
 const viewTone = { Advance: "green", "Advance with changes": "amber", "Don't advance yet": "red" } as const;
 const statusLabel = { invited: "Invited", opened: "Opened it", commented: "Commented" } as const;
@@ -148,16 +231,18 @@ function Part({
 		<motion.section
 			aria-label={title}
 			data-part={title}
+			// What a comment on the idea is pinned to (`IdeaCommentLayer`): the part, wherever it moves.
+			data-point={title}
 			variants={revealVariants}
 			initial={reveal && !prefersReducedMotion ? "initial" : false}
 			animate='animate'
 			className={cn(
-				"flex flex-col gap-2 rounded-sm border-t border-border pt-4 transition-colors first:border-t-0 first:pt-0",
+				"flex flex-col gap-2 rounded-sm transition-colors",
 				marked && "bg-(--corn-50)",
 			)}
 		>
 			<div className='flex items-start justify-between gap-3'>
-				<Typography as='h3' size='base' weight='semibold' className='text-foreground-prominent'>
+				<Typography as='h3' size='lg' weight='semibold' className='text-foreground-prominent'>
 					{title}
 				</Typography>
 				{action}
@@ -165,7 +250,7 @@ function Part({
 			{below}
 			{children}
 			{items?.length ? (
-				<ul className='flex list-disc flex-col gap-1 ps-5 text-sm text-foreground'>
+				<ul className='flex list-disc flex-col gap-1 ps-5 text-base text-foreground'>
 					{items.map((item) => (
 						<li key={item}>{item}</li>
 					))}
@@ -179,8 +264,8 @@ function Part({
 /** The part Sparks is writing now: its heading, "Writing…" and two placeholder lines. */
 function PartInProgress({ title, ref }: { title: string; ref?: React.Ref<HTMLDivElement> }) {
 	return (
-		<div ref={ref} className='flex flex-col gap-2 border-t border-border pt-4 first:border-t-0 first:pt-0'>
-			<Typography as='h3' size='base' weight='semibold' className='text-foreground-prominent'>
+		<div ref={ref} className='flex flex-col gap-2'>
+			<Typography as='h3' size='lg' weight='semibold' className='text-foreground-prominent'>
 				{title}
 			</Typography>
 			<p className='flex items-center gap-2 text-sm text-muted-foreground'>
@@ -203,7 +288,10 @@ function ReviewerList({
 	unread = [],
 	onOpen,
 	notes = {},
+	size = "sm",
 }: {
+	/** Text size: `sm` in the narrow Comments panel; `base` in Review's panel, as Evaluate's text. */
+	size?: "sm" | "base";
 	reviewers: Reviewer[];
 	unread?: string[];
 	onOpen?: (id: string) => void;
@@ -241,17 +329,17 @@ function ReviewerList({
 						) : (
 							<CircleDashed aria-hidden className='size-4 text-muted-foreground' />
 						)}
-						<span className='text-sm font-medium text-foreground'>{reviewer.department}</span>
+						<span className={cn("font-medium text-foreground", size === "base" ? "text-base" : "text-sm")}>{reviewer.department}</span>
 						{reviewer.status === "view" && reviewer.view ? (
 							<Badge variant='flat' tone={viewTone[reviewer.view]} size='xxs'>
 								{reviewer.view}
 							</Badge>
 						) : (
-							<span className='text-xs text-muted-foreground'>{statusLabel[reviewer.status as keyof typeof statusLabel]}</span>
+							<span className={cn("text-muted-foreground", size === "base" ? "text-sm" : "text-xs")}>{statusLabel[reviewer.status as keyof typeof statusLabel]}</span>
 						)}
 					</div>
-					<span className='ps-6 text-xs text-muted-foreground'>Evaluates {reviewer.evaluates}</span>
-					{reviewer.why ? <span className='ps-6 text-sm text-foreground'>"{reviewer.why}"</span> : null}
+					<span className={cn("ps-6 text-muted-foreground", size === "base" ? "text-sm" : "text-xs")}>Evaluates {reviewer.evaluates}</span>
+					{reviewer.why ? <span className={cn("ps-6 text-foreground", size === "base" ? "text-base" : "text-sm")}>"{reviewer.why}"</span> : null}
 					{notes[reviewer.id] ? <span className='ps-6 text-xs font-medium text-link'>{notes[reviewer.id]}</span> : null}
 					</Row>
 				</li>
@@ -262,24 +350,24 @@ function ReviewerList({
 }
 
 /** What each part says, by its title in `reviewPartTitles`. */
-function reviewPartBody(concept: ConceptForReview): Record<(typeof reviewPartTitles)[number], { items?: string[]; children?: React.ReactNode }> {
+function reviewPartBody(concept: ConceptForReview): Record<ReviewPartTitle, { items?: string[]; children?: React.ReactNode }> {
 	return {
 		Summary: {
 			children: (
 				<>
-					<p className='text-sm font-medium text-foreground'>{concept.evidenceStatus}</p>
-					<p className='text-sm text-foreground'>{concept.summary}</p>
+					<p className='text-base font-medium text-foreground'>{concept.evidenceStatus}</p>
+					<p className='text-base text-foreground'>{concept.summary}</p>
 				</>
 			),
 		},
 		Gaps: { items: concept.gaps },
 		"Known issues": { items: concept.knownIssues },
-		"What we believe (hypothesis)": { children: <p className='text-sm text-foreground'>{concept.hypothesis}</p> },
+		"What we believe (hypothesis)": { children: <p className='text-base text-foreground'>{concept.hypothesis}</p> },
 		"What people need to do (user stories), and how to know it’s done (acceptance criteria)": {
 			children: (
 				<ul className='flex flex-col gap-3'>
 					{concept.stories.map((item) => (
-						<li key={item.story} className='flex flex-col gap-1 text-sm'>
+						<li key={item.story} className='flex flex-col gap-1 text-base'>
 							<span className='font-medium text-foreground'>{item.story}</span>
 							<ul className='flex list-disc flex-col gap-0.5 ps-5 text-foreground'>
 								{item.criteria.map((criterion) => (
@@ -296,6 +384,7 @@ function reviewPartBody(concept: ConceptForReview): Record<(typeof reviewPartTit
 		"Why this direction": { items: concept.why },
 		"The evidence": { items: concept.evidence },
 		"What it needs to be built": { items: concept.build },
+		"What to track": { items: concept.tracking },
 		"Design notes": { items: concept.design },
 		"For the UX team to test with real people": { items: concept.realPeople },
 		"What it changes for teams": { items: concept.teams },
@@ -310,23 +399,23 @@ function reviewPartBody(concept: ConceptForReview): Record<(typeof reviewPartTit
  * The idea for review, part by part (prds/sparks-review.md, "What's reviewed"): the same document in Dana's Review
  * panel and on the page the teams open (`PublishedIdea`). `shown`: the parts written so far, while Sparks writes it,
  * each coming in (`reveal`). `partAction`: something on each part's heading, e.g. a reviewer's "Comment"; `partBelow`: under it.
+ * `titles`: which parts, in which order (the team who builds it reads `buildPartTitles` first); every part by default.
  */
 function ReviewDocument({
 	concept,
+	titles = reviewPartTitles,
 	recommendation,
-	shown = reviewPartTitles.length,
+	shown,
 	reveal = false,
 	partAction,
 	partBelow,
 	marked,
-	publishing,
 }: {
 	concept: ConceptForReview;
+titles?: readonly ReviewPartTitle[];
 	/** A part marked for a moment (a comment on it was just opened). */
 	marked?: string;
-	/** Only for Dana, before she publishes: who reviews it and the invitation, after what's still open. */
-	publishing?: React.ReactNode;
-	/** Dana's recommendation, after Known issues, once sent. */
+/** Dana's recommendation, after Known issues, once sent. */
 	recommendation?: string;
 	shown?: number;
 	reveal?: boolean;
@@ -336,17 +425,23 @@ function ReviewDocument({
 	const body = reviewPartBody(concept);
 	return (
 		<>
-			{reviewPartTitles.slice(0, shown).map((title) => (
+			{titles.slice(0, shown ?? titles.length).map((title) => (
 				<React.Fragment key={title}>
-					<Part title={title} reveal={reveal} action={partAction?.(title)} below={partBelow?.(title)} marked={marked === title} {...body[title]} />
+					<Part
+						title={title}
+						reveal={reveal}
+						action={partAction?.(title)}
+						below={partBelow?.(title)}
+						marked={marked === title}
+{...body[title]}
+					/>
 					{title === "Known issues" && recommendation ? (
 						<Part title='Recommendation'>
-							<p className='text-sm text-foreground'>{recommendation}</p>
-							<span className='text-xs text-muted-foreground'>Dana's recommendation</span>
+							<p className='text-base text-foreground'>{recommendation}</p>
+							<span className='text-sm text-muted-foreground'>Dana's recommendation</span>
 						</Part>
 					) : null}
-					{title === "Known issues" ? publishing : null}
-				</React.Fragment>
+</React.Fragment>
 			))}
 		</>
 	);
@@ -358,8 +453,8 @@ function ReviewDocument({
  * (`ReviewNextStep`), the reviewers once it's published, then every part of "What's reviewed", one heading each, in
  * order. The same frame as Evaluate's panel. Not in Figma yet.
  */
-function ReviewPanel({ concept, status, reviewers, recommendation, next, reviewsIn = false, progress, building: build, published, onOpenPublished, focusPart, className }: ReviewPanelProps) {
-	const building = Boolean(build);
+function ReviewPanel({ concept, status, reviewers, recommendation, next, reviewsIn = false, progress, building: build, published, onOpenPublished, focusPart, comments, className }: ReviewPanelProps) {
+const building = Boolean(build);
 	// A comment on a part was opened: that part comes into view, at the top, and is marked for a moment.
 	const documentRef = React.useRef<HTMLDivElement>(null);
 	const [marked, setMarked] = React.useState<string>();
@@ -369,7 +464,7 @@ function ReviewPanel({ concept, status, reviewers, recommendation, next, reviews
 		const element = documentRef.current?.querySelector<HTMLElement>(`[data-part="${CSS.escape(focusPart.part)}"]`);
 		if (!element) return;
 		setMarked(focusPart.part);
-		const timer = window.setTimeout(() => setMarked(undefined), 1600);
+const timer = window.setTimeout(() => setMarked(undefined), 1600);
 		const stop = scrollIntoViewSmoothly(element, { reducedMotion: Boolean(reducedFocus), align: "start" });
 		return () => {
 			window.clearTimeout(timer);
@@ -419,7 +514,7 @@ function ReviewPanel({ concept, status, reviewers, recommendation, next, reviews
 		<section aria-label='Idea for review' className={cn("flex min-h-0 flex-1 flex-col rounded-card bg-background-subtle", className)}>
 			{/* The same header as Evaluate's panels: 68px. */}
 			<div className='flex h-[68px] shrink-0 items-center gap-3 px-5'>
-				<Typography as='h2' size='lg' weight='medium' className='shrink-0 text-foreground-prominent'>
+				<Typography as='h2' size='xl' weight='semibold' className='shrink-0 text-foreground'>
 					Idea for review
 				</Typography>
 				{banner}
@@ -442,28 +537,55 @@ function ReviewPanel({ concept, status, reviewers, recommendation, next, reviews
 				}}
 				ref={documentRef}
 				aria-busy={building || undefined}
-				className='scrollbar-subtle mx-5 mb-6 flex min-h-0 flex-1 flex-col gap-4 scroll-pt-4 overflow-y-auto rounded-[12px] bg-background p-8'
+								className='scrollbar-subtle mx-5 mb-6 flex min-h-0 flex-1 flex-col scroll-pt-4 overflow-y-auto rounded-[12px] bg-background p-8'
 			>
-				{progress ? <ActivityFeed {...progress} /> : null}
-				{next && !building ? <ReviewNextStep next={next} /> : null}
+				{/* Comments on the idea, the same as on the prototype: with "Add comment" on, a click drops a pin. */}
+				<IdeaCommentLayer comments={building ? undefined : comments}>
+					{/* As Evaluate's panel: sections one under the other, a line between each, 24px on either side of it. */}
+					<div className='flex flex-col divide-y divide-border [&>*]:py-6 [&>*:first-child]:pt-0 [&>*:last-child]:pb-0'>
+						{progress || (next && !building) ? (
+							<div className='flex flex-col gap-3'>
+								{progress ? <ActivityFeed {...progress} /> : null}
+								{next && !building ? <ReviewNextStep next={next} /> : null}
+							</div>
+						) : null}
 
-				{reviewers.length ? (
-					<section aria-label='Reviewers' className='flex flex-col gap-2 pb-2'>
-						<Typography as='h3' size='base' weight='semibold' className='text-foreground-prominent'>
-							Reviewers
-						</Typography>
-						<ReviewerList reviewers={reviewers} />
-					</section>
-				) : null}
+						{reviewers.length ? (
+							<section aria-label='Reviewers' className='flex flex-col gap-2'>
+								<Typography as='h3' size='lg' weight='semibold' className='text-foreground-prominent'>
+									Reviewers
+								</Typography>
+								<ReviewerList reviewers={reviewers} size='base' />
+							</section>
+						) : null}
 
-				{/* The parts written so far, each coming in as it's written; then the one being written. */}
-				{blank ? null : <ReviewDocument concept={concept} recommendation={recommendation} shown={shown} reveal={building} marked={marked} publishing={next?.kind === "publish" && !building ? <PublishingPart next={next} /> : undefined} />}
-				{building && !blank && shown < reviewPartTitles.length ? <PartInProgress ref={writingRef} title={reviewPartTitles[shown]} /> : null}
-				{building && shown >= reviewPartTitles.length ? <div ref={writingRef} aria-hidden className='-mt-4 h-px shrink-0' /> : null}
+						{/* The parts written so far, each coming in as it's written; then the one being written. */}
+						{blank ? null : <ReviewDocument concept={concept} recommendation={recommendation} shown={shown} reveal={building} marked={marked} />}
+						{building && !blank && shown < reviewPartTitles.length ? <PartInProgress ref={writingRef} title={reviewPartTitles[shown]} /> : null}
+					</div>
+				</IdeaCommentLayer>
+				{building && shown >= reviewPartTitles.length ? <div ref={writingRef} aria-hidden className='h-px shrink-0' /> : null}
 			</motion.div>
 		</section>
 	);
 }
 
-export { ReviewDocument, ReviewerList, ReviewPanel, reviewPartTitles, viewTone, type ConceptForReview, type IdeaComment, type ReviewPanelProps, type ReviewStatus, type Reviewer };
+export {
+	buildContextTitles,
+	buildPartTitles,
+	ideaCommentAt,
+	IdeaCommentLayer,
+	ReviewDocument,
+	ReviewerList,
+	ReviewPanel,
+	reviewPartTitles,
+	viewTone,
+	type ConceptForReview,
+	type IdeaComment,
+	type IdeaCommentsProps,
+	type ReviewPanelProps,
+	type ReviewPartTitle,
+	type ReviewStatus,
+	type Reviewer,
+};
 export type { ReviewNext };

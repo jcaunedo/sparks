@@ -108,6 +108,11 @@ export const NotEmphasized: Story = {
 };
 
 /** Without an action (e.g. the direction already picked while the plan is open). */
+/** Where it changes things is a physical place (stores, a counter): a map pin instead of the globe. */
+export const PhysicalPlace: Story = {
+	args: { location: "Behind the scenes: stores, the returns team and the catalog team", locationKind: "physical" },
+};
+
 export const WithoutAction: Story = { args: { action: undefined } };
 
 /** Both states and both borders together. */

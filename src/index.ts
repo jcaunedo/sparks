@@ -72,6 +72,9 @@ export {
 /* Forms                                                                      */
 /* -------------------------------------------------------------------------- */
 
+export { Checkbox } from "@/components/forms/checkbox";
+export { handlePeopleKeys, matchPeople, PeopleAvatar, PeopleList, type PeopleOption } from "@/components/forms/people-list";
+export { RadioGroup, RadioGroupItem } from "@/components/forms/radio-group";
 export {
 	Select,
 	SelectContent,
@@ -182,6 +185,15 @@ export {
 	PopoverTitle,
 	PopoverDescription,
 } from "@/components/overlays/popover";
+export {
+	SharePopover,
+	shareRoles,
+	type ShareMember,
+	type SharePopoverProps,
+	type ShareRole,
+	type ShareSuggestion,
+	type ShareTeamPerson,
+} from "@/components/overlays/share-popover";
 export { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/overlays/tooltip";
 
 /* -------------------------------------------------------------------------- */

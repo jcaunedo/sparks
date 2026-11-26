@@ -12,6 +12,8 @@ type DirectionDraft = {
 	idea: string;
 	/** Where it changes things, in Dana's words: "On the product page", "Behind the scenes: …". */
 	where: string;
+	/** Whether `where` is online (the store's site or app: a globe) or a physical place (stores, a counter: a map pin). */
+	whereKind: "online" | "physical";
 	/** Its effect on the main measure: a word, never a score. */
 	effect: "Big" | "Some" | "Little" | "Unclear";
 	effort: { size: "Small" | "Medium" | "Large"; reason: string };
@@ -80,6 +82,7 @@ function DirectionCard({ direction, number, action, className }: DirectionCardPr
 			}
 			description={direction.idea}
 			location={direction.where}
+			locationKind={direction.whereKind}
 			// Words, not scores; the reasons are in the details.
 			ratings={[
 				{ label: "Effect", value: direction.effect },

@@ -276,6 +276,16 @@ A Sparks reply without a clarification card shows its quick replies with the sam
 
 ---
 
+## Direction card "Where" icon: globe online, map pin for a place (`chat/direction-card/direction-card.tsx`)
+
+**Rule:** the line saying where a direction changes things starts with a 14px icon (`size-3.5`) in `decorative-1`, like its text: lucide `Globe` when it's online (`locationKind` `online`, the default: a page, the app), `MapPin` when it's a physical place (`physical`: stores, a counter). sparks.ds "direction-card" (89:151) has only the map pin.
+
+**Why:** the icon says what kind of place the change lands in. A Figma resync would put the map pin on every card, online ones included.
+
+**How to apply:** check: "On the product page" shows the globe; the `PhysicalPlace` story ("Behind the scenes: stores…") shows the map pin. Keep the `locationKind` switch until sparks.ds has both.
+
+---
+
 ## Sparks conversation scroll (`sparks/workspace/workspace.tsx`, `lib/motion/scroll.ts`)
 
 **Rule:** when a reply is added, the workspace scrolls the `li` of Dana's message it answers (`sent`) to the top of the conversation with `scrollIntoViewSmoothly(item, { align: "start" })`, and gives the newest new reply `minHeight` equal to the scroller's height less its 56px top padding, her message and the ~~16px gap~~ 32px below it (`viewHeight - scrollPadding - sentHeight`). Every message, Sparks's or Dana's, has 32px below it: the list's `gap-4` plus `mb-4` on each `li`; change the two together, since `sentHeight` adds the 32.
@@ -328,6 +338,36 @@ The scroller is the whole conversation area, edge to edge (~~`px-8`~~ `px-6`, th
 
 ---
 
+## Radio buttons and checkboxes have a border you can see (`forms/radio-group/radio-group.tsx`, `forms/checkbox/checkbox.tsx`)
+
+**Rule:** `RadioGroupItem` and `Checkbox` are `border border-icon-muted` (gray-500) while unchosen or unchecked (`data-[state=checked]:border-primary` once chosen), not shadcn's `border-input`.
+
+**Why:** with `border-input` an unchosen radio button is a faint ring that barely reads as a control on white (it needs 3:1 against the background to be seen as one; `border-defined`, gray-300, is still under it). A shadcn reinstall or resync brings `border-input` back.
+
+**How to apply:** keep the darker border on any new round or square choice control (a checkbox, when it comes).
+
+---
+
+## The "+" menu is 240px (`chat/prompt-composer/prompt-composer.tsx`)
+
+**Rule:** the message box's "+" menu (`DropdownMenuContent` in `PromptComposer`) is `min-w-[240px]`, 40px wider than the menu panel's 200px minimum ("Menus and select lists share one panel").
+
+**Why:** asked for, so its longer items ("See what the teams see") don't sit tight against the edge. sparks.ds "select-prompt-add" and the shared panel are 200px, so a resync from either brings 200px back.
+
+**How to apply:** keep the class on the "+" menu only; other menus and select lists keep the 200px minimum.
+
+---
+
+## Evaluate's and Review's panels share one text style (`validate/validate-panel.tsx`, `review/review-panel.tsx`, `published/published-idea.tsx`)
+
+**Rule:** the panel's title ("Evaluation", "Idea for review", "Advanced idea") is `Typography as='h2' size='xl' weight='semibold' className='text-foreground'`, the same as the idea's name in the header. Inside, sections are `lg semibold text-foreground-prominent` titles over `text-base` text, secondary lines `text-sm text-muted-foreground`, one under the other with a line between each and 24px on either side (`divide-y divide-border [&>*]:py-6 [&>*:first-child]:pt-0 [&>*:last-child]:pb-0`). Review's next step and the reviewers' page use the same sizes.
+
+**Why:** asked for, so the two panels read as one product, and the panel's title matches the idea's name above it. Figma's "Evaluate" (72:660) still draws the title lg medium, so a resync from it brings that back.
+
+**How to apply:** a new panel beside the prototype uses the same title and section styles.
+
+---
+
 ## Popovers have the 2xl shadow (`overlays/popover/popover.tsx`)
 
 **Rule:** `PopoverContent` is `shadow-2xl` (`--shadow-2xl`: `0 16px 50px -12px var(--shadow-color-lg)`), not shadcn's `shadow-md`. Every popover gets it from the component: Share, notifications, a prototype comment's thread.
@@ -376,7 +416,7 @@ Exception: the pencil on Dana's answers in Sparks opens its tooltip above ("Chan
 
 ---
 
-## Share popover width (`sparks/workspace/share-popover.tsx`)
+## Share popover width (`overlays/share-popover/share-popover.tsx`)
 
 **Rule:** `PopoverContent` is `w-[460px]` (`p-5`), so the invite field leaves the placeholder "Name, email or department" its full width (183px of 219px) beside the longest role, "Can comment", and "Invite".
 
@@ -587,7 +627,7 @@ const selectedMarker = focus?.fromScreen ? undefined : markers.find((m) => m.id 
 
 ---
 
-## One list for picking people (`sparks/shared/people-list.tsx`)
+## One list for picking people (`forms/people-list/people-list.tsx`)
 
 **Rule:** Share's field and "@" in a comment on the prototype use the same `PeopleList`, `matchPeople` and `handlePeopleKeys`: the menu panel (`rounded-input border bg-popover p-1 shadow-xl`), 36px rows 2px apart, a 24px `PeopleAvatar` (a `Building2` for a department), the name sm medium, the team or size xs muted on the right. The field keeps focus (`combobox`, `aria-activedescendant`); rows pick on `mousedown` with `preventDefault`; Esc closes only the list (`stopPropagation`, so the popover around it stays). In the comment box, after a pick, the caret is placed in a layout effect on the new text (`pendingCaret`), not in `requestAnimationFrame`.
 

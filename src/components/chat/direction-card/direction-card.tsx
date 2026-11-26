@@ -1,6 +1,6 @@
 import * as React from "react";
 import { cva, type VariantProps } from "class-variance-authority";
-import { ChevronDown, ChevronsDownUp, ChevronsUpDown, MapPin } from "lucide-react";
+import { ChevronDown, ChevronsDownUp, ChevronsUpDown, Globe, MapPin } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 
 import { Button } from "@/components/buttons/button";
@@ -40,8 +40,10 @@ type DirectionCardProps = Omit<React.ComponentProps<"section">, "title" | "child
 		badges?: React.ReactNode;
 		/** One sentence: what it is. */
 		description: React.ReactNode;
-		/** Where it changes things, after a map pin, e.g. "On the product page". */
+		/** Where it changes things, after its icon, e.g. "On the product page". */
 		location?: React.ReactNode;
+		/** What kind of place `location` is: `online` (default; a globe: a page, the app) or `physical` (a map pin: a store, a counter). */
+		locationKind?: "online" | "physical";
 		/** Words, not scores, in one row: e.g. Effect, Effort, Risk. */
 		ratings?: DirectionCardRating[];
 		/** Always shown, under the ratings, e.g. "The catch". */
@@ -78,6 +80,7 @@ function DirectionCard({
 	badges,
 	description,
 	location,
+	locationKind = "online",
 	ratings = [],
 	lines = [],
 	details = [],
@@ -145,10 +148,10 @@ function DirectionCard({
 					) : null}
 				</div>
 				<p className='text-base text-foreground'>{description}</p>
-				{/* Figma "Where": a 14px map pin and the text in colors/decorative/decorative-1. */}
+				{/* Figma "Where": a 14px icon, a globe online or a map pin for a physical place (Figma has the map pin only: DESIGN.md), and the text in colors/decorative/decorative-1. */}
 				{location ? (
 					<p className='flex items-center gap-1.5 pt-1 text-sm text-decorative-1'>
-						<MapPin aria-hidden className='size-3.5 shrink-0' />
+						{locationKind === "physical" ? <MapPin aria-hidden className='size-3.5 shrink-0' /> : <Globe aria-hidden className='size-3.5 shrink-0' />}
 						{location}
 					</p>
 				) : null}

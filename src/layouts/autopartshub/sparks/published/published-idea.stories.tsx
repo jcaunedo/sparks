@@ -11,6 +11,13 @@ import { sampleMentionable } from "../shared/sample-share";
 import type { IdeaComment } from "../review/review-panel";
 import { PublishedIdea, type PublishedIdeaProps, type ReviewerView } from "./published-idea";
 import {
+	sampleAdvanced,
+	sampleAdvancedAddressedComments,
+	sampleAdvancedClarifiedConcept,
+	sampleAdvancedConcept,
+	sampleAdvancedReader,
+	sampleAdvancedUser,
+	sampleAdvancedVersion,
 	samplePublishedAt,
 	samplePublishedBy,
 	samplePublishedConcept,
@@ -84,3 +91,38 @@ export const ViewSent: Story = {
 
 /** No comments yet: the first reviewer to open it. */
 export const NoComments: Story = { args: { prototypeComments: [], ideaComments: [] } };
+
+/**
+ * Advanced and shared with Dana's product team (prds/sparks-review.md, "After the decision"): what Jordan, a developer,
+ * opens. What to build first, next to the prototype (user stories and acceptance criteria, what it needs, what to track,
+ * design notes, open questions), then why it's built this way. "Ready to build" shows Sparks's check, with what's still
+ * open. "See what the teams see" in Dana's Review opens it once she's shared it.
+ */
+export const Advanced: Story = {
+	args: {
+		user: sampleAdvancedUser,
+		reviewer: sampleAdvancedReader,
+		version: sampleAdvancedVersion,
+		concept: sampleAdvancedConcept,
+		advanced: sampleAdvanced,
+		invitation: undefined,
+		prototype: {
+			label: "1. Fit check before you buy",
+			audiences: fitCheck.audiences,
+			screens: fitCheck.screens.length,
+			screenList: fitCheck.screens.map((name, view) => ({ name, audience: screenAudience(fitCheck, view).id })),
+			render: (audience, screen, part) => fitCheck.render({ data: sampleFitCheck, audience, changes: { fitAbovePrice: true }, openOn: screen, openPart: part }),
+		},
+		prototypeComments: [],
+		ideaComments: [],
+	},
+};
+
+/**
+ * Jordan flagged an acceptance criterion as unclear ("What counts as "no fit data"?"), and Dana made the fix Sparks
+ * proposed: the criterion reads differently now, and the comment shows "Addressed." with how, under the part and in
+ * "Comments".
+ */
+export const UnclearAddressed: Story = {
+	args: { ...Advanced.args, concept: sampleAdvancedClarifiedConcept, ideaComments: sampleAdvancedAddressedComments },
+};

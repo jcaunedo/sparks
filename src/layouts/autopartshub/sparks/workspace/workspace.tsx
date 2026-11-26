@@ -1,5 +1,5 @@
 import * as React from "react";
-import { ArrowLeft, Bell, ChevronDown, FlaskConical, Folder, ListChecks, MessageCircle, MousePointerClick, Paperclip, Pencil, RotateCcw, Users, X, Zap } from "lucide-react";
+import { ArrowLeft, Bell, ChevronDown, ClipboardCheck, Eye, FlaskConical, Folder, ListChecks, MessageCircle, MousePointerClick, Paperclip, Pencil, RotateCcw, Users, X, Zap } from "lucide-react";
 import { animate, AnimatePresence, motion, useAnimationControls, useIsPresent, usePresenceData, type Variants } from "motion/react";
 
 import { ActivityFeed } from "@/components/chat/activity-feed";
@@ -62,7 +62,8 @@ import { assetName, libraryIcon } from "../../library/library-assets";
 import { LibraryDialog, type LibraryDialogProps, type LibraryPick } from "./library-dialog";
 import { SidePanelResizer, useSidePanelWidth } from "./side-panel";
 import { directionActionFor, type DirectionPaths } from "./plan-parts";
-import { SharePopover, type SharePopoverProps } from "./share-popover";
+import { SharePopover, type SharePopoverProps } from "@/components/overlays/share-popover";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/overlays/popover";
 import { HeaderIconButton } from "../../header-icon-button";
 import { NotificationsPopover, type NotificationsPopoverProps } from "../../notifications-popover";
 
@@ -498,6 +499,16 @@ type SparksWorkspaceProps = {
 	 */
 	onResetPrototype?: () => void;
 	/**
+	 * The "+" menu's "See what the teams see", for the demo: opens the page reviewers get from the invitation (the
+	 * published idea), in its own tab. Without it, the menu has no "See what the teams see".
+	 */
+	onSeeTeamsView?: () => void;
+	/**
+	 * The "+" menu's "Go to Review", for the demo: jumps to Review with the idea put together, ready to publish. Without
+	 * it, the menu has no "Go to Review".
+	 */
+	onGoToReview?: () => void;
+	/**
 	 * Opens at the introduction and scrolls smoothly down to where the conversation's history ends (its latest section),
 	 * instead of starting there: right after "Add Plan", so the filled-in Plan goes by. Reduced motion: it starts there.
 	 */
@@ -521,6 +532,11 @@ type SparksWorkspaceProps = {
 		idea?: IdeaComment[];
 		/** Selecting one opens its part in Review. */
 		onOpenIdeaComment?: (id: string) => void;
+		/**
+		 * "Add comment" in the panel's header, while a prototype that takes comments is on screen: adding one on it, on or
+		 * off. Closing the panel turns it off.
+		 */
+		adding?: { on: boolean; onChange: (on: boolean) => void };
 	};
 	/**
 	 * Opens Comments: set as the idea opens, from the notification about its new comments (prds/sparks.md, "New comments"),
@@ -552,9 +568,9 @@ type SparksWorkspaceProps = {
 	 */
 	composerContext?: { label: string; placeholder?: string; onClear: () => void };
 	/**
-	 * "Share" in the header, in every step (shown when given): it opens the share popover, with who has access, a field to
-	 * add a person or a department, and "Copy link" (prds/sparks.md, "Sharing a concept"). Before Review it offers only
-	 * "Can edit" (a collaborator), unless `share.roles` says otherwise.
+	 * "Share" in the header, in every step (shown when given): UCL's `SharePopover`, the same in every step (prds/sparks.md,
+	 * "Sharing a concept"): the three roles, who has access, a field to add a person or a department, "Copy link", and
+	 * the recommended reviewers once there's a direction (`share.recommended`). The workspace gives its copy.
 	 */
 	share?: Omit<SharePopoverProps, "children">;
 	/**
@@ -580,8 +596,10 @@ type SparksWorkspaceProps = {
 	 * "Publish" in the header, after Share, on Review only (prds/sparks-review.md, "Publishing"): gives the teams who review
 	 * a fixed copy of the idea and its prototype. `label`: "Publish", "Publish update" once she's changed it since,
 	 * "Published" when they have the latest. `hint`: why it can't be selected now (a tooltip). Not for collaborators.
+	 * `panel`: what she checks before it goes (who reviews it, the invitation): "Publish" opens it in a popover, with
+	 * "Cancel" and "Publish", which calls `onClick`. Without it, "Publish" publishes at once (e.g. "Publish update").
 	 */
-	publish?: PanelActionProps;
+	publish?: PanelActionProps & { panel?: React.ReactNode; /** The popover's "Publish" can't be selected yet (no one to send it to). */ blocked?: boolean };
 	/**
 	 * "All ideas" in the menu on the concept's name: closes the concept, back to the Sparks start page in the same tab
 	 * (prds/sparks.md, "The concept workspace").
@@ -840,6 +858,48 @@ function pictureOf(phone: HTMLElement) {
  * Where Dana works on a concept: the header with the concept's name and the four steps, the conversation with Sparks
  * centered (Sparks's introduction first), and the message box at the bottom. Figma: Sparks → "Sparks Project" (node 27:1932).
  */
+/**
+ * "Publish" with what she checks before it goes (prds/sparks-review.md, "Publishing"): the header's dark button opens a
+ * popover, "Publish your idea", with `children` (who reviews it, the invitation), then "Cancel" and "Publish".
+ */
+function PublishPopover({ label, onPublish, blocked = false, children }: { label: string; onPublish?: () => void; blocked?: boolean; children: React.ReactNode }) {
+	const [open, setOpen] = React.useState(false);
+	const titleId = React.useId();
+	return (
+		<Popover open={open} onOpenChange={setOpen}>
+			<PopoverTrigger asChild>
+				<Button variant='neutral'>{label}</Button>
+			</PopoverTrigger>
+			<PopoverContent
+				align='end'
+				sideOffset={8}
+				aria-labelledby={titleId}
+				className='flex max-h-[min(640px,var(--radix-popover-content-available-height))] w-[520px] flex-col gap-4 p-0'
+			>
+				<Typography as='h2' id={titleId} size='lg' weight='semibold' className='px-5 pt-5 text-foreground-prominent'>
+					Publish your idea
+				</Typography>
+				<div className='scrollbar-subtle min-h-0 overflow-y-auto px-5'>{children}</div>
+				<div className='flex justify-end gap-2 px-5 pb-5'>
+					<Button variant='outline' onClick={() => setOpen(false)}>
+						Cancel
+					</Button>
+					<Button
+						variant='neutral'
+						disabled={blocked}
+						onClick={() => {
+							setOpen(false);
+							onPublish?.();
+						}}
+					>
+						Publish
+					</Button>
+				</div>
+			</PopoverContent>
+		</Popover>
+	);
+}
+
 function SparksWorkspace({
 	user,
 	conceptName,
@@ -853,6 +913,8 @@ function SparksWorkspace({
 	initialPrompt,
 	onAddPlan,
 	onResetPrototype,
+	onSeeTeamsView,
+	onGoToReview,
 	glideToLatest = false,
 	myLibrary,
 	comments,
@@ -991,7 +1053,13 @@ function SparksWorkspace({
 	// Attached files, waiting to be sent with her next message: "Attach files" in the "+" menu, or a reply's "Attach files".
 	const [files, setFiles] = React.useState<string[]>([]);
 	const fileInputRef = React.useRef<HTMLInputElement>(null);
-	const pickFiles = () => fileInputRef.current?.click();
+	// Picked from a reply's "Attach files", they're her answer: sent as soon as they're picked. From the "+" menu, they
+	// wait in the message box, to go with what she types (prds/sparks-plan-problem.md, "Supporting material").
+	const sendOnPick = React.useRef(false);
+	const pickFiles = (sendNow = false) => {
+		sendOnPick.current = sendNow;
+		fileInputRef.current?.click();
+	};
 	// "Add from library": the dialog with everything in My library.
 	const [pickingFromLibrary, setPickingFromLibrary] = React.useState(false);
 	// The images she picked, by file name, to open from Library: in this tab only (nothing is uploaded).
@@ -1008,7 +1076,7 @@ function SparksWorkspace({
 		setFiles([]);
 	};
 	const quickReply = (text: string) => {
-		if (attachReply && text === attachReply) return pickFiles();
+		if (attachReply && text === attachReply) return pickFiles(true);
 		if (libraryReply && text === libraryReply) return setPickingFromLibrary(true);
 		send(attachReply && files.length ? "" : text);
 	};
@@ -1102,6 +1170,10 @@ function SparksWorkspace({
 		if (openCommentsKey) setSidePanel("comments");
 	}, [openCommentsKey]);
 	const commentsOpen = sidePanel === "comments";
+	// "Add comment" lives in the Comments panel: closing the panel (or Library taking its place) stops adding one.
+	React.useEffect(() => {
+		if (!commentsOpen && comments?.adding?.on) comments.adding.onChange(false);
+	}, [commentsOpen]);
 	const libraryOpen = sidePanel === "library";
 	// Its width: 380px to start, dragged from its left edge between 300px and half the window; kept while it's closed.
 	const [sidePanelWidth, setSidePanelWidth] = useSidePanelWidth();
@@ -1356,8 +1428,13 @@ function SparksWorkspace({
 				{/* "Share", in every step (prds/sparks.md, "Sharing a concept"): Figma's Share, Button Outlined lg · 36, its label
 				    alone (no icon). No avatars beside it (32:1145): who has access is in Share's popover. */}
 				{share ? (
-					// Before Review, only collaborators ("Can edit"): the teams come in when she publishes it in Review.
-					<SharePopover roles={currentStep === "review" ? undefined : ["editor"]} {...share}>
+					// The same Share in every step: whoever she adds with "Can view" or "Can comment" sees it once she publishes it.
+					<SharePopover
+						title='Share idea'
+						description='People and departments you add see the idea and its prototype once you publish it.'
+						rolesHint='With "Can comment", they can also leave feedback. With "Can edit", they work on it with you right away, in your conversation with Sparks too.'
+						{...share}
+					>
 						<Button variant='outline'>Share</Button>
 					</SharePopover>
 				) : null}
@@ -1379,6 +1456,10 @@ function SparksWorkspace({
 								{publish.hint}
 							</TooltipContent>
 						</Tooltip>
+					) : publish.panel && !publish.disabled ? (
+						<PublishPopover label={publish.label} onPublish={publish.onClick} blocked={publish.blocked}>
+							{publish.panel}
+						</PublishPopover>
 					) : (
 						<Button
 							variant='neutral'
@@ -1549,6 +1630,13 @@ function SparksWorkspace({
 							// Cleared, so the same file can be picked again after it's removed.
 							event.target.value = "";
 							if (!names.length) return;
+							if (sendOnPick.current) {
+								// Her answer to "Attach files": sent at once, with any files already waiting in the box.
+								sendOnPick.current = false;
+								onSend?.("", [...files, ...names.filter((name) => !files.includes(name))]);
+								setFiles([]);
+								return;
+							}
 							setFiles((current) => [...current, ...names.filter((name) => !current.includes(name))]);
 							composerRef.current?.focus();
 						}}
@@ -1599,7 +1687,7 @@ function SparksWorkspace({
 						// sparks.ds "select-prompt-add" (77:6726): attach, add from the library, connect, and the demo's initial prompt.
 						addMenu={
 							<>
-								<DropdownMenuItem onSelect={pickFiles}>
+								<DropdownMenuItem onSelect={() => pickFiles()}>
 									<Paperclip aria-hidden />
 									Attach files
 								</DropdownMenuItem>
@@ -1613,8 +1701,8 @@ function SparksWorkspace({
 									Add a connection
 								</DropdownMenuItem>
 								{/* The demo's shortcuts, after a line: the first message, ready to send, the whole of Plan up to
-								    the choice, and starting over. */}
-								{initialPrompt || onAddPlan || onResetPrototype ? <DropdownMenuSeparator /> : null}
+								    the choice, the reviewers' page, and starting over. */}
+								{initialPrompt || onAddPlan || onGoToReview || onSeeTeamsView || onResetPrototype ? <DropdownMenuSeparator /> : null}
 								{initialPrompt ? (
 									<DropdownMenuItem onSelect={() => fillDraft(initialPrompt)}>
 										<MessageCircle aria-hidden />
@@ -1627,6 +1715,20 @@ function SparksWorkspace({
 										Add Plan
 									</DropdownMenuItem>
 								) : null}
+								{onGoToReview ? (
+									<DropdownMenuItem onSelect={onGoToReview}>
+										<ClipboardCheck aria-hidden />
+										Go to Review
+									</DropdownMenuItem>
+								) : null}
+{onSeeTeamsView ? (
+									<DropdownMenuItem onSelect={onSeeTeamsView}>
+										<Eye aria-hidden />
+										See what the teams see
+									</DropdownMenuItem>
+								) : null}
+								{/* Starting over, set apart by a line from the shortcuts that move the demo along. */}
+								{onResetPrototype && (initialPrompt || onAddPlan || onGoToReview || onSeeTeamsView) ? <DropdownMenuSeparator /> : null}
 								{onResetPrototype ? (
 									<DropdownMenuItem onSelect={onResetPrototype}>
 										<RotateCcw aria-hidden />
@@ -1699,6 +1801,7 @@ function SparksWorkspace({
 							onOpenPrototypeComment={comments?.onOpenPrototypeComment}
 							ideaComments={comments?.idea}
 							onOpenIdeaComment={comments?.onOpenIdeaComment}
+							adding={comments?.adding}
 							onClose={closeComments}
 							autoFocus
 						/>

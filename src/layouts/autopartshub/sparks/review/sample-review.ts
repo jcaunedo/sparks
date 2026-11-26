@@ -3,7 +3,8 @@ import type { FitCheckChanges } from "../prototype/fit-check-prototype";
 import type { Evaluation } from "../validate/validate-panel";
 import type { ChosenDraft } from "../plan/chosen-card";
 import type { DirectionDraft } from "../plan/direction-card";
-import type { ConceptForReview, IdeaComment, Reviewer } from "./review-panel";
+import { ideaCommentAt, type ConceptForReview, type IdeaComment, type Reviewer } from "./review-panel";
+import type { ReadyCheck } from "./review-next";
 import type { CommentScope, PrototypeComment, PrototypeCommentAuthor } from "../prototype/prototype-comments";
 import { reviewProfileFor, type ReviewDecision } from "./sample-review-directions";
 import { samplePersonPhoto } from "../../sample-data/sample-people";
@@ -33,6 +34,8 @@ export type ReviewInputs = {
 	engineeringEffort?: boolean;
 	/** Questions added after the reviews. */
 	openQuestions?: string[];
+	/** Clarifications Dana accepted after it advanced: words replaced in the acceptance criteria. */
+	clarified?: { from: string; to: string }[];
 };
 
 const lowerFirst = (text: string) => text.charAt(0).toLowerCase() + text.slice(1);
@@ -47,6 +50,7 @@ export function sampleConceptForReview({
 	evaluation,
 	engineeringEffort,
 	openQuestions = [],
+	clarified = [],
 }: ReviewInputs): ConceptForReview {
 	const profile = reviewProfileFor(direction.id);
 	const main = evaluation?.measures[0];
@@ -66,7 +70,10 @@ export function sampleConceptForReview({
 			...(unknown.length ? [`Still unknown: ${unknown.join("; ")}.`] : []),
 		],
 		hypothesis: chosen.believe,
-		stories: profile.stories(changes),
+		stories: profile.stories(changes).map((item) => ({
+			...item,
+			criteria: item.criteria.map((criterion) => clarified.reduce((text, fix) => text.replace(fix.from, fix.to), criterion)),
+		})),
 		prototype: [`Version ${version}, current when submitted.`, ...profile.prototype(changes)],
 		success: [
 			'Goal: customers buying online get a part that fits the first time: fewer orders come back as "doesn\'t fit", and fewer of those customers stop buying from us (from Dana).',
@@ -93,6 +100,13 @@ export function sampleConceptForReview({
 		build: (evaluation?.build ?? [`Rough effort: ${direction.effort.size}, as estimated in Plan.`]).map((line) =>
 			engineeringEffort && line.startsWith("Rough effort") ? profile.effort.line : line,
 		),
+		// What the success criteria need recorded, so they can be measured once it's live: restated from them, nothing new.
+		tracking: [
+			'Every online return marked "doesn\'t fit", with its order, from launch: the main measure (today, 18,400 in 90 days).',
+			"What the customer was told about fit when they ordered, on the part's page and in the cart, so each return can be matched to it.",
+			"Visits and orders online, so a drop in online sales shows (today, 3.1% of visits end in an order).",
+			"Later orders from customers who returned a part that didn't fit, matched to the return. There's no starting point yet, so recording starts before launch.",
+		],
 		design: evaluation?.design ?? [
 			"Built with the design system's components.",
 			changes.lightText ? "Light gray secondary text departs from the design system (kept by Dana)." : "Text contrast meets the standard.",
@@ -110,6 +124,39 @@ export function sampleConceptForReview({
 		openQuestions: [...profile.openQuestions, ...openQuestions],
 		later: [],
 	};
+}
+
+/** Dana's product team, who builds an advanced idea (made up): Sparks suggests it first when she shares it. */
+export const sampleProductTeam = "Online shopping squad";
+
+/**
+ * Sparks's check before an advanced idea goes to the team who builds it (prds/sparks-review.md, "Ready to build"): every
+ * user story has acceptance criteria, the effort is engineering's, what to track is written, and no open question blocks
+ * building. Nothing here stops her from sharing it.
+ */
+export function sampleReadyToBuild(concept: ConceptForReview, changes: FitCheckChanges, directionId?: string): ReadyCheck[] {
+	const profile = reviewProfileFor(directionId);
+	const without = concept.stories.filter((item) => item.criteria.length === 0).length;
+	const effort = concept.build.find((line) => line.includes("(from engineering)"));
+	const blocking = concept.openQuestions.filter((question) => question === profile.question(changes));
+	return [
+		without
+			? { label: `${without} user ${without === 1 ? "story has" : "stories have"} no acceptance criteria`, done: false, fix: "Add them in the plan, so the team knows when it's done." }
+			: { label: "Every user story has its acceptance criteria", done: true },
+		effort
+			? { label: `Effort from engineering: ${profile.effort.short}`, done: true }
+			: { label: "The effort is still Sparks's rough estimate", done: false, fix: "Ask engineering for theirs before the team plans the work." },
+		concept.tracking.length
+			? { label: "What to track is written, from the success criteria", done: true }
+			: { label: "Nothing says what to track yet", done: false, fix: "Without it, the main measure can't be checked after launch." },
+		blocking.length
+			? {
+					label: `${blocking.length === 1 ? "An open question blocks" : `${blocking.length} open questions block`} building: "${blocking[0]}"`,
+					done: false,
+					fix: "Answer it before the team starts, or share it now: it's listed under Open questions for them.",
+				}
+			: { label: "No open question blocks building", done: true },
+	];
 }
 
 /** The departments Sparks suggests: the UX team and engineering always, plus those the concept changes. Never people. */
@@ -182,13 +229,15 @@ const fitCheckPins: Record<string, Omit<PrototypeComment, "id" | "createdAt" | "
 };
 
 /** What each team says on a part of the "Fit check before you buy" idea while it reviews; "Unclear" flags the part. */
-const fitCheckIdeaComments: Record<string, Pick<IdeaComment, "part" | "text" | "unclear">> = {
+const fitCheckIdeaComments: Record<string, Pick<IdeaComment, "part" | "text" | "unclear"> & { fy?: number }> = {
 	ux: { part: "For the UX team to test with real people", text: "We can test the fit message with 5 customers in the first week of December." },
 	eng: { part: "What it needs to be built", text: "Saved vehicles are there. The fit check on every product page is the bulk of it: about 6 weeks for the web team." },
 	catalog: {
 		part: "What it needs to be built",
 		text: "Who fills the fit data gaps for older vehicles, and by when? It isn't on our plan yet.",
 		unclear: true,
+		// Lower on the same part as engineering's, so the two pins don't overlap.
+		fy: 0.55,
 	},
 };
 
@@ -196,7 +245,37 @@ const fitCheckIdeaComments: Record<string, Pick<IdeaComment, "part" | "text" | "
 export function sampleReviewerIdeaComment(reviewerId: string, directionId?: string): IdeaComment | undefined {
 	const comment = (directionId ?? "fit-check") === "fit-check" ? fitCheckIdeaComments[reviewerId] : undefined;
 	const author = sampleReviewerPeople[reviewerId];
-	return comment && author ? { ...comment, id: `idea-comment-${reviewerId}`, author, createdAt: new Date().toISOString() } : undefined;
+	if (!comment || !author) return undefined;
+	const { fy, ...rest } = comment;
+	// Pinned on its part, as a comment on the prototype is on its screen.
+	return { ...ideaCommentAt(comment.part, undefined, fy), ...rest, id: `idea-comment-${reviewerId}`, author, createdAt: new Date().toISOString() };
+}
+
+/** Jordan, on Dana's product team: who flags something unclear once it's advanced and shared. */
+export const sampleTeamMember: PrototypeCommentAuthor = { name: "Jordan Lee", role: "Online shopping squad", avatarSrc: samplePersonPhoto("Jordan Lee") };
+
+/** How long after she shares the advanced idea Jordan flags a part as unclear, in the demo. */
+export const sampleBuildFlagMs = 4000;
+
+/**
+ * Once it's advanced and shared (prds/sparks-review.md, "Something unclear after it advances"): Jordan's comment, flagging
+ * an acceptance criterion as unclear, and the fix Sparks proposes: the criterion as it is, as it would read, and why.
+ */
+export function sampleBuildFlag(concept: ConceptForReview, directionId?: string) {
+	const flag = reviewProfileFor(directionId).buildFlag;
+	const criterion = concept.stories.flatMap((item) => item.criteria).find((text) => flag && text.includes(flag.from));
+	if (!flag || !criterion) return undefined;
+	const comment: IdeaComment = {
+		// Pinned on the user stories, low, near the criteria.
+		...ideaCommentAt(flag.part, undefined, 0.7),
+		id: "idea-comment-build-flag",
+		part: flag.part,
+		text: flag.text,
+		createdAt: new Date().toISOString(),
+		author: sampleTeamMember,
+		unclear: true,
+	};
+	return { comment, from: flag.from, to: flag.to, criterion, suggestion: criterion.replace(flag.from, flag.to), why: flag.why };
 }
 
 /** The comment a team pins on the prototype as it reviews (prds/sparks-review.md, "What reviewers see and do"), by reviewer id. */

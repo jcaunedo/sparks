@@ -64,6 +64,12 @@ type PrototypePanelProps = {
 	comments?: PrototypeComment[];
 	onCommentsChange?: (comments: PrototypeComment[]) => void;
 	/**
+	 * Adding a comment (a click on the prototype drops a pin), kept outside: "Add comment" is in the Comments panel
+	 * (`AddCommentButton`), not on this toolbar. Without `onCommentingChange`, the panel keeps it and has its own button.
+	 */
+	commenting?: boolean;
+	onCommentingChange?: (on: boolean) => void;
+	/**
 	 * The paths: one per direction built (prds/sparks-prototype.md, "Paths"), labeled as in the directions ("2. Flag
 	 * often-returned parts"). One leads the toolbar as its name; with more than one, as a switcher.
 	 */
@@ -169,6 +175,43 @@ function ScreenArrow({ direction, to, disabled, onClick }: { direction: -1 | 1; 
 const toggleClasses =
 	"aria-pressed:bg-primary aria-pressed:text-primary-foreground aria-pressed:hover:bg-[color-mix(in_srgb,var(--primary)_90%,black)] aria-pressed:hover:text-primary-foreground";
 
+/**
+ * "Add comment", in the Comments panel's header, beside its X (prds/sparks-prototype.md, "Commenting on it"): turns adding
+ * a comment on the prototype on and off, filled with the brand color while on. The same button on Dana's and the
+ * reviewers' pages.
+ */
+function AddCommentButton({
+	pressed,
+	onPressedChange,
+	disabled,
+}: {
+	pressed: boolean;
+	onPressedChange: (pressed: boolean) => void;
+	/**
+	 * Nothing to comment on here (Plan, Evaluate, a prototype being built): shown, but it can't be selected, and its
+	 * tooltip says where comments are added. `aria-disabled`, not `disabled`, so the tooltip still shows on hover and focus.
+	 */
+	disabled?: { hint: string };
+}) {
+	if (disabled)
+		return (
+			<HeaderIconButton
+				label='Add comment'
+				tooltip={disabled.hint}
+				aria-disabled
+				className='cursor-not-allowed opacity-50 hover:bg-transparent'
+				onClick={(event) => event.preventDefault()}
+			>
+				<MessageCirclePlus aria-hidden />
+			</HeaderIconButton>
+		);
+	return (
+		<HeaderIconButton label='Add comment' aria-pressed={pressed} className={toggleClasses} onClick={() => onPressedChange(!pressed)}>
+			<MessageCirclePlus aria-hidden />
+		</HeaderIconButton>
+	);
+}
+
 /** A row of buttons for one choice: the audience, or the device. */
 function Switcher<T extends string>({
 	label,
@@ -237,6 +280,8 @@ function PrototypePanel({
 	mentionable,
 	comments: commentsProp,
 	onCommentsChange,
+	commenting: commentingProp,
+	onCommentingChange,
 	openComment,
 	onOpenCommentChange,
 	paths = [],
@@ -296,7 +341,9 @@ function PrototypePanel({
 	const { prefersReducedMotion } = useMotionPreference();
 	// Comments on the prototype (prds/sparks-prototype.md, "Commenting on it"): "Add comment" and pointing ("Edit
 	// element") are one mode at a time.
-	const [commenting, setCommenting] = React.useState(false);
+	const [commentingState, setCommentingState] = React.useState(false);
+	const commenting = onCommentingChange ? Boolean(commentingProp) : commentingState;
+	const setCommenting = (on: boolean) => (onCommentingChange ? onCommentingChange(on) : setCommentingState(on));
 	const [commentsState, setCommentsState] = React.useState<PrototypeComment[]>([]);
 	const comments = onCommentsChange ? (commentsProp ?? []) : commentsState;
 	const setComments = (update: (current: PrototypeComment[]) => PrototypeComment[]) =>
@@ -319,6 +366,10 @@ function PrototypePanel({
 	React.useEffect(() => {
 		if (pointing) setCommenting(false);
 	}, [pointing]);
+	// Adding a comment, turned on from the Comments panel, stops pointing ("Edit element"): one mode at a time.
+	React.useEffect(() => {
+		if (commenting && pointing) onPointingChange?.(false);
+	}, [commenting]);
 	// Esc stops commenting, unless it's closing a comment's popover.
 	React.useEffect(() => {
 		if (!commenting) return;
@@ -514,8 +565,9 @@ function PrototypePanel({
 							<MousePointerClick aria-hidden />
 						</HeaderIconButton>
 					) : null}
-					{/* "Add comment": a click on the prototype drops a pin and opens the comment's popover (Esc stops it). */}
-					{commentAuthor ? (
+					{/* "Add comment": a click on the prototype drops a pin and opens the comment's popover (Esc stops it). Here only
+					    when the panel keeps it; otherwise it's in the Comments panel. */}
+					{commentAuthor && !onCommentingChange ? (
 						<HeaderIconButton
 							label='Add comment'
 							aria-pressed={commenting}
@@ -566,4 +618,4 @@ function PrototypePanel({
 	);
 }
 
-export { FitPhone, phoneSize, PrototypeNote, PrototypePanel, ScreenArrow, prototypeDeviceClasses, type PrototypeBuild, type PrototypeAudience, type PrototypeDevice, type PrototypePanelProps };
+export { AddCommentButton, FitPhone, phoneSize, PrototypeNote, PrototypePanel, ScreenArrow, prototypeDeviceClasses, type PrototypeBuild, type PrototypeAudience, type PrototypeDevice, type PrototypePanelProps };

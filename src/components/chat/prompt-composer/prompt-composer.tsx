@@ -239,6 +239,8 @@ function PromptComposer({
 							side='top'
 							align='start'
 							sideOffset={8}
+							// 40px wider than the menu panel's 200px minimum (DESIGN.md → "The "+" menu is 240px").
+							className='min-w-[240px]'
 							// Closing it, she's back to her message: focus goes to the box, caret at the end, not to "+".
 							onCloseAutoFocus={(event) => {
 								event.preventDefault();

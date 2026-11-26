@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils";
 import { MentionText, type PrototypeComment } from "../prototype/prototype-comments";
 import { ReviewerList, viewTone, type IdeaComment, type Reviewer } from "../review/review-panel";
 import { SidePanel } from "./side-panel";
+import { AddCommentButton } from "../prototype/prototype-panel";
 
 type CommentsPanelProps = {
 	/** The reviewers, with their status and, once given, their comment, view and why. Empty before the concept is in review. */
@@ -30,6 +31,11 @@ type CommentsPanelProps = {
 	/** Selecting one opens its part in Review, brought into view. */
 	onOpenIdeaComment?: (id: string) => void;
 	onClose: () => void;
+	/**
+	 * "Add comment" beside the X, while something that takes comments is on screen (the prototype, the idea for review):
+	 * adding one, on or off. Without it, the button shows but can't be selected, and says where comments are added.
+	 */
+	adding?: { on: boolean; onChange: (on: boolean) => void };
 	/** Take focus when it opens (it only opens from "Comments"). */
 	autoFocus?: boolean;
 	className?: string;
@@ -126,12 +132,22 @@ function IdeaCommentRow({ comment, onOpen }: { comment: IdeaComment; onOpen?: (i
 					</time>
 				</span>
 				<span className='truncate text-xs text-muted-foreground'>On "{comment.part}"</span>
+				{/* The text it's about, when it started from a selection. */}
+				{comment.quote ? <span className='line-clamp-2 border-s-2 border-border-defined ps-2 text-xs text-muted-foreground'>{comment.quote}</span> : null}
 				<span className='text-sm whitespace-pre-line text-foreground'>{comment.text}</span>
 				{comment.unclear ? (
 					<span className='pt-0.5'>
 						<Badge variant='flat' tone='amber' size='xxs'>
 							Unclear
 						</Badge>
+					</span>
+				) : null}
+				{comment.addressed ? (
+					<span className='flex items-start gap-1 pt-0.5 text-xs text-muted-foreground'>
+						<CircleCheck aria-hidden className='mt-px size-3.5 shrink-0 text-success' />
+						<span>
+							<span className='font-medium text-success'>Addressed.</span> {comment.addressed}
+						</span>
 					</span>
 				) : null}
 			</span>
@@ -162,6 +178,7 @@ function CommentsPanel({
 	ideaComments = [],
 	onOpenIdeaComment,
 	onClose,
+	adding,
 	autoFocus,
 	className,
 }: CommentsPanelProps) {
@@ -190,7 +207,21 @@ function CommentsPanel({
 	}, [open]);
 
 	return (
-		<SidePanel title='Comments' closeLabel='Close comments' onClose={onClose} autoFocus={autoFocus} className={className} bodyClassName='gap-6'>
+		<SidePanel
+			title='Comments'
+			actions={
+				<AddCommentButton
+					pressed={Boolean(adding?.on)}
+					onPressedChange={(on) => adding?.onChange(on)}
+					disabled={adding ? undefined : { hint: "Add comments in Prototype and Review" }}
+				/>
+			}
+			closeLabel='Close comments'
+			onClose={onClose}
+			autoFocus={autoFocus}
+			className={className}
+			bodyClassName='gap-6'
+		>
 			{open ? (
 				<article aria-label={`${open.department}'s comment`} className='flex flex-col gap-4'>
 					<Button ref={backRef} variant='link' className='h-auto w-fit gap-1 p-0 font-semibold text-link' onClick={backToList}>

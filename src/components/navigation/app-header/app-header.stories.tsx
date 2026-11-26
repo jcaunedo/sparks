@@ -120,7 +120,7 @@ export const SparksProject: Story = {
 	},
 };
 
-/** "Sparks Project" in Review: "Share" shows from Review on (Figma `showShareButton`). */
+/** "Sparks Project" with "Share" (in every step; Figma `showShareButton`). */
 export const SparksProjectWithShare: Story = {
 	args: {
 		logo: <ProjectStart name='Wrong-part returns' />,

@@ -317,7 +317,7 @@ export const sampleRealDataReply = prototypeReply(
 
 export const sampleShareReply = prototypeReply(
 	"prototype-change",
-	"The teams see it in Review, once you publish it there. Until then, it's only yours, and whoever you add as a collaborator with \"Share\", who works on it with you.",
+	"Add them with \"Share\": with \"Can view\" or \"Can comment\", they see it once you publish it, in Review. With \"Can edit\", they work on it with you right away.",
 );
 
 /** What she can ask for in words, by direction, after a change Sparks can't make. */

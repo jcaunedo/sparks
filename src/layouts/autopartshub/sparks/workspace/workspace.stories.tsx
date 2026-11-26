@@ -42,6 +42,7 @@ import {
 	sampleProblemUnclearReply,
 	sampleProblemWhoReply,
 	sampleProblemWhoReplyAfter,
+	sampleProblemEvidenceMoreReply,
 	sampleProblemWhyReply,
 	type ProblemCorrectable,
 } from "../plan/sample-problem";
@@ -151,9 +152,15 @@ import {
 	sampleRunStepMs,
 	sampleValidateStartedReply,
 } from "../validate/sample-validate";
+import { PublishPanel } from "../review/review-next";
 import { ReviewPanel, reviewPartTitles, type IdeaComment, type Reviewer, type ReviewNext, type ReviewStatus } from "../review/review-panel";
 import {
 	sampleConceptForReview,
+	sampleBuildFlag,
+	sampleBuildFlagMs,
+	sampleProductTeam,
+	sampleReadyToBuild,
+	sampleTeamMember,
 	sampleDecision,
 	sampleDecisionMs,
 	sampleDecisionOwner,
@@ -164,6 +171,7 @@ import {
 	sampleReviewerViews,
 	sampleReviewerPin,
 	sampleReviewerIdeaComment,
+	sampleReviewerPeople,
 	sampleReviewBuildFinished,
 	sampleReviewBuildProgress,
 	sampleReviewBuilt,
@@ -176,8 +184,8 @@ import {
 	sampleInvitation,
 	sampleDepartmentsInWords,
 } from "../review/sample-review";
-import { sampleDirectory, sampleMentionable, sampleShareDepartment, sampleShareLink, sampleShareMemberFor, sampleShareOwner } from "../shared/sample-share";
-import type { ShareMember } from "./share-popover";
+import { sampleDirectory, sampleMentionable, samplePeopleIn, sampleShareDepartment, sampleShareLink, sampleShareMemberFor, sampleShareOwner } from "../shared/sample-share";
+import type { ShareMember } from "@/components/overlays/share-popover";
 import { sampleConceptName, sampleInitialPrompt, sampleMessages } from "./sample-concept";
 import {
 	SparksWorkspace,
@@ -469,7 +477,6 @@ function WorkspacePrototype(props: SparksWorkspaceProps) {
 		if (appliedIds.current === messageIds) return;
 		appliedIds.current = messageIds;
 		setRawMessages(props.messages);
-		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [messageIds]);
 	React.useEffect(() => setConceptName(props.conceptName), [props.conceptName]);
 	// The step Dana is on and the furthest reached; "Yes, build it" moves both to Prototype.
@@ -617,6 +624,8 @@ function WorkspacePrototype(props: SparksWorkspaceProps) {
 	};
 	// "Edit element": on while she picks; then the element she picked, until she says what to change.
 	const [pointing, setPointing] = React.useState(false);
+	// Adding a comment on the prototype: turned on with "Add comment" in the Comments panel.
+	const [addingComment, setAddingComment] = React.useState(false);
 	// Her comments on the prototype, kept here so the Comments panel lists them; the one opened from there.
 	const [prototypeComments, setPrototypeComments] = React.useState<PrototypeComment[]>(() =>
 		// What others left while she was away, for an idea opened with comments: on the path it's on.
@@ -626,6 +635,8 @@ function WorkspacePrototype(props: SparksWorkspaceProps) {
 	const [newComments, setNewComments] = React.useState<string[]>(() => (props.comments?.prototype ?? []).map((c) => c.id));
 	// The reviewers' comments on parts of the idea, and the part to bring into view in Review when one is opened.
 	const [ideaComments, setIdeaComments] = React.useState<IdeaComment[]>([]);
+	// The comment on the idea whose thread is open (from the Comments panel, or its pin).
+	const [openIdeaComment, setOpenIdeaComment] = React.useState<string>();
 	const [focusPart, setFocusPart] = React.useState<{ part: string; key: number }>();
 	const [openPrototypeComment, setOpenComment] = React.useState<string | undefined>(undefined);
 	/** Opened from the panel or on its pin: it's read. */
@@ -809,6 +820,13 @@ function WorkspacePrototype(props: SparksWorkspaceProps) {
 		shared?: boolean;
 		/** The prototype version the teams see, once she's published (prds/sparks-review.md, "Publishing"). */
 		published?: number;
+		/**
+		 * Advanced and shared: what the team who builds it flagged as unclear, Sparks's fix (hers to edit) and what she did
+		 * (prds/sparks-review.md, "Something unclear after it advances").
+		 */
+		buildFlag?: { commentId: string; text: string; criterion: string; suggestion: string; why: string; edited?: boolean; outcome?: "made" | "skipped" };
+		/** Clarifications she made after it advanced: a criterion as it was, and as it reads now. */
+		clarified?: { from: string; to: string }[];
 	}>(() =>
 		// A story (or an idea reopened) that starts on Review, or past it: the idea, put together.
 		(props.reachedStep ?? props.currentStep) === "review"
@@ -833,6 +851,7 @@ function WorkspacePrototype(props: SparksWorkspaceProps) {
 			evaluation: reviewEvaluation,
 			engineeringEffort: extra.engineeringEffort ?? review?.engineeringEffort,
 			openQuestions: extra.openQuestions ?? review?.openQuestions,
+			clarified: review?.clarified,
 		});
 	/**
 	 * Review opens (prds/sparks-review.md, "Review's screen"): no conversation; Sparks puts the idea together on the left,
@@ -871,9 +890,31 @@ function WorkspacePrototype(props: SparksWorkspaceProps) {
 				{ ...withNewId(sampleReviewStartedReply), step: "prototype" },
 			]);
 	};
-	/** The teams get this version of the idea and its prototype, and the invitation. */
+	const [shareMembers, setShareMembers] = React.useState<ShareMember[]>(() => [sampleShareOwner(props.user.firstName, props.user.avatarSrc)]);
+	const addMembers = (added: ShareMember[]) =>
+		setShareMembers((current) => [...current, ...added.filter((member) => !current.some((m) => m.id === member.id))]);
+	// Who reviews it: the people Sparks suggests for this idea (by its direction), first, then their teams, added with
+	// "Share" (prds/sparks-review.md, "Who to invite"). Who she's added is who the invitation goes to; a team reviews once
+	// it, or its person, is in.
+	const suggestedPeople = sampleReviewersFor(reviewId).flatMap((reviewer) => {
+		const person = sampleReviewerPeople[reviewer.id];
+		if (!person) return [];
+		const member = sampleShareMemberFor(person.name, "commenter");
+		return [{ reviewer, member, detail: member.detail }];
+	});
+	const suggestedTeams = sampleReviewersFor(reviewId).map((reviewer) => {
+		const team = sampleShareDepartment(reviewer.department);
+		return { reviewer, member: team, detail: team.detail };
+	});
+	const suggestedReviewers = [...suggestedPeople, ...suggestedTeams];
+	const reviewersInShare = sampleReviewersFor(reviewId).filter((reviewer) =>
+		suggestedReviewers.some((s) => s.reviewer.id === reviewer.id && shareMembers.some((m) => m.id === s.member.id && m.role !== "owner")),
+	);
+	const addedReviewers = shareMembers.filter((m) => m.role === "commenter" || m.role === "viewer");
+	const inWords = (names: string[]) => (names.length < 2 ? names.join("") : `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}`);
+	/** The teams she added with "Share" get this version of the idea and its prototype, and the invitation. */
 	const publishIt = () =>
-		setReview((current) => (current ? { ...current, status: { kind: "in-review" }, reviewers: sampleReviewersFor(reviewId), published: reviewData.versions.length } : current));
+		setReview((current) => (current ? { ...current, status: { kind: "in-review" }, reviewers: reviewersInShare, published: reviewData.versions.length } : current));
 	const publishUpdate = (version: number) => setReview((current) => (current ? { ...current, published: version } : current));
 	/** "Publish", "Publish update" or "Published", in the header, on Review (prds/sparks-review.md, "Publishing"). */
 	const publishAction = (() => {
@@ -902,10 +943,46 @@ function WorkspacePrototype(props: SparksWorkspaceProps) {
 				owner: review.decision.owner,
 				reason: review.decision.reason,
 				departments: sampleDepartmentsInWords(reviewId),
+				team: `your product team, the ${sampleProductTeam.toLowerCase()}`,
+				ready: review.decision.kind === "advance" ? sampleReadyToBuild(concept(), reviewChanges, reviewId) : undefined,
+				flag: review.buildFlag
+					? {
+							who: `${sampleTeamMember.name}, from your product team`,
+							text: review.buildFlag.text,
+							criterion: review.buildFlag.criterion,
+							suggestion: review.buildFlag.suggestion,
+							why: review.buildFlag.why,
+							edited: Boolean(review.buildFlag.edited),
+							outcome: review.buildFlag.outcome,
+							onChange: (text) => update({ buildFlag: { ...review.buildFlag!, suggestion: text, edited: true } }),
+							onMake: () => {
+								const flag = review.buildFlag!;
+								update({ buildFlag: { ...flag, outcome: "made" }, clarified: [...(review.clarified ?? []), { from: flag.criterion, to: flag.suggestion }] });
+								// Jordan, and everyone it's shared with, sees how it was addressed, under the comment.
+								// Her reply in its thread, as she'd answer it on the idea herself.
+								const how = `I changed the acceptance criterion: "${flag.suggestion}"`;
+								setIdeaComments((current) =>
+									current.map((c) =>
+										c.id === flag.commentId
+											? {
+													...c,
+													addressed: `${props.user.firstName} changed the acceptance criterion: "${flag.suggestion}"`,
+													replies: [
+														...(c.replies ?? []),
+														{ id: `reply-${Date.now()}`, text: how, createdAt: new Date().toISOString(), author: { name: `${props.user.firstName} Morales`, avatarSrc: props.user.avatarSrc } },
+													],
+												}
+											: c,
+									),
+								);
+							},
+							onSkip: () => update({ buildFlag: { ...review.buildFlag!, outcome: "skipped" } }),
+						}
+					: undefined,
 				shared: Boolean(review.shared),
-				// The same sharing as "Share": the reviewers' departments join "Who has access".
+				// The same sharing as "Share": her product team, then the reviewers' departments, join "Who has access".
 				onShare: () => {
-					addMembers(sampleReviewersFor(reviewId).map((reviewer) => sampleShareDepartment(reviewer.department)));
+					addMembers([sampleProductTeam, ...sampleReviewersFor(reviewId).map((reviewer) => reviewer.department)].map(sampleShareDepartment));
 					update({ shared: true });
 				},
 				onEvaluate: evaluateIt,
@@ -960,10 +1037,9 @@ function WorkspacePrototype(props: SparksWorkspaceProps) {
 		return {
 			kind: "publish",
 			version: latest,
-			teams: sampleReviewersFor(reviewId),
 			invitation: review.invitation ?? sampleInvitation(review.skipped, reviewId),
 			onInvitationChange: (invitation) => update({ invitation }),
-			goesTo: sampleDepartmentsInWords(reviewId),
+			goesTo: inWords(addedReviewers.map((member) => member.name)),
 			onEvaluate: review.skipped ? evaluateIt : undefined,
 		};
 	})();
@@ -973,6 +1049,25 @@ function WorkspacePrototype(props: SparksWorkspaceProps) {
 			review?.published !== undefined && reviewPath === chosenId && review.published === versions.length && savedVersion.current === versions.length + 1;
 		return first ? sampleWithTeamsNote(reply, versions.length) : reply;
 	};
+	// Advanced and shared: a while later, someone on her product team flags an acceptance criterion as unclear, and
+	// Sparks proposes a fix in the next step (prds/sparks-review.md, "Something unclear after it advances").
+	React.useEffect(() => {
+		if (!review?.shared || review.decision?.kind !== "advance" || review.buildFlag) return;
+		const flag = sampleBuildFlag(concept(), reviewId);
+		if (!flag) return;
+		const timer = window.setTimeout(() => {
+			setIdeaComments((current) => [...current, { ...flag.comment, createdAt: new Date().toISOString() }]);
+			setReview((current) =>
+				current
+					? {
+							...current,
+							buildFlag: { commentId: flag.comment.id, text: flag.comment.text, criterion: flag.criterion, suggestion: flag.suggestion, why: flag.why },
+						}
+					: current,
+			);
+		}, sampleBuildFlagMs);
+		return () => window.clearTimeout(timer);
+	}, [review?.shared, review?.decision?.kind, review?.buildFlag, reviewId]);
 	// Putting the idea together: one step at a time (getting ready, each part, what's open and who to ask).
 	React.useEffect(() => {
 		if (!review || review.buildStep === undefined) return;
@@ -1045,9 +1140,6 @@ function WorkspacePrototype(props: SparksWorkspaceProps) {
 			? review.reviewers.filter((r) => (r.status === "commented" || r.status === "view") && readFeedback[r.id] !== r.status).map((r) => r.id)
 			: [];
 	// "Share": who has access, Dana first; added people and departments after her, newest last, each once.
-	const [shareMembers, setShareMembers] = React.useState<ShareMember[]>(() => [sampleShareOwner(props.user.firstName, props.user.avatarSrc)]);
-	const addMembers = (added: ShareMember[]) =>
-		setShareMembers((current) => [...current, ...added.filter((member) => !current.some((m) => m.id === member.id))]);
 	// The parts of the plan she's changed (by changing an answer) since the prototype last matched it: while there are
 	// any, the prototype shows a note (prds/sparks-prototype.md, "When the plan changes").
 	const [outdated, setOutdated] = React.useState<PlanPartId[]>([]);
@@ -1073,7 +1165,15 @@ function WorkspacePrototype(props: SparksWorkspaceProps) {
 			]),
 		openComment: openPrototypeComment,
 		onOpenCommentChange: setOpenPrototypeComment,
+		commenting: addingComment,
+		onCommentingChange: setAddingComment,
 	};
+	// A prototype that takes comments is on screen (built, in Prototype, or in Review): "Add comment" shows in the Comments
+	// panel. Leaving it stops adding one.
+	const commentable = (step === "prototype" && isBuilt) || (step === "review" && Boolean(review) && review?.buildStep === undefined);
+	React.useEffect(() => {
+		if (!commentable) setAddingComment(false);
+	}, [commentable]);
 
 	// The screen being built, shown as it's assembled; the last one stays while Sparks checks it all.
 	const prototypeBuild = (() => {
@@ -1156,7 +1256,6 @@ function WorkspacePrototype(props: SparksWorkspaceProps) {
 		knownIds.current = libraryIds;
 		if (isNew && !fromPanel.current) setLibraryAddedKey((key) => key + 1);
 		fromPanel.current = false;
-		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [libraryIds]);
 	// The Problem summary lists what she added, as it stands.
 	const added = addedFrom(library);
@@ -1169,7 +1268,6 @@ function WorkspacePrototype(props: SparksWorkspaceProps) {
 				m.from === "sparks" && m.parts.some(stale) ? { ...m, parts: m.parts.map((p) => (p.kind === "problem" ? { ...p, problem: { ...p.problem, added } } : p)) } : m,
 			);
 		});
-		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [addedKey]);
 	// How many of the Problem part's steps Sparks has asked so far.
 	const stepsAsked = problemSteps.filter((step) => messages.some((m) => m.from === "sparks" && m.id.startsWith(step.id))).length;
@@ -1487,7 +1585,12 @@ function WorkspacePrototype(props: SparksWorkspaceProps) {
 							: newApp
 								? sampleProblemEvidenceNewAppReply
 								: onEvidence
-									? sampleProblemWhoReplyAfter(sentNames, sampleProblemAddedWords(text))
+									? // She added something: Sparks asks once if there's anything else; after that (more, or "That's all"), on to who.
+										lastAsk?.id.startsWith("problem-evidence-more")
+										? sampleProblemWhoReplyAfter(sentNames, sampleProblemAddedWords(text), !(sentNames.length || sampleProblemAddedWords(text)))
+										: sentNames.length || sampleProblemAddedWords(text)
+											? sampleProblemEvidenceMoreReply(sentNames, sampleProblemAddedWords(text))
+											: sampleProblemWhoReplyAfter([])
 							: stepsAsked < problemSteps.length
 								? problemSteps[stepsAsked]
 								: sampleProblemDoneReply(problem),
@@ -1708,7 +1811,26 @@ function WorkspacePrototype(props: SparksWorkspaceProps) {
 				// Typing in the field lists the people and departments that match.
 				directory: sampleDirectory,
 				onRoleChange: (id, role) => setShareMembers((current) => current.map((m) => (m.id === id ? { ...m, role } : m))),
+				onRemove: (id) => setShareMembers((current) => current.filter((m) => m.id !== id)),
+				// Selecting a team's name lists its people.
+				peopleIn: samplePeopleIn,
+				onTeamPeopleChange: (id, excluded) => setShareMembers((current) => current.map((m) => (m.id === id ? { ...m, excluded } : m))),
 				link: sampleShareLink,
+				// The reviewers Sparks suggests for this idea, in every step once there's a direction: its people (their job title
+				// and team), then their teams (how many people).
+				recommended:
+					paths.length
+						? {
+								people: suggestedReviewers.map(({ member, detail }) => ({ name: member.name, kind: member.kind, detail, avatarSrc: member.avatarSrc })),
+								// A team comes with the people she unchecked in its popover left out.
+								onAdd: (name, excluded) =>
+									addMembers(
+										suggestedReviewers
+											.filter(({ member }) => member.name === name)
+											.map(({ member }) => (member.kind === "department" && excluded.length ? { ...member, excluded } : member)),
+									),
+							}
+						: undefined,
 			}}
 			paths={{ built: paths, active: chosenId, onRun: runDirection }}
 			library={{
@@ -1722,7 +1844,17 @@ function WorkspacePrototype(props: SparksWorkspaceProps) {
 				onRemove: (id) => setLibraryRemoved((current) => [...current, id]),
 			}}
 			// In the header, on Review only.
-			publish={step === "review" ? publishAction : undefined}
+			// The first time, "Publish" opens who reviews it and the invitation, to check and change before it goes.
+			publish={
+				step === "review" && publishAction
+					? {
+							...publishAction,
+							panel: reviewNext?.kind === "publish" ? <PublishPanel next={reviewNext} /> : undefined,
+							// No one to send it to until she adds reviewers with "Share".
+							blocked: !reviewersInShare.length,
+						}
+					: undefined
+			}
 			// Evaluate's and Review's empty states, once the prototype is built: the same as "Yes, evaluate it" and "Add to Review".
 			upcomingActions={
 				isBuilt
@@ -1768,6 +1900,10 @@ function WorkspacePrototype(props: SparksWorkspaceProps) {
 			onAnswerCancel={cancelAnswer}
 			onAnswerChange={changeAnswer}
 			onAddPlan={reached === "plan" ? addPlan : undefined}
+			// The demo's way to the reviewers' page, from any step: the published idea, in its own tab.
+			onSeeTeamsView={() => openStoryInNewTab(storyIds.sparksPublishedIdea)}
+			// The demo's jump to Review, with the idea put together (story "Review Ready").
+			onGoToReview={() => goToStory(storyIds.sparksReviewReady)}
 			// Comments: the reviewers' feedback once it's in review; the dot while there's feedback she hasn't opened yet.
 			comments={{
 				reviewers: review?.status.kind === "ready" ? [] : (review?.reviewers ?? []),
@@ -1777,6 +1913,7 @@ function WorkspacePrototype(props: SparksWorkspaceProps) {
 					if (status) setReadFeedback((current) => ({ ...current, [id]: status }));
 				},
 				prototype: prototypeComments,
+				adding: commentable ? { on: addingComment, onChange: setAddingComment } : undefined,
 				// Opening one shows its path first.
 				idea: ideaComments,
 				// From any step: Review opens, with the part brought into view.
@@ -1785,6 +1922,7 @@ function WorkspacePrototype(props: SparksWorkspaceProps) {
 					if (!part) return;
 					if (step !== "review") setStep("review");
 					setFocusPart({ part, key: Date.now() });
+					setOpenIdeaComment(id);
 				},
 				// From any step: Prototype opens on its path, with the comment's thread open on its pin.
 				onOpenPrototypeComment: (id) => {
@@ -1822,8 +1960,23 @@ function WorkspacePrototype(props: SparksWorkspaceProps) {
 							building={review.buildStep === undefined ? undefined : sampleReviewBuilt(reviewPartTitles, review.skipped, review.buildStep)}
 							published={review.published}
 							focusPart={focusPart}
+							// Her comments on parts of the idea, with the teams': "Comment" on each part, or "Add comment" in Comments.
+							comments={{
+								items: ideaComments,
+								onChange: setIdeaComments,
+								author: { name: `${props.user.firstName} Morales`, avatarSrc: props.user.avatarSrc },
+								adding: addingComment,
+								mentionable: sampleMentionable,
+								openId: openIdeaComment,
+								onOpenChange: setOpenIdeaComment,
+							}}
 							// Opens the reviewers' page for the version they see, in its own tab.
-							onOpenPublished={() => openStoryInNewTab(storyIds.sparksPublishedIdea, { version: review.published })}
+							// Once advanced and shared, the page the team who builds it opens: what to build first.
+							onOpenPublished={() =>
+								review.shared && review.decision?.kind === "advance"
+									? openStoryInNewTab(storyIds.sparksAdvancedIdea)
+									: openStoryInNewTab(storyIds.sparksPublishedIdea, { version: review.published })
+							}
 						/>
 						{/* As the teams get it: to try and comment on; changed in Prototype, so no "Edit element" and no restoring. */}
 						<PrototypePanel
@@ -2326,15 +2479,19 @@ export const PrototypeBuilding: Story = {
 	},
 };
 
-/** The prototype built: Sparks's introduction and "Ready for me to put it through its paces?". Not in Figma yet. */
+/**
+ * The prototype built: Sparks's introduction and "Ready for me to put it through its paces?". Plan got there the usual
+ * way, "Generate prototype" on Sparks's pick, so its conversation ends at the directions; her message and Sparks's
+ * progress are Prototype's. Not in Figma yet.
+ */
 export const PrototypeReady: Story = {
 	args: {
 		conceptName: sampleConceptName,
 		currentStep: "prototype",
 		reachedStep: "prototype",
 		messages: [
-			...approveChosen(WhatWellBuild.args?.messages ?? []),
-			{ id: "u15", from: "user", text: sampleBuildIt },
+			...(Directions.args?.messages ?? []),
+			{ id: "u15", from: "user", text: `Generate a prototype of "${sampleDirectionFitCheck.name}".` },
 			{
 				...goOn(
 					samplePrototypeBuildingReply("fit-check", fitCheckScreens, sampleBuildSteps(fitCheckScreens).length),

@@ -1,5 +1,5 @@
 import * as React from "react";
-import { ArrowUp, AtSign, CircleCheck, RotateCcw, Trash2 } from "lucide-react";
+import { ArrowUp, AtSign, CircleCheck, MessageCirclePlus, RotateCcw, Trash2 } from "lucide-react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/data-display/avatar";
 import { Button } from "@/components/buttons/button";
@@ -9,7 +9,7 @@ import { formatRelativeDate } from "@/lib/relative-date";
 import { scrollContainerOf } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 
-import { handlePeopleKeys, matchPeople, PeopleList, type PeopleOption } from "../shared/people-list";
+import { handlePeopleKeys, matchPeople, PeopleList, type PeopleOption } from "@/components/forms/people-list";
 
 /*
  * Comments on the prototype (prds/sparks-prototype.md, "Commenting on it"): with "Add comment" on, a click on the
@@ -49,6 +49,10 @@ type CommentAnchor = {
 	screenAt?: { fx: number; fy: number };
 	/** What she clicked, in words ("Add your vehicle"), when it says something. */
 	where?: string;
+	/** The text she selected to comment on, when she started it from a selection: shown quoted above the comment. */
+	quote?: string;
+	/** Where that text is in its element's text (`point`, or `node`): highlighted there while the comment is open. */
+	quoteAt?: { start: number; length: number };
 };
 
 /** Where comments are being added: the audience and device shown. A pin shows only where it was added. */
@@ -87,6 +91,11 @@ type PrototypeCommentsProps = {
 	/** The comment whose popover is open, e.g. opened from the Comments panel; with `onOpenChange`, controlled. */
 	openId?: string;
 	onOpenChange?: (id: string | undefined) => void;
+	/**
+	 * Comments can start from selected text too: selecting text shows "Add comment" above it, which starts a comment
+	 * pinned where the selection starts, with the text quoted (the idea for review; not the prototype, whose text is UI).
+	 */
+	selectable?: boolean;
 	children: React.ReactNode;
 };
 
@@ -318,35 +327,93 @@ function CommentForm({
 	);
 }
 
-/** One message in a thread: avatar, name, team, when, then the text. */
+/** One message in a thread: avatar, name with their team under it, when, then the text. */
+/** How far above selected text "Add comment" floats, and the pin it becomes, in px. */
+const selectionGap = 8;
+
+/** The name of the highlight on the open comment's quoted text (CSS Custom Highlight API). */
+const quoteHighlight = "comment-quote";
+
+/**
+ * Where a comment's quoted text is now: in its element (its `point`, or the `node` it was made on), at `quoteAt`, or,
+ * if the text has changed since, wherever that text is found in it. None when it's gone.
+ */
+function quoteRange(content: HTMLElement, anchor: CommentAnchor): Range | undefined {
+	let element: HTMLElement | null | undefined = anchor.node?.isConnected && content.contains(anchor.node) ? anchor.node : null;
+	if (!element && anchor.point) element = content.querySelector<HTMLElement>(`[data-point="${CSS.escape(anchor.point)}"]`);
+	if (!element || !anchor.quote) return undefined;
+	const text = element.textContent ?? "";
+	const wanted = anchor.quote.replace(/…$/, "");
+	let start = anchor.quoteAt?.start ?? -1;
+	let length = anchor.quoteAt?.length ?? 0;
+	const at = (from: number, size: number) => text.slice(from, from + size).replace(/\s+/g, " ").trim();
+	if (start < 0 || !at(start, length).startsWith(wanted.slice(0, 40))) {
+		start = text.indexOf(wanted);
+		length = wanted.length;
+	}
+	if (start < 0) return undefined;
+	// From character offsets to a range over the element's text nodes.
+	const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT);
+	const range = document.createRange();
+	let seen = 0;
+	let started = false;
+	for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+		const size = node.textContent?.length ?? 0;
+		if (!started && start <= seen + size) {
+			range.setStart(node, start - seen);
+			started = true;
+		}
+		if (started && start + length <= seen + size) {
+			range.setEnd(node, start + length - seen);
+			return range;
+		}
+		seen += size;
+	}
+	return undefined;
+}
+
+/** The text a comment is about, quoted: a line on its left, muted, at most three lines. */
+function Quote({ text, className }: { text: string; className?: string }) {
+	return <p className={cn("line-clamp-3 border-s-2 border-border-defined ps-2 text-sm text-muted-foreground", className)}>{text}</p>;
+}
+
 function ThreadEntry({
 	author,
 	createdAt,
 	text,
+	quote,
 	mentions,
 	actions,
 }: {
 	author: PrototypeCommentAuthor;
 	createdAt: string;
 	text: string;
+	/** The text it's about (started from a selection), quoted above it. */
+	quote?: string;
 	mentions?: CommentMention[];
 	actions?: React.ReactNode;
 }) {
 	const time = formatRelativeDate(createdAt);
 	return (
-		<div className='flex flex-col gap-1'>
+		// 8px between the name, the quote and the text.
+		<div className='flex flex-col gap-2'>
 			<div className='flex items-center gap-2'>
 				<Avatar className='size-6'>
 					{author.avatarSrc ? <AvatarImage src={author.avatarSrc} alt='' /> : null}
 					<AvatarFallback className='text-[10px]'>{initials(author.name)}</AvatarFallback>
 				</Avatar>
-				<span className='text-sm font-semibold text-foreground'>{author.name}</span>
-				{author.role ? <span className='text-xs text-muted-foreground'>{author.role}</span> : null}
-				<time dateTime={createdAt} title={time.title} className='text-xs text-muted-foreground'>
+				{/* The name, with their team under it. */}
+				<span className='flex min-w-0 flex-col'>
+					<span className='text-sm font-semibold text-foreground'>{author.name}</span>
+					{author.role ? <span className='text-xs text-foreground'>{author.role}</span> : null}
+				</span>
+				{/* When, on the right, before the actions. */}
+				<time dateTime={createdAt} title={time.title} className='ms-auto shrink-0 text-xs text-muted-foreground'>
 					{time.label}
 				</time>
-				{actions ? <span className='ms-auto flex items-center gap-0.5'>{actions}</span> : null}
+				{actions ? <span className='flex items-center gap-0.5'>{actions}</span> : null}
 			</div>
+			{quote ? <Quote text={quote} className='ms-8' /> : null}
 			<p className='ps-8 text-sm whitespace-pre-line text-foreground'>
 				<MentionText text={text} mentions={mentions} />
 			</p>
@@ -385,6 +452,7 @@ function PrototypeComments({
 	mentionable,
 	openId: openIdProp,
 	onOpenChange,
+	selectable = false,
 	children,
 }: PrototypeCommentsProps) {
 	const contentRef = React.useRef<HTMLDivElement>(null);
@@ -466,10 +534,80 @@ function PrototypeComments({
 		const k = s.height / (scroller.offsetHeight || s.height || 1) || 1;
 		if (p.top < s.top + 24 || p.bottom > s.bottom - 24) scroller.scrollTop += (p.top - s.top - s.height / 3) / k;
 	}, [openId, openPlaced]);
-	// Turning "Add comment" off drops a comment she hadn't added.
+	// Turning "Add comment" off drops a comment she hadn't added, unless it started from a selection (no mode for that).
 	React.useEffect(() => {
-		if (!active) setDraft(null);
+		if (!active) setDraft((current) => (current?.quote ? current : null));
 	}, [active]);
+
+	// Selected text: "Add comment" above it, where the selection starts; it follows the text as it scrolls.
+	const [selection, setSelection] = React.useState<{ x: number; y: number; anchor: CommentAnchor } | null>(null);
+	React.useEffect(() => {
+		if (!selectable) return;
+		const update = () => {
+			const content = contentRef.current;
+			const wrapper = wrapperRef.current;
+			const picked = document.getSelection();
+			if (!content || !wrapper || !picked || picked.isCollapsed || !picked.rangeCount) return setSelection(null);
+			const range = picked.getRangeAt(0);
+			const quote = picked.toString().replace(/\s+/g, " ").trim();
+			if (!quote || !content.contains(range.commonAncestorContainer)) return setSelection(null);
+			const lines = [...range.getClientRects()].filter((rect) => rect.width > 0);
+			const first = lines[0] ?? range.getBoundingClientRect();
+			// The pin goes where "Add comment" shows, so the button becomes the pin: above where the selection starts, its corner
+			// `selectionGap` over the first line's top-left, on the part (`data-point`) it starts in, so it moves with it.
+			const begin = range.startContainer instanceof HTMLElement ? range.startContainer : range.startContainer.parentElement;
+			if (!begin) return setSelection(null);
+			const pointable = begin.closest<HTMLElement>("[data-point]");
+			const element = pointable && content.contains(pointable) ? pointable : begin;
+			const rect = element.getBoundingClientRect();
+			// Where the text starts in the element's text, to highlight it again while the comment is open.
+			const before = document.createRange();
+			before.setStart(element, 0);
+			before.setEnd(range.startContainer, range.startOffset);
+			const quoteAt = element.contains(range.startContainer) ? { start: before.toString().length, length: range.toString().length } : undefined;
+			const origin = wrapper.getBoundingClientRect();
+			setSelection({
+				x: first.left - origin.left,
+				y: first.top - origin.top,
+				anchor: {
+					point: element === pointable ? pointable.dataset.point : undefined,
+					node: element,
+					fx: (first.left - rect.left) / (rect.width || 1),
+					fy: (first.top - selectionGap - rect.top) / (rect.height || 1),
+					where: element === pointable ? describe(pointable, true) : undefined,
+					quote: quote.length > 280 ? `${quote.slice(0, 277)}…` : quote,
+					quoteAt,
+				},
+			});
+		};
+		document.addEventListener("selectionchange", update);
+		const scroller = contentRef.current ? scrollContainerOf(contentRef.current) : undefined;
+		scroller?.addEventListener("scroll", update, { passive: true });
+		return () => {
+			document.removeEventListener("selectionchange", update);
+			scroller?.removeEventListener("scroll", update);
+		};
+	}, [selectable]);
+	// The open comment's text (or the one being written from a selection), highlighted where it is.
+	const quoted = draft?.quote ? draft : shown.find((comment) => comment.id === openId && comment.quote);
+	React.useEffect(() => {
+		const content = contentRef.current;
+		if (!quoted || !content || typeof CSS === "undefined" || !("highlights" in CSS)) return;
+		const range = quoteRange(content, quoted);
+		if (!range) return;
+		CSS.highlights.set(quoteHighlight, new Highlight(range));
+		return () => {
+			CSS.highlights.delete(quoteHighlight);
+		};
+	}, [quoted]);
+
+	const startFromSelection = () => {
+		if (!selection) return;
+		setOpenId(undefined);
+		setDraft(selection.anchor);
+		setSelection(null);
+		document.getSelection()?.removeAllRanges();
+	};
 
 	// With "Add comment" on, a click on the prototype starts a comment there instead of using it; Enter starts one on
 	// the element with focus, in its middle.
@@ -497,6 +635,8 @@ function PrototypeComments({
 
 	return (
 		<div ref={wrapperRef} className='relative h-full'>
+			{/* The open comment's quoted text: the highlight's color (corn-100, as a marker pen). */}
+			{selectable ? <style>{`::highlight(${quoteHighlight}) { background-color: var(--corn-100); color: inherit; }`}</style> : null}
 			<div
 				ref={contentRef}
 				onClickCapture={start}
@@ -547,6 +687,7 @@ function PrototypeComments({
 									author={comment.author}
 									createdAt={comment.createdAt}
 									text={comment.text}
+									quote={comment.quote}
 									mentions={comment.mentions}
 									actions={
 										<>
@@ -610,6 +751,20 @@ function PrototypeComments({
 					</Popover>
 				);
 			})}
+			{/* Selected text: "Add comment" floats above where it starts (mousedown keeps the selection). Its hover darkens its
+			    own fill (the hover tint mixed into the popover color), never see-through: text sits under it. */}
+			{selection && !draft ? (
+				<button
+					type='button'
+					onMouseDown={(event) => event.preventDefault()}
+					onClick={startFromSelection}
+					className='absolute z-20 flex h-9 -translate-y-full items-center gap-2 rounded-button-lg border border-border bg-popover px-3 text-sm font-medium text-foreground shadow-2xl outline-none hover:bg-[color-mix(in_oklab,var(--foreground)_6%,var(--popover))] focus-visible:ring-2 focus-visible:ring-ring'
+					style={{ left: selection.x, top: selection.y - selectionGap }}
+				>
+					<MessageCirclePlus aria-hidden className='size-4 text-icon' />
+					Add comment
+				</button>
+			) : null}
 			{draft && positions.draft ? (
 				<Popover open onOpenChange={(open) => !open && setDraft(null)}>
 					<PopoverAnchor asChild>
@@ -624,6 +779,7 @@ function PrototypeComments({
 						// A click elsewhere on the prototype starts another comment instead; don't let it drop this one first.
 						onInteractOutside={(event) => contentRef.current?.contains(event.target as Node) && event.preventDefault()}
 					>
+						{draft.quote ? <Quote text={draft.quote} className='mx-4 mt-4' /> : null}
 						<CommentForm
 							mentionable={mentionable}
 							onSubmit={(text, mentions) => {

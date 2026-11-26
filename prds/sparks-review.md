@@ -2,7 +2,7 @@
 Created: Nov 21, 2026
 Created by: Julio Caunedo
 Last updated: Nov 25, 2026
-Latest update: Review is where collaboration starts: before it, "Share" only adds collaborators ("Can edit"), and the teams, and anyone who views or comments, come in here. Why: the teams give feedback on a version Dana chose to publish, not on her work in progress.
+Latest update: "Share" is the same in every step, so "View recommended reviewers" shows as soon as there's a direction, not only in Review; who she adds there sees the idea once she publishes it. Reviewers are chosen in "Share": "View recommended reviewers" shows the teams Sparks suggests for this idea, with how many people each has, each added with its circle-plus button; "Publish your idea" sends to who she added. Comments on the idea are the prototype's comments, pinned on the idea (pins, threads, replies, resolving), from "Add comment" or selected text (quoted), for Dana and the teams; no "Comment" on the parts' headings. Who reviews it and the invitation are in a popover from "Publish" ("Publish your idea"), no longer a part of the idea; Review's text and spacing match Evaluate's. The reviewers' page: their view is behind "Share your review" in the header, in a popover, and Dana's invitation is the email, no longer a box on the page; the version badge sits beside the idea's name. Handing it to development. When the team who builds it flags something as unclear, Sparks proposes a clarification in the next step, Dana makes it, edits it or leaves it, and they see how it was addressed. After Advance, Sparks checks it's ready to build ("Ready to build") and suggests her product team first; the team who builds it opens the advanced idea on what to build, next to the prototype, with why it's built this way after it. A new part, "What to track", says what the build must record to measure the success criteria. Review is also where collaboration starts: before it, "Share" only adds collaborators ("Can edit"). Why: the team who builds it needs what to build first, and to measure what Plan said success is; reviewers give feedback on a version Dana chose to publish.
 Recent updates: Review also opens from its explanation, with "Add to Review", besides "Add to Review" in Evaluate and "Go to Review instead" in Prototype. The reviewers' page is laid out as Dana's Review: the idea and the prototype side by side. Review has no conversation: the idea for review on the left, the final prototype on the right, and the next step at the top of the idea.
 Scope: Review, the last of a Sparks concept's four steps (Plan, Prototype, Evaluate, Review), where it advances or not: the concept prepared for review, bringing in the UX team, engineering and the departments involved, Dana's recommendation, the decision owner's decision, and what happens after.
 Purpose: defines how a concept enters AutoParts Co.'s product process instead of going around it: reviewed by the people who will shape it, decided by the person who owns the decision, and shared with the teams when it advances.
@@ -13,7 +13,7 @@ Purpose: defines how a concept enters AutoParts Co.'s product process instead of
 **Location:** the last of a Sparks concept's four steps. It opens when Dana selects ~~"Go ahead to Review"~~ "Add to Review" in Evaluate ([sparks-validate.md](sparks-validate.md), "Go ahead or keep improving"), or when she goes to Review after Prototype without running Evaluate ("Go to Review instead" in Prototype, or "Add to Review" on Review's explanation, [sparks.md](sparks.md), "Moving through the steps"), and whenever she selects Review in the steps once it's open. Reviewers and the decision owner reach it from their invitation.
 **Audience:** Dana, who prepares the concept and recommends; the UX team, engineering and the departments she brings in to review it; the decision owner, who decides; the people she shares an advanced concept with.
 **Description:** the step where Sparks prepares the concept for review, the right people review its feasibility and value, Dana recommends, and the decision owner decides whether it advances, iterates or stops.
-**Status:** defined. Built as a reference layout from this PRD (not in Figma yet), from Dana's side, with the reviewers and the decision owner simulated: ~~"Go ahead to Review"~~ "Add to Review" in Evaluate (or "Go to Review instead", with Evaluate skipped) opens Review with the concept for review ~~beside the conversation~~ beside the final prototype, with no conversation (`ReviewPanel`, `ReviewNextStep`, `PrototypePanel`); Sparks lists what's open, suggests the departments, drafts the invitation; the reviewers' status and views come in; Sparks summarizes and proposes changes; it drafts her recommendation and the decision owner decides; she shares an advanced concept. "Share" shows in the header ~~from Review on~~ in every step, and opens the share popover ([sparks.md](sparks.md), "Sharing a concept"). Everything follows the chosen direction: the concept for review comes from "What we'll build" (the hypothesis, why this direction, the trade-off, the other directions) with that direction's user stories, prototype and evaluation; the departments Sparks suggests (the returns team for "Flag often-returned parts", the catalog team for the others), their views, Sparks's proposals, its recommendation and the decision differ by direction. After the reviews, Sparks can propose a change to the prototype for every direction (the fix the UX team asks for: the flag as a reminder, the fit checked in the cart, the vehicle filled in at the counter), and the reviews and user stories reflect the fixes already made. A decision to go back to the choice reopens it in Plan. Not built: the reviewers' and decision owner's side (commenting, "Unclear" flags, asking Sparks), answering comments one by one, withdrawing, Stop, "Sending failed", and new versions after the decision.
+**Status:** defined. Built as a reference layout from this PRD (not in Figma yet), from Dana's side, with the reviewers and the decision owner simulated: ~~"Go ahead to Review"~~ "Add to Review" in Evaluate (or "Go to Review instead", with Evaluate skipped) opens Review with the concept for review ~~beside the conversation~~ beside the final prototype, with no conversation (`ReviewPanel`, `ReviewNextStep`, `PrototypePanel`); Sparks lists what's open, suggests the departments, drafts the invitation; the reviewers' status and views come in; Sparks summarizes and proposes changes; it drafts her recommendation and the decision owner decides; Sparks checks it's ready to build, and she shares the advanced concept with her product team and the reviewers' departments; the team who builds it opens it on what to build (`PublishedIdea` with `advanced`, story "Advanced", Jordan from her product team). "Share" shows in the header ~~from Review on~~ in every step, and opens the share popover ([sparks.md](sparks.md), "Sharing a concept"). Everything follows the chosen direction: the concept for review comes from "What we'll build" (the hypothesis, why this direction, the trade-off, the other directions) with that direction's user stories, prototype and evaluation; the departments Sparks suggests (the returns team for "Flag often-returned parts", the catalog team for the others), their views, Sparks's proposals, its recommendation and the decision differ by direction. After the reviews, Sparks can propose a change to the prototype for every direction (the fix the UX team asks for: the flag as a reminder, the fit checked in the cart, the vehicle filled in at the counter), and the reviews and user stories reflect the fixes already made. A decision to go back to the choice reopens it in Plan. Not built: the reviewers' and decision owner's side (commenting, "Unclear" flags, asking Sparks), answering comments one by one, withdrawing, Stop, "Sending failed", and new versions after the decision. Simulated: a few seconds after she shares it, Jordan flags an acceptance criterion as unclear, and Sparks's fix shows in the next step (story "Unclear addressed" shows his side once it's made).
 
 ---
 
@@ -40,16 +40,31 @@ Review has no conversation, as Evaluate. Two panels of the same width sit side b
 - **The idea for review, on the left.** On top, where it stands ("Ready for review", "Published · version 3", "The reviews are in", "Waiting for a decision from…", "Advanced") and, once published, "See what the teams see". Below, on a card: what Sparks did to put it together, the next step, the reviewers once it's published, and the idea, part by part ("What's reviewed").
 - **The final prototype, on the right:** the version it would be published at, for each audience and device, screen by screen, with everyone's comments. She tries it and comments; it's changed in Prototype.
 
+**Comments on the idea** work exactly as on the prototype ([sparks-prototype.md](sparks-prototype.md), "Commenting on it"), for Dana and for the teams:
+
+- **With "Add comment" on** in the Comments panel, a click on the idea drops a pin there (her avatar) and opens the same box to write the comment, with "@" to tag people and teams. The pin is on the part she clicked and moves with it.
+- **Selecting text** in the idea shows "Add comment" above the selection, with no mode to turn on: it starts the same comment, pinned where "Add comment" showed, above where the selection starts, so the button becomes the pin, with the text quoted above it, in the thread and in Comments. While its thread is open (from its pin or from Comments), or while she writes it, the text is highlighted in the idea, as with a marker pen.
+- **Each pin opens its thread:** the comment, its replies and a box to reply, "Mark as resolved" (its pin leaves the idea) or "Reopen", and "Delete comment" on her own.
+- **In Comments,** under "On the idea", with the part ("On "Gaps"") and the quote; selecting one opens its thread on the idea.
+
+~~**Comments on the idea.** With "Add comment" on in the Comments panel, selecting a part of the idea opens its comments and a box to add one under its heading, with "This part is unclear".~~ ~~Each part's heading has "Comment" (or how many comments it has).~~ No "Comment" on the parts' headings.
+
+⚠️ **Gap:** the comment box has no "This part is unclear" yet, so new comments can't flag a part as unclear; the sample flags ("Unclear" in Comments) still show. 🙋 **Open question:** add "Unclear" to the comment box on the idea, as an option the prototype's box doesn't have?
+
+✅ **Resolved:** comments on the idea are the prototype's comments, pinned on the idea: the same "Add comment", pin, box, thread, replies and resolving, on Dana's page and the teams'; selected text starts one too, quoted. Why: one way to comment wherever she is, and the idea reads clean, with no "Comment" on every heading.
+
 **The next step** is a box at the top of the idea, one thing at a time:
 
-1. **"Check it, then publish it":** what the teams get, that gaps and known issues don't stop her, and "Publish" in the header. With Evaluate skipped, "Evaluate it first".
+1. **"Check it, then publish it":** what the teams get, that gaps and known issues don't stop her, and "Publish" in the header, which shows who reviews it and the invitation before it goes. With Evaluate skipped, "Evaluate it first".
 2. **"The teams have it":** the version they see. If hers is newer, it says so and points to "Publish update".
 3. **"The reviews are in":** what they say in one sentence, then by topic, and "What Sparks would change", with "Make the changes" and "Not now".
 4. **"Ready to ask for a decision?":** what the changes did, if she made them, and "Draft my recommendation". She can leave it for later.
 5. **"Your recommendation":** Sparks's draft, with a pen to change it, who it goes to, how much is still open, and "Submit it".
 6. **"Sent to {decision owner}",** then the decision and its reason, with what follows: "Share it with them", "Evaluate it" or "Go back to the choice".
 
-**"Publishing it"** is a part of the idea only she sees, before publishing, after Known issues: who reviews it and what each team evaluates, the invitation (with a pen to change it), who it goes to and that her conversation isn't included, and what they get (a fixed copy).
+~~**"Publishing it"** is a part of the idea only she sees, before publishing, after Known issues: who reviews it and what each team evaluates, the invitation (with a pen to change it), who it goes to and that her conversation isn't included, and what they get (a fixed copy).~~ **"Publish" opens "Publish your idea",** a popover from the header, before it goes: ~~who reviews it and what each team evaluates,~~ the invitation (with a pen to change it), who it goes to (who she added with "Share") and that her conversation isn't included, and what they get (a fixed copy), then "Cancel" and "Publish". She makes any change there, at the moment she publishes. With no one added yet, it says so ("No one to send it to yet: add who reviews it with "Share"") and "Publish" can't be selected.
+
+✅ **Resolved:** ~~who reviews it and~~ the invitation is in a popover from "Publish", not a part of the idea; who reviews it is chosen in "Share" ("Who to invite"). Why: they're settings for publishing, so they belong where she publishes; the idea for review stays exactly what the teams get.
 
 ✅ **Resolved:** Review has no conversation; everything it said is in the idea or its next step, and the prototype is beside it. Why: the conversation repeated the idea next to it; Dana should see what the teams will get, the idea and the prototype, and check it before publishing.
 
@@ -73,6 +88,7 @@ When Review opens, Sparks prepares the concept for review from the spec, and tel
 | Why this direction | The chosen direction, why, the trade-offs accepted, what else was considered | The choice in Plan ([sparks-plan-compare.md](sparks-plan-compare.md)) |
 | The evidence | The problem brief and the evaluation, each statement with its source or "Assumption", and each finding with its method | The problem brief (Plan, [sparks-plan-clarify.md](sparks-plan-clarify.md)), [sparks-validate.md](sparks-validate.md) |
 | What it needs to be built | What AutoParts Co. doesn't have yet, what's available, and Sparks's rough effort, for engineering to confirm | Prototype, Evaluate's "Can AutoParts Co. build it" |
+| What to track | What the build must record so the success criteria can be measured once it's live: the main measure, what must not get worse, and measures with no starting point yet (recording starts before launch). "Every online return marked "doesn't fit", with its order, from launch." | The success criteria in Plan ([sparks-plan-define-success.md](sparks-plan-define-success.md)) |
 | Design notes | Anything that departs from the design system, and the accessibility results | Prototype, Evaluate |
 | For the UX team to test with real people | "What only real people can tell us", with a suggested way to find out each | [sparks-validate.md](sparks-validate.md), "What only real people can tell us" |
 | What it changes for teams | The change for each department | Evaluate |
@@ -85,6 +101,7 @@ Rules:
 - **Nothing new.** Sparks restates and organizes what's in the spec; it doesn't add requirements nobody decided. When the spec doesn't answer something the teams will need, it goes under "Open questions", not into a guess.
 - **Honest about evidence.** The summary states the evidence status in its first lines, with its method: "Simulation supports hypothesis. Based on simulated scenarios. Real-user testing is recommended before implementation." ([sparks.md](sparks.md), "Evidence and decisions").
 - **Each statement keeps its label:** evidence with its source, from Dana, or "Assumption".
+- **What to track restates the success criteria** as what the build must record; it adds no measure Plan didn't agree.
 - **Gaps are visible, not hidden.** A skipped Evaluate shows in the summary as a gap ("Evaluate was skipped: the hypothesis is not tested").
 
 ℹ️ **Paths:** with more than one path in the prototype ([sparks-prototype.md](sparks-prototype.md), "Paths"), one goes to Review: the path shown when she goes there. Sending another path later starts Review over for it. On Review, the prototype and evaluation shown are that path's. ⚠️ **Gap:** the other paths, as alternatives considered with their results, aren't shown in Review yet.
@@ -97,7 +114,7 @@ Dana watches the idea for review being written. When Review opens, ~~Sparks says
 
 - **On the ~~right~~ left:** the parts written so far, each coming in as it's written, then the one being written, with its heading, "Writing…" and placeholder lines. ~~The badge says "Putting it together…" until the last part, then "Ready for review".~~ There's no badge until it's done, then "Ready for review". The view follows the newest part, unless she scrolls up to read one; once it's done, it goes back to the top, where the summary is.
 - **~~In the conversation~~ At the top of the same panel:** Sparks's progress in place, as while it builds a prototype ([sparks-prototype.md](sparks-prototype.md), "Building it"): ~~"Writing "Gaps", 2 of 16 parts.",~~ a status for each stage ("Laying out the parts of your idea…", "Writing your idea for review…", "Giving it a final polish…") over the latest five steps ("Gathering what you decided in Plan", "Writing "Gaps"", "Drafting the invitation"), folding to ~~"Wrote all 16 parts."~~ "Put together in 18s", which opens to show every step.
-- **Then** ~~Sparks's "**Here's your idea, ready for review.** It's all on the right.",~~ the same reply goes on (a new one, if she's said something since): how she got here ("Done. Evaluate is finished, and the evaluation is in your plan.") and "Your idea is ready for review.", "**Here's what I put together:**" (the idea, the evidence, what's for the teams), then "**Here's what's still open:**", who to invite and the invitation ("Checking it's ready", "Bringing others in"). Nothing can be sent before it's written. ✅ **Resolved:** with no conversation, what comes then is the next step, "Check it, then publish it", and "Publishing it" ("Review's screen").
+- **Then** ~~Sparks's "**Here's your idea, ready for review.** It's all on the right.",~~ the same reply goes on (a new one, if she's said something since): how she got here ("Done. Evaluate is finished, and the evaluation is in your plan.") and "Your idea is ready for review.", "**Here's what I put together:**" (the idea, the evidence, what's for the teams), then "**Here's what's still open:**", who to invite and the invitation ("Checking it's ready", "Bringing others in"). Nothing can be sent before it's written. ✅ **Resolved:** with no conversation, what comes then is the next step, "Check it, then publish it", and ~~"Publishing it"~~ the popover from "Publish" ("Review's screen").
 
 ✅ **Resolved:** the idea for review builds part by part, in real time, instead of appearing whole while Sparks thinks. Why: Dana sees what goes into it and that nothing is added, the way she watches the prototype being built.
 
@@ -122,21 +139,27 @@ Each comes with a suggested fix and a recommendation: "The hypothesis hasn't bee
 
 ### Who to invite
 
-Sparks suggests departments to review the concept, each with what they'd evaluate:
+Sparks suggests departments to review the concept, from the idea itself (its direction, who it involves, what it changes), each with what they'd evaluate:
 
 - **The UX team, always:** the experience, the design notes, and what to test with real people.
 - **Engineering, always:** whether it can be built as described, what's missing, and the effort.
-- **The departments it touches,** from the brief's "Who's involved" and "What it changes for teams": the value for their area and what it changes in their work. "Stores: what changes on fit calls."
+- **The departments it touches,** from the brief's "Who's involved" and "What it changes for teams": the value for their area and what it changes in their work. "Catalog team: the fit data it depends on." ~~"Stores: what changes on fit calls."~~ For "Fit check before you buy", Sparks suggests the UX team, engineering and the catalog team, not stores.
 
-Dana chooses the departments and the people in them. Sparks never names or picks individuals (the problem brief in Plan, [sparks-plan-clarify.md](sparks-plan-clarify.md)).
+Dana chooses the departments and the people in them. ~~Sparks never names or picks individuals (the problem brief in Plan, [sparks-plan-clarify.md](sparks-plan-clarify.md)).~~ Sparks suggests people too, one per suggested department, the person in it who knows the area (Priya Shah for the UX team, Marcus Lee for engineering); she picks, and adds none it doesn't show her. The problem brief still names groups only ([sparks-plan-clarify.md](sparks-plan-clarify.md)).
+
+✅ **Resolved:** Sparks suggests individual reviewers as well as departments, in Share's "View recommended reviewers", people first, then teams; Dana picks which to add. Why: a team of 212 is slow to answer; a named person she can add in one click gets the review moving. The brief keeps groups only, since it describes the problem, not who reviews it.
+
+**In "Share"** ~~**, in Review:**~~ **, in every step once there's a direction:** under "Who has access", "View recommended reviewers (6)" opens who Sparks suggests for this idea: the people first, with their photo and team ("Ana Silva · Catalog team"), then the departments, with how many people each has ("4 people", as under "Who has access"), each with a circle-plus button on its right (ghost, "Add Catalog" in its tooltip) that adds that one ("Can comment"); selecting anywhere on the row adds it too, except a team's name, which opens its people. She picks which. ~~"Sparks suggests, for this idea" lists them, with "Add recommended reviewers", which adds them all.~~ The list is closed until she opens it, leaves out who already has access, and goes once they all have. She can also add any person or department in the field. Who she's added is who "Publish" sends the invitation to.
+
+✅ **Resolved:** reviewers are chosen in "Share", with Sparks's suggestions for this idea behind "View recommended reviewers", each added with its own circle-plus button; "Publish your idea" no longer lists who reviews it, and sends it to who she added. Why: who sees the idea is set in one place, and Sparks does the suggesting; she picks which teams, one at a time.
 
 ### The invitation
 
-Review is where others come in. Before it, the only people who see the idea are collaborators she added with "Share" ("Can edit"); "Can view" and "Can comment" are offered from Review on ([sparks.md](sparks.md), "Sharing a concept").
+Review is where others come in. Before it, the only people who see the idea are collaborators she added with "Share" ("Can edit"); ~~"Can view" and "Can comment" are offered from Review on~~ she can add people to view or comment in any step, and they see the idea once she publishes it ([sparks.md](sparks.md), "Sharing a concept").
 
 ✅ **Resolved:** collaboration happens only in Review, unless Dana adds a collaborator ("Can edit") earlier. Why: the teams review a version she chose to publish, not her work in progress.
 
-Dana starts it from Sparks's suggestion ~~in the conversation~~ in "Publishing it", or from "Share" in the header. "Share" appears in the header ~~from Review on~~ (in every step, [sparks.md](sparks.md)), ~~and in Review opens the invitation~~ which opens the share popover; the invitation comes from Sparks ~~in the conversation~~ there; before Review it isn't shown ([sparks.md](sparks.md), "Sharing a concept").
+Dana starts it from Sparks's suggestion ~~in the conversation~~ ~~in "Publishing it"~~ in the popover from "Publish", or from "Share" in the header. "Share" appears in the header ~~from Review on~~ (in every step, [sparks.md](sparks.md)), ~~and in Review opens the invitation~~ which opens the share popover; the invitation comes from Sparks ~~in the conversation~~ there; before Review it isn't shown ([sparks.md](sparks.md), "Sharing a concept").
 
 Sparks drafts a short invitation Dana can edit: what the concept is, what she'd like from them, and by when.
 
@@ -149,7 +172,7 @@ Sparks shows who will receive it and whether her conversation with Sparks is inc
 The teams who review get a **fixed version** of the idea: what's in "Idea for review" and the clickable prototype at that version, to try and comment on. Dana keeps working on hers; they see what she published until she publishes an update.
 
 - **"Publish"** is the last button in the header, after "Share", only on Review ([sparks.md](sparks.md), "Share and Publish"). Only Dana, the idea's owner, publishes and asks for a decision: someone she shared it with as "Can edit" (a collaborator) doesn't see "Publish", and Sparks doesn't offer them to ask for a decision ([sparks.md](sparks.md), "Sharing a concept"). ~~It's available once there's a prototype; before, it can't be selected and says why ("Build a prototype first: the teams get your idea and its prototype.").~~ Review opens only with a prototype, so there's always something to publish; while Sparks puts the idea together, it can't be selected and says why ("Putting your idea together…").
-- **The first time,** ~~it opens Review:~~ when Review opens, Sparks writes the idea for review ("Putting it together"), then shows what's still open, the teams it would invite and the invitation, and what publishing gives them ("Publishing it"): "**Publishing gives them a fixed copy:** this idea and the prototype as it is now (version 3), to try and comment on. You keep working on yours; when you change it, publish an update. Asking for a decision comes later, when you're ready." She confirms with ~~"Looks right, publish it", or~~ "Publish". ~~Sparks: "Published. The teams now see version 3 of your idea and its prototype, and I've sent them the invitation."~~ The next step says "The teams have it".
+- **The first time,** ~~it opens Review:~~ when Review opens, Sparks writes the idea for review ("Putting it together"), then shows what's still open in the next step; "Share" suggests the teams to invite ("Who to invite"), and "Publish" opens the invitation, who it goes to and what publishing gives them ("Publish your idea"): "**Publishing gives them a fixed copy:** this idea and the prototype as it is now (version 3), to try and comment on. You keep working on yours; when you change it, publish an update. Asking for a decision comes later, when you're ready." She confirms with ~~"Looks right, publish it", or~~ "Publish" in the popover. ~~Sparks: "Published. The teams now see version 3 of your idea and its prototype, and I've sent them the invitation."~~ The next step says "The teams have it".
 - **Publishing before Evaluate is allowed.** The gap shows on what they see ("Gaps": "Evaluate was skipped: the hypothesis is not tested").
 - **After changes,** the button reads "Publish update". Selecting it publishes the latest version to the same teams, with no new invitation~~: "Done. The teams now see version 4 of your idea and its prototype, and I've told them what changed."~~. They're told what changed; their feedback on the earlier version stays, marked with the version it was about. With nothing new to publish, it reads "Published" and can't be selected. Since the button shows only on Review, Sparks says so where she makes the change: the first time she changes the prototype after publishing, its reply in Prototype adds "The teams still see version 3. When you want them to see this one, publish an update in Review."
 - **On the ~~right~~ left,** the badge says which version they see: "Published · version 3", and "See what the teams see" opens the page they open from the invitation, at that version, in its own tab ("What reviewers see and do").
@@ -162,16 +185,17 @@ The teams who review get a **fixed version** of the idea: what's in "Idea for re
 
 ### What reviewers see and do
 
-- They open the concept and the prototype from their invitation, on the published idea's page: the version Dana published, never her working copy.
-- **The page,** laid out as Dana's Review ("Review's screen"): the idea's name on the left of the header (no menu: it isn't theirs)~~, "Idea" and "Prototype" centered~~; "Comments", the version they see ("Version 3"), notifications and their avatar on the right. Below, the idea for review on the left and its prototype on the right:
-  - **Their review,** in a box at the top of the idea, where Dana's Review has her next step:
-    - **The invitation:** "Dana Morales asked you to review this idea", her words, the date she'd like it by, and which version this is: "Version 3, published 2 hr ago. Dana keeps working on hers; you see this version until she publishes an update."
-    - **Their view:** "Advance", "Advance with changes" or "Don't advance yet", a sentence on why, and "Send your view"; once sent, it shows with "Change your view". The line above it says Dana asks for a decision once the teams have given theirs.
-  - **The idea:** the same document as Dana's ("What's reviewed"), without "Publishing it" and her next step. Each part's heading has "Comment" (or how many comments it has): it opens the part's comments and a box to add one right under the heading, with "This part is unclear" (Enter adds it, Esc closes it).
-  - **The prototype** at that version, with its audiences and devices, "Add comment" and everyone's pins with their threads ([sparks-prototype.md](sparks-prototype.md), "Commenting on it").
+- They open the concept and the prototype from their invitation, on the published idea's page: the version Dana published, never her working copy. **The invitation is the email** (and the AutoPartsHUB notification): "Dana Morales asked you to review this idea", her words and the date she'd like it by; the page doesn't repeat it.
+- **The page,** laid out as Dana's Review ("Review's screen"): the idea's name on the left of the header (no menu: it isn't theirs), with the version they see beside it ("Version 3")~~, "Idea" and "Prototype" centered~~; "Comments", notifications, **"Share your review"** and their avatar on the right. Below, the idea for review on the left and its prototype on the right:
+  - ~~**Their review,** in a box at the top of the idea, where Dana's Review has her next step: the invitation ("Dana Morales asked you to review this idea", her words, the date, the version) and their view.~~
+  - **Their view, behind "Share your review":** the header's dark button (as Dana's "Publish"), before their avatar, opens a popover: "Your review", "Should it move forward? Dana asks for a decision once the teams have given theirs.", the date she'd like it by and the version ("By Friday, Nov 28 · Version 3, published 2 hr ago. Dana keeps working on hers; you see this version until she publishes an update."), then "Advance", "Advance with changes" or "Don't advance yet", as radio buttons, one per row. Only once one is chosen do the field for a sentence on why ("Why, in a sentence") and "Submit review" come in, with the field focused, ready to type. Sending closes it, and the button becomes "Your view: Advance" (outlined), which opens it again with their view, why, and "Change your view".
+  - **The idea:** the same document as Dana's ("What's reviewed"), without her next step. ~~Each part's heading has "Comment" (or how many comments it has).~~ Comments are pinned on the idea, as on the prototype: "Add comment" in the Comments panel, or selected text ("Comments on the idea").
+  - **The prototype** at that version, with its audiences and devices, and everyone's pins with their threads; "Add comment" is in the Comments panel's header ([sparks-prototype.md](sparks-prototype.md), "Commenting on it").
   - **"Comments"** opens the same side panel as Dana's, with everyone's comments, newest first and resolved ones last: who, their team, when, where ("On "Gaps"", or "On the prototype · Customer · Phone · "Save vehicle""), the text, "Unclear", replies and "Resolved". Selecting one opens it where it is: its part of the idea, brought to the top with its comments open, or its thread on the prototype.
 
-  ~~✅ **Resolved:** reviewers get a page of their own for the published idea: their review on the left (the invitation, their view, every comment), and the idea and its prototype on the right, one at a time.~~ ✅ **Resolved:** reviewers get a page of their own for the published idea, laid out as Dana's Review: the idea and its prototype side by side, their review at the top of the idea, comments where they belong and in "Comments". Why: they come to read, try and react; what Dana checks before publishing is what they get, in the same place.
+  ~~✅ **Resolved:** reviewers get a page of their own for the published idea: their review on the left (the invitation, their view, every comment), and the idea and its prototype on the right, one at a time.~~ ✅ **Resolved:** reviewers get a page of their own for the published idea, laid out as Dana's Review: the idea and its prototype side by side, ~~their review at the top of the idea,~~ their view behind "Share your review" in the header, comments where they belong and in "Comments". Why: they come to read, try and react; what Dana checks before publishing is what they get, in the same place.
+
+  ✅ **Resolved:** the reviewer's view is behind "Share your review" in the header, in a popover, and Dana's invitation is the email that brings them, not a box on the page. Why: the idea starts at the top of the page, the way Dana sees it; the invitation is read once, where it arrives.
 
   ⚠️ **Gap:** asking Sparks about the concept isn't built on the page yet. Their comments on parts of the idea show in Dana's Comments panel, under "On the idea", each opening its part in Review ([sparks.md](sparks.md), "The concept workspace"). Answering or resolving a comment on a part isn't designed yet (comments on the prototype have threads).
 - They give feedback: comment on any part or point at anything in the prototype, flag a part as "Unclear", or suggest an improvement ([sparks.md](sparks.md), "Feedback"). They can reply to each other.
@@ -183,7 +207,7 @@ The teams who review get a **fixed version** of the idea: what's in "Idea for re
 ### Reviews coming back
 
 - Dana sees each reviewer's status: invited, opened, commented, or their view.
-- Sparks summarizes the reviews for her, grouped by topic, and says where reviewers disagree with each other: "The UX team wants the fit message above the price; the stores team is fine with it as is." "Engineering confirms saved vehicles; fit data for older vehicles would need the catalog team."
+- Sparks summarizes the reviews for her, grouped by topic, and says where reviewers disagree with each other: "The UX team wants the fit message above the price; the catalog team needs a date and an owner for the fit data." "Engineering confirms saved vehicles; fit data for older vehicles would need the catalog team."
 - For each topic and each "Unclear" flag, Sparks proposes a clarification or a change. Dana accepts, edits or dismisses it, or replies. Feedback never changes the concept or the prototype on its own. In the summary, Sparks lists its proposed changes together and asks once: "Make the changes" or "Not now" (sparks.md, "Sparks decides, Dana approves").
 
 ✅ **Resolved:** after the reviews, Sparks proposes its changes as one list with one question, not one decision per comment; ~~the recommendation follows in the same reply~~ then asks "**Ready to ask for a decision?**", with "Draft my recommendation" ~~and "Not yet"~~ (if the prototype changed, it first says the teams still see the earlier version, and to select "Publish update"). ~~"Not yet" leaves it for later: "Okay. Keep working on it, and publish updates as you go. When you're ready for a decision, tell me.", with "Ask for a decision".~~ It waits at the top of the idea until she does.
@@ -200,7 +224,7 @@ When Dana asks for a decision ("Draft my recommendation", "Ask for a decision", 
 - **Iterate:** it's promising, but something needs another pass first. Names where to go back to (a step, or a part of Plan such as the choice) and what to change.
 - **Stop:** it isn't worth pursuing now. Says why and what was learned.
 
-> I'd recommend advancing, with real-user testing first. The simulation supports the hypothesis: "doesn't fit" returns are likely to drop 35–50%, against a target of 40%. That's based on simulated scenarios, so the UX team's test of the fit message with real customers should come before the build. Engineering and the stores support it.
+> I'd recommend advancing, with real-user testing first. The simulation supports the hypothesis: "doesn't fit" returns are likely to drop 35–50%, against a target of 40%. That's based on simulated scenarios, so the UX team's test of the fit message with real customers should come before the build. Engineering and the catalog team support it.
 
 - The recommendation is Dana's. She edits it, or writes her own, and it's recorded as hers.
 - It always states the evidence status separately from what it recommends. Recommending Advance doesn't claim the hypothesis is proven.
@@ -226,7 +250,7 @@ What follows each decision:
 
 | Decision | What happens | The concept shows |
 | --- | --- | --- |
-| Advance | The concept stays in Sparks, ready for Dana to share, without edit rights, with the people, teams or departments who'll carry it forward, or the whole company ([sparks.md](sparks.md), "Sharing a concept"). Sparks suggests who, starting with the reviewers' departments. Review is marked Done | "Advanced", with the date, next to the evidence status |
+| Advance | The concept stays in Sparks, ready for Dana to share, without edit rights, with the people, teams or departments who'll carry it forward, or the whole company ([sparks.md](sparks.md), "Sharing a concept"). Sparks checks it's ready to build ("Ready to build") and suggests who, ~~starting with the reviewers' departments~~ starting with her product team, who builds it, then the reviewers' departments. Review is marked Done | "Advanced", with the date, next to the evidence status |
 | Iterate | The concept goes back to the step, or the part of Plan, the decision names, with the decision's reason as Sparks's first message there. What comes after it becomes Needs a check | The step it's on |
 | Stop | The concept is closed, with its reasons and learnings documented. Review is marked Done | "Stopped", with the date, next to the evidence status |
 
@@ -239,9 +263,50 @@ What follows each decision:
 - **What was decided is kept as it was.** The decision applies to the version that was submitted; the reviewers' and decision owner's view of it doesn't change under them.
 - **Learnings stay.** When a concept is advanced or stopped, its learnings are added to Previous experiments in company knowledge: the problem, the hypothesis, the evidence status and its method, the decision and why, and what was learned. Not the conversation, and nothing from Dana's personal knowledge: a statement based on it is listed as "Based on the owner's own material", without its content. Sparks then shows it to the next person with a similar idea ([sparks-plan-problem.md](sparks-plan-problem.md), "What AutoParts Co. already knows").
 - **Company knowledge stays governed.** Learnings added this way follow company knowledge governance: people whose role includes managing company knowledge can review, correct or remove them ([sparks.md](sparks.md), "Company knowledge").
+- **The team who builds it gets it from Sparks** ("Handing it to development", below).
 - **An advanced concept can keep evolving.** People she shares it with, such as her developers, can give feedback the same way reviewers do, including flagging anything unclear; Sparks proposes a fix, and Dana decides ([sparks.md](sparks.md), "Feedback"). Changes go into a new version, and people she shared it with see what changed since the version they first saw.
 
 ~~✅ **Resolved:** a stopped concept's learnings go into Previous experiments, so the company keeps what it learned and doesn't pay to learn it twice.~~ ✅ **Resolved:** the learnings of every decided concept, advanced or stopped, go into Previous experiments, without anything from the owner's personal knowledge, and under company knowledge governance. The company keeps what it learned and doesn't pay to learn it twice.
+
+### Handing it to development
+
+The advanced concept is the handoff: no new step, no export. Her product team (Dana's squad, who builds it) gets the same idea, read-only, in the order they need it.
+
+**Ready to build.** When the decision is Advance, the next step shows Sparks's check before she shares it, under "Before your team builds it", each line done (a check) or still open (with a fix):
+
+- every user story has its acceptance criteria;
+- the effort is engineering's, not Sparks's rough estimate: "Effort from engineering: about 6 weeks";
+- what to track is written, from the success criteria;
+- no open question blocks building: "An open question blocks building: "Who fills the fit data gaps for older vehicles, and by when?"", with "Answer it before the team starts, or share it now: it's listed under Open questions for them."
+
+None of them stops her from sharing it; the team sees the same lines.
+
+**Sharing it.** Sparks suggests her product team first, then the reviewers' departments: "Share it with your product team, the online shopping squad, who'll build it, and the teams who'll carry it forward: the UX team, engineering and the catalog team." "Share it with them" adds them all, as "Can comment" ([sparks.md](sparks.md), "Sharing a concept"). Once shared, "See what the teams see" in Review opens the page the team who builds it gets.
+
+**What the team who builds it sees.** The published idea's page, laid out as Review ("What reviewers see and do"), at the version advanced:
+
+- **On top, where reviewers have their review:** "Dana Morales shared this idea with you to build", the decision and its reason ("Morgan Reyes advanced it on Nov 24, 2026: "…""), how to read it, how to ask about something unclear, and "Ready to build", Sparks's check as she shared it. The panel says "Advanced idea", with "Advanced · {date}".
+- **What to build first:** what people need to do (user stories) and how to know it's done (acceptance criteria), the prototype, what it needs to be built, what to track, design notes, open questions, known issues, what to test with real people, and what it changes for teams.
+- **Then "Why it's built this way":** the summary, success criteria, hypothesis, why this direction, the evidence, gaps, decisions and what comes later.
+- The prototype on the right, at that version; comments on any part through "Add comment" in the Comments panel, with "This part is unclear" ([sparks.md](sparks.md), "Feedback"); no view to give.
+
+✅ **Resolved:** the advanced concept is the handoff to development: Sparks checks it's ready to build, suggests her product team first, and the team who builds it opens it on what to build, next to the prototype, with why after it. Why: Dana's goal is to hand her developers something they can understand and act on; the document written for a decision leads with the summary and gaps, and developers need the user stories, what it needs and what's open first.
+
+✅ **Resolved:** "What to track" is a part of the idea, drafted from the success criteria. Why: without it, the main measure Plan agreed on can't be checked after launch; engineering sees it in the review too.
+
+### Something unclear after it advances
+
+The team who builds it flags a part as unclear the way reviewers do: "Add comment", then the part, with "This part is unclear" ([sparks.md](sparks.md), "Feedback"). It's the moment Dana's frustration comes from (requests bounced back as "unclear" with no guidance), so Sparks answers it with a fix, not just a notification.
+
+- **Where it shows:** in Dana's Comments panel, under "On the idea", with "Unclear", and in Review's next step, under what was shared: "Jordan Lee, from your product team, flagged something as unclear", his words, and the part it's on ("On the acceptance criterion: "Given a part with no fit data for my vehicle, …"").
+- **Sparks's fix:** "I'd say it this way:", the part as it would read, with a pen to change it, and where Sparks took it from ("From the prototype: its "We're not sure this fits" message says the fit data doesn't cover the vehicle's trim and engine."), then "It changes this criterion only; nothing else in the idea changes." It restates what the concept already decided (the prototype, the spec, a decision); when nothing there answers it, Sparks says so and suggests adding it to the open questions instead of guessing.
+- **Her answer:** "Make the change" or "Not now". Made: "Done. It now reads: "…" Jordan sees it's been addressed, and how, and everyone it's shared with sees the new wording." Not now: "Okay. It stays in Comments, flagged as unclear, until you answer it."
+- **On their side:** the part reads as changed, and the comment shows "Addressed." with how ("Dana changed the acceptance criterion: "…""), under the part and in "Comments".
+- Nothing changes until she makes it; it's recorded in Decisions as a comment she accepted ([sparks.md](sparks.md), "The decision log").
+
+✅ **Resolved:** after it advances, something flagged as unclear gets a fix from Sparks in Review's next step: the part as it would read, from what the concept already decided, with where it comes from; Dana makes it, edits it or leaves it, and the person who flagged it sees how it was addressed. Why: requests bounced back as "unclear" with no guidance are one of Dana's frustrations; here she answers with one click, and the team gets the answer where they asked.
+
+⚠️ **Gap:** a change that touches the prototype (not only the spec's words) would go through Prototype, with Evaluate becoming Needs a check, as after the reviews; it isn't simulated. Answering a flag in her own words, instead of a fix, isn't designed. The fix she makes isn't recorded in Decisions yet.
 
 ## Who can do what
 
@@ -314,14 +379,14 @@ What Dana says → what Sparks must do:
 | Opens Review | Prepare the concept from the spec, adding nothing nobody decided, and list gaps, missing evidence, unresolved assumptions and risks |
 | Opens it with Evaluate skipped | Show "Not tested" as the evidence status, list it as a gap, and recommend running Evaluate without blocking her |
 | Tries to submit before Plan is done or without a prototype | Say what's needed for a decision and take her to the missing step |
-| ~~"Who should review this?"~~ Opens "Publishing it" | Suggest the UX team, engineering and the departments the concept changes, each with what they'd evaluate, and no individual names |
+| ~~"Who should review this?"~~ ~~Opens "Publishing it"~~ ~~Selects "Publish"~~ Opens "Share" in Review | Suggest the UX team, engineering and the departments the concept changes, each with what they'd evaluate, ~~and no individual names~~ and a person in each, for her to pick from |
 | ~~"Send it to the stores team."~~ | Draft the invitation, show who receives it and that the conversation isn't included, and wait for her confirmation |
 | Reviewers disagree with each other | Say so in the summary, with both views, and let Dana decide |
 | ~~"Just approve it so we can build it."~~ | Say the decision belongs to the decision owner, and offer to prepare her recommendation |
 | ~~"Write that it's validated."~~ | Explain that the simulation supports the hypothesis but isn't validation with real people, and keep the evidence status as it is |
 | Recommends advancing when the evidence doesn't support the hypothesis | Say so once, with the evidence, and keep her recommendation as hers |
 | The decision is Stop | Record the reasons and learnings, tell Dana what was kept and where, without treating it as a failure |
-| The decision is Advance | Suggest who to share it with, starting with the reviewers' departments, and share only when she confirms |
+| The decision is Advance | Check it's ready to build, listing what's still open with a fix; suggest who to share it with, starting with her product team, then the reviewers' departments, and share only when she confirms |
 | A requirement the teams need that the spec doesn't answer | List it under "Open questions" instead of filling it in |
 
 ⚠️ The questions struck through above were asked in Review's conversation, which is gone; they stand until there's a place to ask ("Review's screen", open question).
@@ -342,10 +407,12 @@ What Dana says → what Sparks must do:
 - "Publish" ~~can't be selected before there's a prototype, and says why;~~ shows only on Review, and can't be selected while the idea is put together; it gives the teams a fixed version of the idea and its prototype, at the version shown, and publishes only when Dana confirms.
 - After a change, "Publish update" publishes the latest version to the same teams; their feedback on the earlier one stays, marked with its version.
 - Publishing doesn't ask for a decision: Sparks drafts the recommendation only when Dana asks for one.
-- Sparks suggests the UX team and engineering always, plus the departments the concept touches, each with what they'd evaluate, and never names a person.
-- "Share" shows in the header ~~only from Review on~~ in every step, ~~and in Review opens the invitation~~ and opens the share popover, offering only "Can edit" before Review and every role from Review on ([sparks.md](sparks.md), "Sharing a concept"); the invitation is Sparks's draft, in "Publishing it".
+- Sparks suggests the UX team and engineering always, plus the departments the concept touches, each with a person in it to add instead or as well; nothing is added until she picks it.
+- "Share" shows in the header ~~only from Review on~~ in every step, ~~and in Review opens the invitation~~ and opens the share popover, ~~offering only "Can edit" before Review and every role from Review on~~ the same in every step, every role ([sparks.md](sparks.md), "Sharing a concept"); the invitation is Sparks's draft, in the popover from "Publish".
+- ~~In Review,~~ In every step once there's a direction, "Share" has "View recommended reviewers", which opens the departments Sparks suggests for this idea without access yet, each with how many people it has and a circle-plus button that adds it, as "Can comment".
+- "Publish", the first time, opens "Publish your idea": the invitation with a pen, who it goes to (who she added with "Share") and what they get, with "Cancel" and "Publish"; with no one added, "Publish" there can't be selected; nothing goes until "Publish" there.
 - Review shows no conversation and no message box: the idea for review and the final prototype, side by side; the prototype can be tried and commented on there, not changed.
-- The teams never see the next step or "Publishing it".
+- The teams never see the next step or the "Publish your idea" popover.
 - No invitation, submission or share happens without Dana's confirmation of who gets what; the conversation is included only if she says so.
 - Reviewers can view, comment, flag a part as unclear, suggest improvements, ask Sparks and give their view, and can't edit the spec or the prototype.
 - Each "Unclear" flag gets a fix proposed by Sparks; nothing changes until Dana accepts it, and the person who flagged it sees when it's addressed.
@@ -354,6 +421,11 @@ What Dana says → what Sparks must do:
 - The recommendation states the evidence status separately from advance, iterate or stop; the recommendation recorded is Dana's.
 - Sparks suggests the area's product lead as decision owner; only the decision owner can record Advance, Iterate or Stop, and the decision needs a reason.
 - Advance keeps the concept in Sparks, shows "Advanced" with the evidence status, and lets Dana share it without edit rights; Iterate reopens the named step or part of Plan; Stop shows "Stopped" with its reasons.
+- Given the decision is Advance, the next step shows "Before your team builds it": acceptance criteria, engineering's effort, what to track and blocking open questions, each done or with a fix, and none of them stops her from sharing.
+- Sparks suggests her product team first when she shares an advanced concept, then the reviewers' departments.
+- The team who builds it opens the advanced concept on what people need to do (user stories) and how to know it's done, next to the prototype, with "Ready to build" on top and "Why it's built this way" after what to build.
+- Given the team who builds it flags a part as unclear, then Review's next step shows their words, the part, and Sparks's fix with where it comes from; nothing changes until Dana selects "Make the change", and then the part reads as fixed for everyone and the comment shows "Addressed." with how.
+- "What to track" restates the success criteria as what the build must record, and adds no measure Plan didn't agree.
 - Advanced and stopped concepts add their learnings to Previous experiments, with nothing from Dana's personal knowledge.
 - The recommendation and the decision appear in "Decisions" without anyone writing anything for the log.
 

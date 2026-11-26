@@ -449,7 +449,7 @@ function ValidatePanel({
 
 	const header = (
 		<div className='flex h-[68px] shrink-0 items-center justify-between gap-3 px-5'>
-			<Typography as='h2' size='lg' weight='medium' className='text-foreground-prominent'>
+			<Typography as='h2' size='xl' weight='semibold' className='text-foreground'>
 				Evaluation
 			</Typography>
 			{running ? (

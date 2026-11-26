@@ -2,7 +2,7 @@
 Created: Nov 21, 2026
 Created by: Julio Caunedo
 Last updated: Nov 25, 2026
-Latest update: a new section, "Initial prompt improvement", explains why Sparks improves Dana's first message (she isn't a designer, a rough message leaves gaps and starts from a solution, misunderstandings are cheapest now), how it works step by step, what it uses and leaves out, its two-paragraph structure with the demo's before and after, and why it's built this way. The card's second paragraph now uses only general knowledge of the domain (a return, a call to the store, a customer who trusts us less), not "Returns keep rising" or customers who stop buying. Why: those weren't in Dana's message any more, so "from your message" wasn't true, and she should be able to confirm every word of the first thing she approves. The ✅ tags and the struck-through earlier decisions were removed (git keeps them).
+Latest update: "Attach files" as an answer sends the files as soon as they're picked, with no step in the message box (from "+", they still wait there). Once Dana adds supporting material (files, things from My library, a link or notes), Sparks thanks her and asks "Anything else to add?", with "That's all", "Attach files" and "Add from library", and says she can always add more later with "+" in the message box or in the idea's library (the folder at the top). It asks only once: what she adds then goes on to who it affects. Why: she often has more than one thing to add, and shouldn't feel this is her only chance. Also today: a new section, "Initial prompt improvement", and the card's second paragraph uses only general knowledge of the domain.
 Recent updates: Sparks's question about supporting material offers "Add from library" besides "Attach files", with their "+" menu icons. Files can be sent with no text at any time, and what she added is in the idea's Library. After the problem statement, Sparks asks which live app the idea improves, then for anything that supports it.
 Scope: the Problem part of Plan, the first of Plan's five parts: how Dana describes a problem, what Sparks does with it, what company knowledge it brings in, and the Problem section it adds to the concept.
 Purpose: defines how a rough idea, in Dana's own words, becomes a problem statement she agrees with, so everything after it builds on the right problem.
@@ -158,8 +158,17 @@ Sparks asks only about what it drafted. It names the concept itself and takes "W
    > A report, a document, customer feedback or a link all help. Attach files, add from your library, or paste a link or notes in the message box. It's optional, and I'll keep what you add with this idea, marked as yours.
    >
    > ["Nothing to add", "Attach files", "Add from library"]
-4. **Who it affects.** Sparks says what she added, and where its guess comes from, then asks on the card:
-   > No problem. (or 'Thanks, I've added "returns-report-q3.pdf" to this idea, marked as yours.') Next, who runs into this most. My guess comes from what customers ask stores about fit.
+
+   Once she adds something, Sparks says what it kept and asks once more:
+   > Thanks, I've added "Returns report Q3" and "Fit-call log" to this idea, marked as yours.
+   >
+   > **Anything else to add?**
+   >
+   > You can always add more later: with "+" in the message box, or in the idea's library, from the folder at the top.
+   >
+   > ["That's all", "Attach files", "Add from library"]
+4. **Who it affects.** Sparks goes on, and says where its guess comes from, then asks on the card:
+   > No problem. (after "Nothing to add"; "Good." after "That's all"; 'Thanks, I've added "…" to this idea, marked as yours.' after more) Next, who runs into this most. My guess comes from what customers ask stores about fit.
    >
    > [Clarification card. "Who does it affect most?" "Do-it-yourself customers buying online, most often for vehicles more than 10 years old." Suggested by Sparks · from customer intelligence]
    >
@@ -202,15 +211,20 @@ The live app is a question of its own right after the problem statement, with Sp
 
 A reminder, not a requirement: Sparks asks once for anything that supports the idea (a report, a document, customer feedback, a link).
 
-- **"Attach files"** opens the file picker and isn't sent as an answer. The files show in the message box, each with a remove button, and go with Send or Enter; they need no text with them here. Her bubble shows the file names.
-- **"Add from library"** opens the dialog with everything in My library ([sparks.md](sparks.md), "Adding from My library") and isn't sent as an answer. "Add to idea" there is her answer: her bubble lists what she picked, and Sparks thanks her by name and goes on. "Add from library" in the "+" menu does the same.
+- **"Attach files"** opens the file picker and isn't sent as an answer. ~~The files show in the message box, each with a remove button, and go with Send or Enter; they need no text with them here.~~ The files she picks are her answer: they're sent as soon as she picks them, with no step in the message box (any files already waiting there go with them). Her bubble shows the file names, and Sparks asks "Anything else to add?". Cancelling the picker sends nothing.
+- **"Add from library"** opens the dialog with everything in My library ([sparks.md](sparks.md), "Adding from My library") and isn't sent as an answer. "Add to idea" there is her answer: her bubble lists what she picked, and Sparks thanks her by name and asks if there's anything else ("Anything else to add?", below). "Add from library" in the "+" menu does the same.
 - **Icons:** "Attach files" (a paperclip) and "Add from library" (a folder) have the icons they have in the "+" menu.
 
   "Add from library" is one of the replies, and both have icons. Why: what supports an idea is often in My library already.
 - **A link or notes** typed in the message box count too: "Thanks, I've added that to this idea, marked as yours."
+- **"Anything else to add?"** follows whatever she adds (files, things from My library, a link or notes): Sparks thanks her by name, asks if there's anything else, and says where she can add more later: "You can always add more later: with "+" in the message box, or in the idea's library, from the folder at the top." The replies are "That's all" (↵), "Attach files" and "Add from library". It asks only once: what she adds then is thanked by name in the next reply, which goes on to who it affects ('Thanks, I've added "…"'); "That's all" (or a typed no) goes on with "Good."
 - **"Nothing to add"** (↵) goes on: "No problem." If files are waiting in the message box, it sends them instead.
-- **Later,** "Attach files" in the "+" menu adds files to any message, with or without text ([sparks.md](sparks.md), "The message box").
+- **Later,** "Attach files" in the "+" menu adds files to any message, with or without text: from there they wait in the message box, with a remove button each, until she sends ([sparks.md](sparks.md), "The message box").
+
+  ✅ **Resolved:** "Attach files" as an answer sends the files as soon as they're picked; only the "+" menu puts them in the message box first. Why: picking files is already her answer to the question, so making her send them again is an extra step.
 - What she added is listed in the Problem summary ("**What you added:**") and belongs to the concept ([sparks.md](sparks.md), "Personal knowledge"). It's also in "Library", in the header, where she can add more or remove some; the summary follows ([sparks.md](sparks.md), "The idea's library").
+
+✅ **Resolved:** after she adds supporting material, Sparks asks "Anything else to add?" instead of going straight on, and says she can always add more later with "+" or in the idea's library. Why: she often has more than one thing (a report and a call log), and knowing she can add more anytime keeps this question from feeling like her only chance.
 
 Sparks asks for supporting material as its own optional question, after the live app. Why: Dana often has a report or customer feedback and doesn't think to bring it; on the same card as the live app it would be two questions at once and easy to skip past.
 
@@ -379,7 +393,8 @@ Changing the problem after it's approved follows the overview's rule: the sectio
 | --- | --- | --- |
 | Sparks is reading | Her message, then Sparks thinking ("Popping the hood on support cases…") | Wait, stop the reply |
 | Asking | One reply at a time: a short lead line, then the clarification card with the question, Sparks's answer and the answer buttons | Confirm it, say "Not quite", edit the card, or reply in her own words |
-| Asking for supporting material | The question, with "Nothing to add", "Attach files" and "Add from library"; files picked show in the message box | Attach files, remove one, add from My library, paste a link or notes, or go on without |
+| Asking for supporting material | The question, with "Nothing to add", "Attach files" and "Add from library"; files picked are sent at once | Attach files, add from My library, paste a link or notes, or go on without |
+| Asking for more (once) | What she added, "Anything else to add?", where she can add more later, and "That's all", "Attach files", "Add from library" | Add more (then it goes on), or go on with "That's all" |
 | Something missing | Sparks's question about the missing part; the card says what's missing | Answer, or write it on the card |
 | Several problems | The list of problems, with "Start a concept for this" for each one she isn't starting with | Pick one; save others as concepts |
 | Nothing found in company knowledge | "I didn't find anything about this in company knowledge…" | Go on |
@@ -402,7 +417,7 @@ What Dana says → what Sparks must do:
 | A problem with nothing in company knowledge | Say so in one line and go on, without blocking Plan |
 | "It's the counter app" (or its address), after "Not quite" on the app | Put it on the card in her words and say the prototype will start from what's live there |
 | "It's a new app" | Record that nothing is live yet, and say it starts from the design system |
-| A file, a link or notes as supporting material | Say what it added, marked as hers, and ask the next thing |
+| A file, a link or notes as supporting material | Say what it added, marked as hers, ask "Anything else to add?" once and say she can add more later with "+" or in the idea's library; what she adds then, or "That's all", goes on to the next thing |
 | "Where's order 48213?" | Say Sparks is for product problems and suggest where to check an order |
 | "I don't know why it matters." | Offer its best guess from company knowledge, labeled as an assumption, and go on |
 | "Yes, that's it." | Confirm the suggestion and ask the next thing; after the last one, show the Problem summary and move on to the questions, saying so in one line |

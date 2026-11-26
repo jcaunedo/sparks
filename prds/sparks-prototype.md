@@ -2,7 +2,7 @@
 Created: Nov 21, 2026
 Created by: Julio Caunedo
 Last updated: Nov 25, 2026
-Latest update: Review's explanation has "Add to Review", besides "Go to Review instead" in the conversation, so Review can start from there too. Every open comment's pin shows over its screen, and opening a comment goes to its screen.
+Latest update: "Add comment" moved from the prototype's toolbar to the Comments panel's header, beside its X, on Dana's and the reviewers' pages. Why: adding a comment and reading them belong together; the toolbar keeps what changes and tries the prototype. Also today: Review's explanation has "Add to Review"; every open comment's pin shows over its screen.
 Recent updates: "Fit check before you buy" and "Fit check at checkout" have the customer's screens only, with no store staff view, and the vehicle is added with its VIN, a past repair invoice or its details. "Go to Review instead" opens Review, which has no conversation. "Evaluate" is at the end of the toolbar, and "Fix in the prototype" in Evaluate opens here on the finding's page, with Sparks's plan. Quick replies are one per row beside the prototype.
 Scope: the Prototype step of a Sparks concept, the second of four (Plan, Prototype, Evaluate, Review): what Sparks builds from the chosen direction, how Dana tries it and changes it without design or engineering skills, versions, and the Prototype section of the concept.
 Purpose: defines how the chosen direction becomes a working concept Dana can try (a clickable prototype, or another testable artifact), built from AutoParts Co.'s own design system, ready to be evaluated in Evaluate.
@@ -118,7 +118,7 @@ In the Prototype step, the prototype shows beside the conversation, large enough
   ✅ **Resolved:** the arrows slide the screens horizontally, like a carousel, so Dana sees which way she moved through the screens. Under reduced motion, the screens crossfade.
 
   ✅ **Resolved:** arrows beside the prototype go through every screen Sparks built, so Dana can see all of them without finding her way through the journey. The same arrows sit under Evaluate's strip (sparks-validate.md, "The agents") and beside the prototype on the reviewers' page.
-- **On the right, icon buttons named in tooltips:** "Edit element" ("Changing it"), "Add comment" ("Commenting on it"), ~~"Versions ({n})",~~ ~~"Start over",~~ "Try it full screen". Then the step's button forward, "Evaluate" ("Finishing the step").
+- **On the right, icon buttons named in tooltips:** "Edit element" ("Changing it"), ~~"Add comment" ("Commenting on it"),~~ ~~"Versions ({n})",~~ ~~"Start over",~~ "Try it full screen". Then the step's button forward, "Evaluate" ("Finishing the step").
 
   ✅ **Resolved:** the toolbar's actions are icon buttons, each named in a tooltip on hover and keyboard focus (and in its accessible name), and the device switcher shows icons (`Smartphone`, `Monitor`). The audience switcher keeps its words: "Customer" and "Store staff" have no icon that says them. "Edit element" and "Add comment" fill with the brand color while on; only one is on at a time.
 - ~~Each audience opens on its device (the customer on a phone, store staff on a desktop); Dana can switch either.~~ The prototype opens on the first audience's device (the customer on a phone); switching the audience keeps the device she's on, and only the device switcher changes it.
@@ -208,7 +208,11 @@ Each direction Dana builds is a path in the prototype: Plan's pick first, then e
 
 Dana can leave comments on the prototype itself, pinned where they apply, as notes on what she's trying.
 
-- **"Add comment"** (a speech bubble with a plus) turns commenting on; Esc or the button again turns it off. While it's on, the prototype doesn't respond to clicks: a click drops a pin there instead (Enter does it on the element with focus).
+- **"Add comment"** (a speech bubble with a plus), ~~on the prototype's toolbar~~ in the Comments panel's header, beside its X, turns commenting on; Esc, the button again, or closing the panel turns it off. It can be selected while a prototype that takes comments is on screen (built, in Prototype or Review). Elsewhere (Plan, Evaluate, while the prototype is built) it still shows, faded, and can't be selected; its tooltip says "Add comments in Prototype and Review".
+
+  The same comments work on the idea for review, beside the prototype, and can start from selected text there ([sparks-review.md](sparks-review.md), "Comments on the idea").
+
+  ✅ **Resolved:** "Add comment" is in the Comments panel, not on the prototype's toolbar, on Dana's and the reviewers' pages alike. Why: adding a comment and reading them belong together; the toolbar keeps what changes and tries the prototype. While it's on, the prototype doesn't respond to clicks: a click drops a pin there instead (Enter does it on the element with focus).
 - **The pin and its box:** the pin is her avatar in a white drop whose point marks the spot (blue while it's open). Under it, a box to write in, "Add a comment", with "@" at the bottom left and a send button on the right; Enter adds the comment, Shift+Enter starts a new line, Esc or a click outside drops it.
 - **Tagging people and teams:** "@" (the button, named "Mention someone", or typed after a space) lists the people (with their team) and departments (with their size) whose name starts with what she types after it, under the box: the same list as Share's field ([sparks.md](sparks.md), "Sharing a concept"). ↑/↓ move, Enter, Tab or a click picks, Esc closes only the list. Picking puts "@Priya Shah" in the text; in the thread, the Comments panel and the reviewers' page, a tag shows in the brand color. Replies can tag too.
 - **After adding it,** the pin stays where she put it. Selecting it opens the comment: who (and a reviewer's team, "UX team"), when, the text~~ and "Delete comment"~~, then its thread. Commenting stays on, so she can add another.

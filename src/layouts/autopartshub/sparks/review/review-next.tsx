@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Pencil } from "lucide-react";
+import { CircleAlert, CircleCheck, Pencil } from "lucide-react";
 import { motion } from "motion/react";
 
 import { AssistantMessage } from "@/components/chat/assistant-message";
@@ -15,16 +15,42 @@ import { cn } from "@/lib/utils";
  * would change, her recommendation, the decision. Only she sees it: the teams get the idea under it.
  */
 
+/** One line of Sparks's check before an advanced idea goes to the team who builds it, with a fix when it isn't done. */
+type ReadyCheck = { label: string; done: boolean; fix?: string };
+
+/**
+ * Something the team who builds it flagged as unclear once it advanced (prds/sparks-review.md, "Something unclear after
+ * it advances"): who, what they asked, the acceptance criterion as it is, and the clarification Sparks proposes, hers
+ * to edit, make or leave for now. Nothing changes until she makes it.
+ */
+type BuildFlag = {
+	/** "Jordan Lee, from your product team". */
+	who: string;
+	text: string;
+	criterion: string;
+	suggestion: string;
+	/** Where Sparks took the clarification from. */
+	why: string;
+	edited: boolean;
+	onChange: (text: string) => void;
+	onMake: () => void;
+	onSkip: () => void;
+	/** What she did with it. */
+	outcome?: "made" | "skipped";
+};
+
 /** What Review is waiting for, with what she can do about it. */
 type ReviewNext =
 	/** Before publishing: who reviews it, the invitation (hers to edit), and what publishing gives them. */
 	| {
 			kind: "publish";
 			version: number;
-			teams: { id: string; department: string; evaluates: string }[];
 			invitation: string;
 			onInvitationChange: (text: string) => void;
-			/** Who gets it, in a sentence: "the UX team, engineering, stores and the catalog team". */
+			/**
+			 * Who gets it, in a sentence: who she added with "Share" to review it ("UX team, Engineering, Stores and Catalog").
+			 * Empty: no one yet, so it can't be published.
+			 */
 			goesTo: string;
 			/** Evaluate was skipped: run it first. */
 			onEvaluate?: () => void;
@@ -45,11 +71,76 @@ type ReviewNext =
 			reason: string;
 			/** Who Sparks would share an advanced idea with, in a sentence. */
 			departments: string;
+			/** Her product team, who builds it: suggested first. */
+			team: string;
+			/** Advanced: Sparks's check that it's ready to build (prds/sparks-review.md, "Ready to build"). */
+			ready?: ReadyCheck[];
+			/** Advanced and shared: something the team who builds it flagged as unclear, with Sparks's fix. */
+			flag?: BuildFlag;
 			shared: boolean;
 			onShare: () => void;
 			onEvaluate: () => void;
 			onBackToChoice: () => void;
 	  };
+
+/**
+ * Sparks's check before the team builds it: each line done (a check) or not (with its fix). None of them stops her from
+ * sharing it; the team sees the same lines. Shared with `PublishedIdea`'s advanced view.
+ */
+function ReadyToBuild({ checks, title = "Before your team builds it" }: { checks: ReadyCheck[]; title?: string }) {
+	return (
+		<div className='flex flex-col gap-2'>
+			<p className='text-base font-medium text-foreground'>{title}</p>
+			<ul className='flex flex-col gap-2'>
+				{checks.map((check) => (
+					<li key={check.label} className='flex items-start gap-2 text-base'>
+						{check.done ? (
+							<CircleCheck aria-hidden className='mt-0.5 size-4 shrink-0 text-success' />
+						) : (
+							<CircleAlert aria-hidden className='mt-0.5 size-4 shrink-0 text-warning' />
+						)}
+						<span className='flex flex-col gap-0.5'>
+							<span className='text-foreground'>
+								<span className='sr-only'>{check.done ? "Done: " : "Still open: "}</span>
+								{check.label}
+							</span>
+							{check.fix ? <span className='text-sm text-muted-foreground'>{check.fix}</span> : null}
+						</span>
+					</li>
+				))}
+			</ul>
+		</div>
+	);
+}
+
+/** Something flagged as unclear after it advanced, and Sparks's fix: make it, edit it first, or leave it for now. */
+function BuildFlagFix({ flag }: { flag: BuildFlag }) {
+	const first = flag.who.split(" ")[0];
+	return (
+		<div className='flex flex-col gap-3 border-t border-border pt-3'>
+			<Title>{flag.who} flagged something as unclear</Title>
+			<p className='text-base text-foreground'>"{flag.text}"</p>
+			<p className={note}>On the acceptance criterion: "{flag.criterion}"</p>
+			{flag.outcome === "made" ? (
+				<p className='text-base text-foreground'>
+					Done. It now reads: "{flag.suggestion}" {first} sees it's been addressed, and how, and everyone it's shared with sees the new wording.
+				</p>
+			) : flag.outcome === "skipped" ? (
+				<p className='text-base text-foreground'>Okay. It stays in Comments, flagged as unclear, until you answer it.</p>
+			) : (
+				<>
+					<p className='text-base font-medium text-foreground'>I'd say it this way:</p>
+					<EditableDraft label='Acceptance criterion' text={flag.suggestion} onChange={flag.onChange} />
+					<p className={note}>{flag.edited ? "Edited by you." : flag.why} It changes this criterion only; nothing else in the idea changes.</p>
+					<div className='flex flex-wrap gap-2'>
+						<NextButton onClick={flag.onMake}>Make the change</NextButton>
+						<NextButton onClick={flag.onSkip}>Not now</NextButton>
+					</div>
+				</>
+			)}
+		</div>
+	);
+}
 
 /** The same button for everything she can do here: outlined, 36px (the step's dark one is "Publish", in the header). */
 function NextButton(props: React.ComponentProps<typeof Button>) {
@@ -58,7 +149,7 @@ function NextButton(props: React.ComponentProps<typeof Button>) {
 
 function Title({ children }: { children: React.ReactNode }) {
 	return (
-		<Typography as='h3' size='base' weight='semibold' className='text-foreground-prominent'>
+		<Typography as='h3' size='lg' weight='semibold' className='text-foreground-prominent'>
 			{children}
 		</Typography>
 	);
@@ -76,7 +167,7 @@ function EditableDraft({ label, text, onChange }: { label: string; text: string;
 	if (value === undefined)
 		return (
 			<div className='flex items-start gap-2'>
-				<p className='min-w-0 flex-1 text-sm whitespace-pre-line text-foreground'>{text}</p>
+				<p className='min-w-0 flex-1 text-base whitespace-pre-line text-foreground'>{text}</p>
 				<Tooltip>
 					<TooltipTrigger asChild>
 						<Button
@@ -113,7 +204,7 @@ function EditableDraft({ label, text, onChange }: { label: string; text: string;
 						close(true);
 					}
 				}}
-				className='w-full resize-none rounded-input border border-border bg-background px-[11px] py-[7px] text-sm text-foreground outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50'
+				className='w-full resize-none rounded-input border border-border bg-background px-[11px] py-[7px] text-base text-foreground outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50'
 			/>
 			<div className='flex justify-end gap-2'>
 				<NextButton onClick={() => close()}>Cancel</NextButton>
@@ -124,35 +215,31 @@ function EditableDraft({ label, text, onChange }: { label: string; text: string;
 }
 
 const note = "text-sm text-muted-foreground";
-const list = "flex list-disc flex-col gap-1 ps-6 text-sm text-foreground";
+const list = "flex list-disc flex-col gap-1 ps-6 text-base text-foreground";
 
 /**
- * "Publishing it", a part of the idea only Dana sees, before she publishes: who reviews it and what each evaluates, the
- * invitation (hers to edit) and what publishing gives them.
+ * What "Publish" opens, in a popover from the header, before it goes (prds/sparks-review.md, "Publishing"): who reviews it
+ * and what each evaluates, the invitation (hers to edit), who it goes to and what publishing gives them. The workspace
+ * adds "Cancel" and "Publish" under it.
  */
-function PublishingPart({ next }: { next: Extract<ReviewNext, { kind: "publish" }> }) {
-	const label = "text-sm font-medium text-foreground";
+function PublishPanel({ next }: { next: Extract<ReviewNext, { kind: "publish" }> }) {
+	const label = "text-base font-medium text-foreground";
 	return (
-		<section aria-label='Publishing it' data-part='Publishing it' className='flex flex-col gap-2 border-t border-border pt-4'>
-			<Title>Publishing it</Title>
-			<p className={note}>Only you see this part.</p>
-			<p className={label}>Who reviews it</p>
-			<ul className={list}>
-				{next.teams.map((team) => (
-					<li key={team.id}>
-						<span className='font-medium'>{team.department}:</span> {team.evaluates}.
-					</li>
-				))}
-			</ul>
-			<p className={cn(label, "pt-1")}>The invitation</p>
+		<div className='flex flex-col gap-2'>
+			<p className={label}>The invitation</p>
 			<EditableDraft label='Invitation' text={next.invitation} onChange={next.onInvitationChange} />
-			<p className={note}>It goes to {next.goesTo}, in AutoPartsHUB and by email. Your conversation with Sparks isn't included.</p>
+			{/* Who reviews it is who she added with "Share" ("View recommended reviewers"). */}
+			<p className={note}>
+				{next.goesTo
+					? `It goes to ${next.goesTo}, who you added with "Share", in AutoPartsHUB and by email. Your conversation with Sparks isn't included.`
+					: `No one to send it to yet: add who reviews it with "Share" ("View recommended reviewers" shows the teams Sparks suggests).`}
+			</p>
 			<p className={cn(label, "pt-1")}>What they get</p>
-			<p className='text-sm text-foreground'>
+			<p className='text-base text-foreground'>
 				A fixed copy: this idea and the prototype as it is now (version {next.version}), to try and comment on. You keep working on yours; when you change it,
 				publish an update. Asking for a decision comes later, when you're ready.
 			</p>
-		</section>
+		</div>
 	);
 }
 
@@ -171,13 +258,14 @@ function ReviewNextStep({ next, className }: { next: ReviewNext; className?: str
 				return (
 					<>
 						<Title>Check it, then publish it</Title>
-						<p className='text-sm text-foreground'>
-							This is what the teams get, with the prototype on the right. Who reviews it and the invitation are under "Publishing it". The gaps and known issues
-							don't stop you: they go to the teams as they are. When it looks right, select "Publish".
+						<p className='text-base text-foreground'>
+							This is what the teams get, with the prototype on the right. The gaps and known issues don't stop you: they go to the teams as they are. Add who
+							reviews it with "Share" ("View recommended reviewers" shows the teams I suggest). When it looks right, select "Publish": you'll see the invitation
+							and can change it before it goes.
 						</p>
 						{next.onEvaluate ? (
 							<>
-								<p className='text-sm text-foreground'>Evaluate was skipped. Running it takes a few minutes and would make your recommendation stronger.</p>
+								<p className='text-base text-foreground'>Evaluate was skipped. Running it takes a few minutes and would make your recommendation stronger.</p>
 								<div>
 									<NextButton onClick={next.onEvaluate}>Evaluate it first</NextButton>
 								</div>
@@ -189,7 +277,7 @@ function ReviewNextStep({ next, className }: { next: ReviewNext; className?: str
 				return (
 					<>
 						<Title>The teams have it</Title>
-						<p className='text-sm text-foreground'>
+						<p className='text-base text-foreground'>
 							They see version {next.version} of your idea and its prototype, and have the invitation. Their feedback shows here and in Comments as it comes in.
 						</p>
 						{next.stale ? <p className={note}>Your prototype is at version {next.stale} now. When you want them to see it, select "Publish update".</p> : null}
@@ -199,8 +287,8 @@ function ReviewNextStep({ next, className }: { next: ReviewNext; className?: str
 				return (
 					<>
 						<Title>The reviews are in</Title>
-						<p className='text-sm text-foreground'>{next.verdict}</p>
-						<AssistantMessage className='text-sm' text={next.topics.map((topic) => `- ${topic}`).join("\n")} />
+						<p className='text-base text-foreground'>{next.verdict}</p>
+						<AssistantMessage text={next.topics.map((topic) => `- ${topic}`).join("\n")} />
 						<Title>What Sparks would change</Title>
 						<ul className={list}>
 							{next.proposals.map((proposal) => (
@@ -217,13 +305,13 @@ function ReviewNextStep({ next, className }: { next: ReviewNext; className?: str
 				return (
 					<>
 						<Title>Ready to ask for a decision?</Title>
-						{next.done ? <p className='text-sm text-foreground'>{next.done}</p> : null}
+						{next.done ? <p className='text-base text-foreground'>{next.done}</p> : null}
 						{next.stale ? (
-							<p className='text-sm text-foreground'>
+							<p className='text-base text-foreground'>
 								The teams still see version {next.stale.seen}. Select "Publish update" when you want them to see version {next.stale.now}.
 							</p>
 						) : null}
-						<p className='text-sm text-foreground'>
+						<p className='text-base text-foreground'>
 							Sparks drafts your recommendation for {next.owner}. Or keep working, publish updates as you go, and ask when you're ready.
 						</p>
 						<div>
@@ -249,7 +337,7 @@ function ReviewNextStep({ next, className }: { next: ReviewNext; className?: str
 				return (
 					<>
 						<Title>Sent to {next.owner}</Title>
-						<p className='text-sm text-foreground'>With the idea, the reviews and your recommendation. The decision shows here as soon as there's one.</p>
+						<p className='text-base text-foreground'>With the idea, the reviews and your recommendation. The decision shows here as soon as there's one.</p>
 					</>
 				);
 			case "decided":
@@ -262,22 +350,25 @@ function ReviewNextStep({ next, className }: { next: ReviewNext; className?: str
 									? `${next.owner} asked to iterate`
 									: `${next.owner} asked to go back to the choice`}
 						</Title>
-						<p className='text-sm text-foreground'>"{next.reason}"</p>
+						<p className='text-base text-foreground'>"{next.reason}"</p>
 						{next.decision === "advance" ? (
 							<>
-								<p className='text-sm text-foreground'>
+								<p className='text-base text-foreground'>
 									It's in Decisions, and what you learned is now in Previous experiments, so the next person with a similar idea starts from it.
 								</p>
+								{next.ready?.length ? <ReadyToBuild checks={next.ready} /> : null}
 								{next.shared ? (
-									<p className='text-sm text-foreground'>
-										Shared with {next.departments}, without edit rights. They'll find it in AutoPartsHUB, with the prototype, the decisions and every reason behind
-										them.
+									<p className='text-base text-foreground'>
+										Shared with {next.team}, who'll build it, and {next.departments}, without edit rights. It opens for them on what to build, next to the prototype,
+										with the decisions and every reason behind them after it.
 									</p>
-								) : (
+								) : null}
+								{next.shared && next.flag ? <BuildFlagFix flag={next.flag} /> : null}
+								{next.shared ? null : (
 									<>
-										<p className='text-sm text-foreground'>
-											Share it with the teams who'll carry it forward: {next.departments}. They'll see it without edit rights, and without your conversation with
-											Sparks. Or use "Share" at the top whenever you're ready.
+										<p className='text-base text-foreground'>
+											Share it with {next.team}, who'll build it, and the teams who'll carry it forward: {next.departments}. They'll see it without edit rights, and
+											without your conversation with Sparks. It opens for them on what to build. Or use "Share" at the top whenever you're ready.
 										</p>
 										<div>
 											<NextButton onClick={next.onShare}>Share it with them</NextButton>
@@ -287,14 +378,14 @@ function ReviewNextStep({ next, className }: { next: ReviewNext; className?: str
 							</>
 						) : next.decision === "iterate-validate" ? (
 							<>
-								<p className='text-sm text-foreground'>It's in Decisions. The idea goes back to Evaluate, with that reason first.</p>
+								<p className='text-base text-foreground'>It's in Decisions. The idea goes back to Evaluate, with that reason first.</p>
 								<div>
 									<NextButton onClick={next.onEvaluate}>Evaluate it</NextButton>
 								</div>
 							</>
 						) : (
 							<>
-								<p className='text-sm text-foreground'>
+								<p className='text-base text-foreground'>
 									It's in Decisions. The idea goes back to the choice in Plan, with that reason first. What you learned from this prototype and its evaluation stays
 									in your plan.
 								</p>
@@ -322,4 +413,4 @@ function ReviewNextStep({ next, className }: { next: ReviewNext; className?: str
 	);
 }
 
-export { PublishingPart, ReviewNextStep, type ReviewNext };
+export { PublishPanel, ReadyToBuild, ReviewNextStep, type BuildFlag, type ReadyCheck, type ReviewNext };

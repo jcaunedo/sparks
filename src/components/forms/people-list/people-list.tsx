@@ -5,9 +5,10 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/data-display/a
 import { cn } from "@/lib/utils";
 
 /*
- * The list of people and departments to pick from while typing: "@" in a comment on the prototype, and the field in
- * "Share" (prds/sparks-prototype.md, "Commenting on it"; prds/sparks.md, "Sharing a concept"). One list, so both look and
- * work the same: typing narrows it, ↑/↓ move, Enter (or Tab) picks, Esc closes it. Not in Figma yet.
+ * The list of people and departments to pick from while typing in a field: `SharePopover`'s field and "@" in a comment
+ * (prds/sparks.md, "Sharing a concept"; prds/sparks-prototype.md, "Commenting on it"). One list, so both look and work
+ * the same: typing narrows it (`matchPeople`), ↑/↓ move, Enter (or Tab) picks, Esc closes it (`handlePeopleKeys`). Not
+ * in sparks.ds yet.
  */
 
 /** Someone to pick: a person, with their team, or a whole department, with its size. */
@@ -37,7 +38,7 @@ function matchPeople(options: PeopleOption[], query: string, limit = 8) {
 	return [...byName, ...byTeam].slice(0, limit);
 }
 
-/** A person's photo or initials, or a building for a department: the same as "Who has access" in Share. */
+/** A person's photo or initials, or a building for a department: the same as "Who has access" in `SharePopover`. */
 function PeopleAvatar({ option, className }: { option: Pick<PeopleOption, "kind" | "name" | "avatarSrc">; className?: string }) {
 	return (
 		<Avatar className={className}>
