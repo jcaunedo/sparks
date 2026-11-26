@@ -13,7 +13,8 @@ import { handlePeopleKeys, matchPeople, PeopleList, type PeopleOption } from "..
 /*
  * "Share" (prds/sparks.md, "Sharing a concept"): a popover from the header, in every step. Dana adds a person or a
  * department as "Can view", "Can comment" or "Can edit". Only "Can edit" (a collaborator) can change the idea and sees
- * her conversation with Sparks; for everyone else it stays hidden.
+ * her conversation with Sparks; for everyone else it stays hidden. Before Review, only "Can edit" is offered
+ * (`roles`): collaboration starts in Review, unless she adds a collaborator.
  * Kept simple on purpose: it isn't designed yet (not in Figma).
  */
 
@@ -41,6 +42,9 @@ const shareRoles: { value: ShareRole; label: string }[] = [
 	{ value: "editor", label: "Can edit" },
 ];
 
+const allRoles: ShareRole[] = ["viewer", "commenter", "editor"];
+const roleLabel = (role: ShareRole) => shareRoles.find((r) => r.value === role)?.label ?? "";
+
 type SharePopoverProps = {
 	/** Who has access now, the owner first. */
 	members: ShareMember[];
@@ -52,6 +56,12 @@ type SharePopoverProps = {
 	 * Anyone else is invited by email: "Invite" shows once the field holds a valid email.
 	 */
 	directory?: PeopleOption[];
+	/**
+	 * The roles she can give, in order; the first is the default unless "Can comment" is among them. All three by
+	 * default. Before Review the workspace passes only "Can edit": nobody but a collaborator sees the idea until she
+	 * publishes it (prds/sparks.md, "Sharing a concept").
+	 */
+	roles?: ShareRole[];
 	/** She changed the role of someone she added. */
 	onRoleChange?: (id: string, role: ShareRole) => void;
 	/** The concept's link, for "Copy link". */
@@ -81,7 +91,8 @@ function MemberAvatar({ member, className }: { member: ShareMember; className?: 
 }
 
 /** The concept's sharing: copy its link, add a person or a department, and who has access. */
-function SharePopover({ members, onInvite, directory = [], onRoleChange, link, children }: SharePopoverProps) {
+function SharePopover({ members, onInvite, directory = [], roles = allRoles, onRoleChange, link, children }: SharePopoverProps) {
+	const collaboratorsOnly = roles.length === 1 && roles[0] === "editor";
 	const [value, setValue] = React.useState("");
 	// The people and departments matching what she's typed, without those who already have access.
 	const [active, setActive] = React.useState(0);
@@ -95,7 +106,9 @@ function SharePopover({ members, onInvite, directory = [], onRoleChange, link, c
 		setValue("");
 		inputRef.current?.focus();
 	};
-	const [role, setRole] = React.useState<ShareRole>("commenter");
+	const [picked, setRole] = React.useState<ShareRole>("commenter");
+	// The role picked, while it's on offer (the popover stays mounted from step to step).
+	const role = roles.includes(picked) ? picked : roles.includes("commenter") ? "commenter" : roles[0];
 	const [copied, setCopied] = React.useState(false);
 	const inputId = React.useId();
 	const inputRef = React.useRef<HTMLInputElement>(null);
@@ -139,9 +152,9 @@ function SharePopover({ members, onInvite, directory = [], onRoleChange, link, c
 					</Button>
 				</div>
 				<p id={descriptionId} className='text-sm text-muted-foreground'>
-					People and departments you add can see the idea and the prototype. With "Can comment", they can also leave
-					feedback. With "Can edit", they work on it with you, in your conversation with Sparks too; otherwise, it
-					stays hidden.
+					{collaboratorsOnly
+						? "People you add work on the idea with you: they can change it, and they see your conversation with Sparks. The teams see it in Review, once you publish it."
+						: "People and departments you add can see the idea and the prototype. With \"Can comment\", they can also leave feedback. With \"Can edit\", they work on it with you, in your conversation with Sparks too; otherwise, it stays hidden."}
 				</p>
 				<form
 					className='relative flex gap-2'
@@ -178,7 +191,11 @@ function SharePopover({ members, onInvite, directory = [], onRoleChange, link, c
 							aria-activedescendant={listOpen ? `${listId}-${active}` : undefined}
 							className='h-full min-w-0 flex-1 bg-transparent ps-3 text-sm text-foreground outline-none placeholder:text-foreground-subtle'
 						/>
-						<RoleSelect value={role} onChange={setRole} label='Role for who you invite' />
+						{roles.length > 1 ? (
+							<RoleSelect value={role} roles={roles} onChange={setRole} label='Role for who you invite' />
+						) : (
+							<span className='shrink-0 px-2 text-sm text-muted-foreground'>{roleLabel(role)}</span>
+						)}
 					</div>
 					{/* Only once what she's typed is an email; until then the field takes the whole row. */}
 					{email ? (
@@ -209,13 +226,15 @@ function SharePopover({ members, onInvite, directory = [], onRoleChange, link, c
 									<span className='truncate text-sm font-medium text-foreground'>{member.name}</span>
 									{member.detail ? <span className='truncate text-xs text-muted-foreground'>{member.detail}</span> : null}
 								</div>
-								{member.role === "owner" || !onRoleChange ? (
+								{/* A role that isn't on offer here (someone added in Review, seen again in Plan) shows as text. */}
+								{member.role === "owner" || !onRoleChange || roles.length < 2 || !roles.includes(member.role) ? (
 									<span className='shrink-0 px-2 text-sm text-muted-foreground'>
-										{member.role === "owner" ? "Owner" : shareRoles.find((r) => r.value === member.role)?.label}
+										{member.role === "owner" ? "Owner" : roleLabel(member.role)}
 									</span>
 								) : (
 									<RoleSelect
 										value={member.role}
+										roles={roles}
 										onChange={(next) => onRoleChange(member.id, next)}
 										label={`Role for ${member.name}`}
 									/>
@@ -233,7 +252,17 @@ function SharePopover({ members, onInvite, directory = [], onRoleChange, link, c
  * "Can view", "Can comment" or "Can edit", as a `Select` without a border: the trigger is the role and a chevron, the list sparks.ds's
  * Select panel. Used in the invite field and on each person or department she added.
  */
-function RoleSelect({ value, onChange, label }: { value: ShareRole; onChange: (role: ShareRole) => void; label: string }) {
+function RoleSelect({
+	value,
+	roles,
+	onChange,
+	label,
+}: {
+	value: ShareRole;
+	roles: ShareRole[];
+	onChange: (role: ShareRole) => void;
+	label: string;
+}) {
 	return (
 		<Select value={value} onValueChange={(next) => onChange(next as ShareRole)}>
 			<SelectTrigger
@@ -244,7 +273,7 @@ function RoleSelect({ value, onChange, label }: { value: ShareRole; onChange: (r
 				<SelectValue />
 			</SelectTrigger>
 			<SelectContent position='popper' align='end' className='min-w-[160px]'>
-				{shareRoles.map((r) => (
+				{shareRoles.filter((r) => roles.includes(r.value)).map((r) => (
 					<SelectItem key={r.value} value={r.value}>
 						{r.label}
 					</SelectItem>

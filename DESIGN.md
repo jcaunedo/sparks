@@ -328,6 +328,16 @@ The scroller is the whole conversation area, edge to edge (~~`px-8`~~ `px-6`, th
 
 ---
 
+## Popovers have the 2xl shadow (`overlays/popover/popover.tsx`)
+
+**Rule:** `PopoverContent` is `shadow-2xl` (`--shadow-2xl`: `0 16px 50px -12px var(--shadow-color-lg)`), not shadcn's `shadow-md`. Every popover gets it from the component: Share, notifications, a prototype comment's thread.
+
+**Why:** a popover floats over the page and needs to stand apart from it; with `shadow-md` the Share popover blended into the page behind it. A shadcn reinstall or resync brings back `shadow-md`.
+
+**How to apply:** don't set a shadow on a single popover through `className`; change it here so they all match. Menus and select lists keep their own panel, `shadow-xl` ("Menus and select lists share one panel").
+
+---
+
 ## Prototype headers stay at the top (`sparks/prototype/fit-check-prototype.tsx`, `more-prototypes.tsx`)
 
 **Rule:** every prototype screen's header (the shop's `ShopHeader` and the fit check's, the counter and catalog headers) is `sticky top-0 z-10 bg-background`; the counter and catalog ones sit in a `p-4` column, so they add `-mx-4 -mt-4 px-4 pt-4` to cover its padding.

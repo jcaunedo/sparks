@@ -553,7 +553,8 @@ type SparksWorkspaceProps = {
 	composerContext?: { label: string; placeholder?: string; onClear: () => void };
 	/**
 	 * "Share" in the header, in every step (shown when given): it opens the share popover, with who has access, a field to
-	 * add a person or a department, and "Copy link" (prds/sparks.md, "Sharing a concept").
+	 * add a person or a department, and "Copy link" (prds/sparks.md, "Sharing a concept"). Before Review it offers only
+	 * "Can edit" (a collaborator), unless `share.roles` says otherwise.
 	 */
 	share?: Omit<SharePopoverProps, "children">;
 	/**
@@ -1355,7 +1356,8 @@ function SparksWorkspace({
 				{/* "Share", in every step (prds/sparks.md, "Sharing a concept"): Figma's Share, Button Outlined lg · 36, its label
 				    alone (no icon). No avatars beside it (32:1145): who has access is in Share's popover. */}
 				{share ? (
-					<SharePopover {...share}>
+					// Before Review, only collaborators ("Can edit"): the teams come in when she publishes it in Review.
+					<SharePopover roles={currentStep === "review" ? undefined : ["editor"]} {...share}>
 						<Button variant='outline'>Share</Button>
 					</SharePopover>
 				) : null}

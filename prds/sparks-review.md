@@ -2,8 +2,8 @@
 Created: Nov 21, 2026
 Created by: Julio Caunedo
 Last updated: Nov 25, 2026
-Latest update: Review also opens from its explanation, with "Add to Review", besides "Add to Review" in Evaluate and "Go to Review instead" in Prototype. The reviewers' page is laid out as Dana's Review: the idea and the prototype side by side.
-Recent updates: Review has no conversation: the idea for review on the left, the final prototype on the right, and what the conversation did is the next step at the top of the idea. Known issues come right after Gaps. "Publish" shows in the header only on Review, and Sparks says when the teams see an earlier version. Only Dana publishes and asks for a decision, not a collaborator.
+Latest update: Review is where collaboration starts: before it, "Share" only adds collaborators ("Can edit"), and the teams, and anyone who views or comments, come in here. Why: the teams give feedback on a version Dana chose to publish, not on her work in progress.
+Recent updates: Review also opens from its explanation, with "Add to Review", besides "Add to Review" in Evaluate and "Go to Review instead" in Prototype. The reviewers' page is laid out as Dana's Review: the idea and the prototype side by side. Review has no conversation: the idea for review on the left, the final prototype on the right, and the next step at the top of the idea.
 Scope: Review, the last of a Sparks concept's four steps (Plan, Prototype, Evaluate, Review), where it advances or not: the concept prepared for review, bringing in the UX team, engineering and the departments involved, Dana's recommendation, the decision owner's decision, and what happens after.
 Purpose: defines how a concept enters AutoParts Co.'s product process instead of going around it: reviewed by the people who will shape it, decided by the person who owns the decision, and shared with the teams when it advances.
 -->
@@ -131,6 +131,10 @@ Sparks suggests departments to review the concept, each with what they'd evaluat
 Dana chooses the departments and the people in them. Sparks never names or picks individuals (the problem brief in Plan, [sparks-plan-clarify.md](sparks-plan-clarify.md)).
 
 ### The invitation
+
+Review is where others come in. Before it, the only people who see the idea are collaborators she added with "Share" ("Can edit"); "Can view" and "Can comment" are offered from Review on ([sparks.md](sparks.md), "Sharing a concept").
+
+✅ **Resolved:** collaboration happens only in Review, unless Dana adds a collaborator ("Can edit") earlier. Why: the teams review a version she chose to publish, not her work in progress.
 
 Dana starts it from Sparks's suggestion ~~in the conversation~~ in "Publishing it", or from "Share" in the header. "Share" appears in the header ~~from Review on~~ (in every step, [sparks.md](sparks.md)), ~~and in Review opens the invitation~~ which opens the share popover; the invitation comes from Sparks ~~in the conversation~~ there; before Review it isn't shown ([sparks.md](sparks.md), "Sharing a concept").
 
@@ -339,7 +343,7 @@ What Dana says → what Sparks must do:
 - After a change, "Publish update" publishes the latest version to the same teams; their feedback on the earlier one stays, marked with its version.
 - Publishing doesn't ask for a decision: Sparks drafts the recommendation only when Dana asks for one.
 - Sparks suggests the UX team and engineering always, plus the departments the concept touches, each with what they'd evaluate, and never names a person.
-- "Share" shows in the header ~~only from Review on~~ in every step, ~~and in Review opens the invitation~~ and opens the share popover ([sparks.md](sparks.md), "Sharing a concept"); the invitation is Sparks's draft, in "Publishing it".
+- "Share" shows in the header ~~only from Review on~~ in every step, ~~and in Review opens the invitation~~ and opens the share popover, offering only "Can edit" before Review and every role from Review on ([sparks.md](sparks.md), "Sharing a concept"); the invitation is Sparks's draft, in "Publishing it".
 - Review shows no conversation and no message box: the idea for review and the final prototype, side by side; the prototype can be tried and commented on there, not changed.
 - The teams never see the next step or "Publishing it".
 - No invitation, submission or share happens without Dana's confirmation of who gets what; the conversation is included only if she says so.
