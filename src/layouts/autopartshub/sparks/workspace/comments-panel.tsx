@@ -1,16 +1,24 @@
 import * as React from "react";
-import { ChevronLeft, CircleCheck, MessageSquare } from "lucide-react";
+import { ChevronLeft, CircleCheck, ListFilter, MessageSquare } from "lucide-react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/data-display/avatar";
 import { Badge } from "@/components/data-display/badge";
 import { Button } from "@/components/buttons/button";
+import {
+	DropdownMenu,
+	DropdownMenuCheckboxItem,
+	DropdownMenuContent,
+	DropdownMenuLabel,
+	DropdownMenuSeparator,
+	DropdownMenuTrigger,
+} from "@/components/overlays/dropdown-menu";
 import { formatRelativeDate } from "@/lib/relative-date";
 import { cn } from "@/lib/utils";
 
 import { MentionText, type PrototypeComment } from "../prototype/prototype-comments";
 import { ReviewerList, viewTone, type IdeaComment, type Reviewer } from "../review/review-panel";
+import { HeaderIconButton } from "../../header-icon-button";
 import { SidePanel } from "./side-panel";
-import { AddCommentButton } from "../prototype/prototype-panel";
 
 type CommentsPanelProps = {
 	/** The reviewers, with their status and, once given, their comment, view and why. Empty before the concept is in review. */
@@ -31,15 +39,57 @@ type CommentsPanelProps = {
 	/** Selecting one opens its part in Review, brought into view. */
 	onOpenIdeaComment?: (id: string) => void;
 	onClose: () => void;
-	/**
-	 * "Add comment" beside the X, while something that takes comments is on screen (the prototype, the idea for review):
-	 * adding one, on or off. Without it, the button shows but can't be selected, and says where comments are added.
-	 */
-	adding?: { on: boolean; onChange: (on: boolean) => void };
 	/** Take focus when it opens (it only opens from "Comments"). */
 	autoFocus?: boolean;
 	className?: string;
 };
+
+/**
+ * Which comments the Comments panel shows (prds/sparks-review.md, "Comments on the idea"): open and resolved ones, on
+ * the idea and on the prototype. Resolved ones are hidden to start.
+ */
+type CommentFilters = { open: boolean; resolved: boolean; idea: boolean; prototype: boolean };
+const defaultCommentFilters: CommentFilters = { open: true, resolved: false, idea: true, prototype: true };
+
+/** Whether a comment shows with these filters: its state (open or resolved) and where it is. */
+const showsComment = (filters: CommentFilters, comment: { resolved?: boolean }, where: "idea" | "prototype") =>
+	filters[where] && (comment.resolved ? filters.resolved : filters.open);
+
+/**
+ * The filters, from an icon beside the Comments panel's X (where "Add comment" was): a menu of checkboxes, "Show"
+ * (Open, Resolved) and "Where" (On the idea, On the prototype). The dot shows while they differ from the start.
+ */
+function CommentFiltersMenu({ filters, onChange }: { filters: CommentFilters; onChange: (filters: CommentFilters) => void }) {
+	const changed = (Object.keys(defaultCommentFilters) as (keyof CommentFilters)[]).some((key) => filters[key] !== defaultCommentFilters[key]);
+	const item = (key: keyof CommentFilters, label: string) => (
+		<DropdownMenuCheckboxItem
+			checked={filters[key]}
+			onCheckedChange={(on) => onChange({ ...filters, [key]: Boolean(on) })}
+			// Choosing one keeps the menu open, to set the others.
+			onSelect={(event) => event.preventDefault()}
+		>
+			{label}
+		</DropdownMenuCheckboxItem>
+	);
+	return (
+		<DropdownMenu>
+			<DropdownMenuTrigger asChild>
+				<HeaderIconButton label='Filter comments' tooltip='Filter' dot={changed}>
+					<ListFilter aria-hidden />
+				</HeaderIconButton>
+			</DropdownMenuTrigger>
+			<DropdownMenuContent align='end' className='min-w-[200px]'>
+				<DropdownMenuLabel>Show</DropdownMenuLabel>
+				{item("open", "Open")}
+				{item("resolved", "Resolved")}
+				<DropdownMenuSeparator />
+				<DropdownMenuLabel>Where</DropdownMenuLabel>
+				{item("idea", "On the idea")}
+				{item("prototype", "On the prototype")}
+			</DropdownMenuContent>
+		</DropdownMenu>
+	);
+}
 
 /** Two initials, as on the comment's pin, so the avatar's color matches it (Avatar picks the color from them). */
 const initialsOf = (name: string) =>
@@ -178,7 +228,6 @@ function CommentsPanel({
 	ideaComments = [],
 	onOpenIdeaComment,
 	onClose,
-	adding,
 	autoFocus,
 	className,
 }: CommentsPanelProps) {
@@ -189,9 +238,10 @@ function CommentsPanel({
 	const given = reviewers.filter((reviewer) => reviewer.status === "view").length;
 	const pinsBy = (department: string) => prototypeComments.filter((comment) => comment.author.role === department);
 	const ideaBy = (department: string) => ideaComments.filter((comment) => comment.author.role === department);
-	const newestIdea = [...ideaComments].reverse();
-	const openPins = [...prototypeComments].reverse().filter((comment) => !comment.resolved);
-	const resolvedPins = [...prototypeComments].reverse().filter((comment) => comment.resolved);
+	const [filters, setFilters] = React.useState(defaultCommentFilters);
+	const newestIdea = [...ideaComments].reverse().filter((comment) => showsComment(filters, comment, "idea"));
+	const openPins = [...prototypeComments].reverse().filter((comment) => !comment.resolved && showsComment(filters, comment, "prototype"));
+	const resolvedPins = [...prototypeComments].reverse().filter((comment) => comment.resolved && showsComment(filters, comment, "prototype"));
 
 	const openComment = (id: string) => {
 		setOpenId(id);
@@ -209,13 +259,8 @@ function CommentsPanel({
 	return (
 		<SidePanel
 			title='Comments'
-			actions={
-				<AddCommentButton
-					pressed={Boolean(adding?.on)}
-					onPressedChange={(on) => adding?.onChange(on)}
-					disabled={adding ? undefined : { hint: "Add comments in Prototype and Review" }}
-				/>
-			}
+			// Filters beside the X; adding a comment is on what it's about (the prototype's toolbar, the idea's header).
+			actions={<CommentFiltersMenu filters={filters} onChange={setFilters} />}
 			closeLabel='Close comments'
 			onClose={onClose}
 			autoFocus={autoFocus}
@@ -332,7 +377,7 @@ function CommentsPanel({
 							</ul>
 						</section>
 					) : null}
-					{prototypeComments.length ? (
+					{filters.prototype && prototypeComments.length ? (
 						<section aria-labelledby='comments-prototype' className={cn("flex flex-col gap-1", (reviewers.length || newestIdea.length) && "border-t border-border pt-6")}>
 							<h3 id='comments-prototype' className='pb-2 text-lg font-semibold text-foreground'>
 								On the prototype
@@ -344,10 +389,17 @@ function CommentsPanel({
 										</li>
 									))}
 								</ul>
-								{openPins.length === 0 ? <p className='px-2 text-sm text-muted-foreground'>Everything on the prototype is resolved.</p> : null}
+								{/* Nothing open to show: everything's resolved, or the filters hide what there is. */}
+								{!openPins.length && !resolvedPins.length ? (
+									<p className='px-2 text-sm text-muted-foreground'>
+										{filters.open && prototypeComments.every((comment) => comment.resolved)
+											? "Everything on the prototype is resolved."
+											: "No comments here with these filters."}
+									</p>
+								) : null}
 								{resolvedPins.length ? (
 									<>
-										<h4 className='px-2 pt-3 pb-1 text-xs font-semibold text-muted-foreground'>Resolved ({resolvedPins.length})</h4>
+										{openPins.length ? <h4 className='px-2 pt-3 pb-1 text-xs font-semibold text-muted-foreground'>Resolved ({resolvedPins.length})</h4> : null}
 										<ul className='flex flex-col gap-0.5'>
 											{resolvedPins.map((comment) => (
 												<li key={comment.id}>
@@ -370,4 +422,4 @@ function CommentsPanel({
 	);
 }
 
-export { CommentsPanel, type CommentsPanelProps };
+export { CommentFiltersMenu, CommentsPanel, defaultCommentFilters, showsComment, type CommentFilters, type CommentsPanelProps };

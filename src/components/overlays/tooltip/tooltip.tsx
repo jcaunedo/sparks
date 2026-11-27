@@ -1,10 +1,15 @@
 import * as React from "react";
 import * as TooltipPrimitive from "@radix-ui/react-tooltip";
 
+import { motionDuration } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 
-/** Shares the open delay between tooltips. Optional: every `Tooltip` brings its own. */
-function TooltipProvider({ delayDuration = 0, ...props }: React.ComponentProps<typeof TooltipPrimitive.Provider>) {
+/**
+ * Shares the open delay between tooltips. Optional: every `Tooltip` brings its own. Every tooltip waits
+ * `motionDuration.tooltipDelay` (1s) under the pointer before it shows, a general rule (DESIGN.md → "Icon buttons have
+ * a tooltip"); keyboard focus shows it at once (Radix).
+ */
+function TooltipProvider({ delayDuration = motionDuration.tooltipDelay * 1000, ...props }: React.ComponentProps<typeof TooltipPrimitive.Provider>) {
 	return <TooltipPrimitive.Provider data-slot='tooltip-provider' delayDuration={delayDuration} {...props} />;
 }
 

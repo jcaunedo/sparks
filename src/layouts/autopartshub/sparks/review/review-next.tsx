@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils";
 
 /*
  * Review's next step, at the top of the idea for review (prds/sparks-review.md, "Review's screen"): what Dana does there,
- * one thing at a time, since Review has no conversation: who reviews it and the invitation, the reviews and what Sparks
+ * one thing at a time, since Review has no conversation: checking it before publishing, the reviews and what Sparks
  * would change, her recommendation, the decision. Only she sees it: the teams get the idea under it.
  */
 
@@ -41,20 +41,11 @@ type BuildFlag = {
 
 /** What Review is waiting for, with what she can do about it. */
 type ReviewNext =
-	/** Before publishing: who reviews it, the invitation (hers to edit), and what publishing gives them. */
-	| {
-			kind: "publish";
-			version: number;
-			invitation: string;
-			onInvitationChange: (text: string) => void;
-			/**
-			 * Who gets it, in a sentence: who she added with "Share" to review it ("UX team, Engineering, Stores and Catalog").
-			 * Empty: no one yet, so it can't be published.
-			 */
-			goesTo: string;
-			/** Evaluate was skipped: run it first. */
-			onEvaluate?: () => void;
-	  }
+	/**
+	 * Before publishing: the version that goes out. No box: "Share" and "Publish" in the header are the next step (what's
+	 * shared and who it goes to are in "Publish"'s popover).
+	 */
+	| { kind: "publish"; version: number }
 	/** Published: waiting for the teams' views. `stale`: the version now, when they see an earlier one. */
 	| { kind: "in-review"; version: number; stale?: number }
 	/** Every view is in: what they say, by topic, and what Sparks would change. */
@@ -217,33 +208,7 @@ function EditableDraft({ label, text, onChange }: { label: string; text: string;
 const note = "text-sm text-muted-foreground";
 const list = "flex list-disc flex-col gap-1 ps-6 text-base text-foreground";
 
-/**
- * What "Publish" opens, in a popover from the header, before it goes (prds/sparks-review.md, "Publishing"): who reviews it
- * and what each evaluates, the invitation (hers to edit), who it goes to and what publishing gives them. The workspace
- * adds "Cancel" and "Publish" under it.
- */
-function PublishPanel({ next }: { next: Extract<ReviewNext, { kind: "publish" }> }) {
-	const label = "text-base font-medium text-foreground";
-	return (
-		<div className='flex flex-col gap-2'>
-			<p className={label}>The invitation</p>
-			<EditableDraft label='Invitation' text={next.invitation} onChange={next.onInvitationChange} />
-			{/* Who reviews it is who she added with "Share" ("View recommended reviewers"). */}
-			<p className={note}>
-				{next.goesTo
-					? `It goes to ${next.goesTo}, who you added with "Share", in AutoPartsHUB and by email. Your conversation with Sparks isn't included.`
-					: `No one to send it to yet: add who reviews it with "Share" ("View recommended reviewers" shows the teams Sparks suggests).`}
-			</p>
-			<p className={cn(label, "pt-1")}>What they get</p>
-			<p className='text-base text-foreground'>
-				A fixed copy: this idea and the prototype as it is now (version {next.version}), to try and comment on. You keep working on yours; when you change it,
-				publish an update. Asking for a decision comes later, when you're ready.
-			</p>
-		</div>
-	);
-}
-
-/** One next step, in a bordered box: it comes in (Reveal) as Review moves on, and is announced. */
+/** One next step, with no box around it (a part of the tab, a line under it, as the idea's parts): it comes in (Reveal) as Review moves on, and is announced. */
 function ReviewNextStep({ next, className }: { next: ReviewNext; className?: string }) {
 	const { prefersReducedMotion } = useMotionPreference();
 	const [first] = React.useState(next.kind);
@@ -255,24 +220,7 @@ function ReviewNextStep({ next, className }: { next: ReviewNext; className?: str
 	const body = (() => {
 		switch (next.kind) {
 			case "publish":
-				return (
-					<>
-						<Title>Check it, then publish it</Title>
-						<p className='text-base text-foreground'>
-							This is what the teams get, with the prototype on the right. The gaps and known issues don't stop you: they go to the teams as they are. Add who
-							reviews it with "Share" ("View recommended reviewers" shows the teams I suggest). When it looks right, select "Publish": you'll see the invitation
-							and can change it before it goes.
-						</p>
-						{next.onEvaluate ? (
-							<>
-								<p className='text-base text-foreground'>Evaluate was skipped. Running it takes a few minutes and would make your recommendation stronger.</p>
-								<div>
-									<NextButton onClick={next.onEvaluate}>Evaluate it first</NextButton>
-								</div>
-							</>
-						) : null}
-					</>
-				);
+				return null;
 			case "in-review":
 				return (
 					<>
@@ -399,7 +347,7 @@ function ReviewNextStep({ next, className }: { next: ReviewNext; className?: str
 		}
 	})();
 	return (
-		<section ref={ref} tabIndex={-1} role='status' aria-label='Next step' className={cn("rounded-lg border border-border-defined p-4 outline-none", className)}>
+		<section ref={ref} tabIndex={-1} role='status' aria-label='Next step' className={cn("outline-none", className)}>
 			<motion.div
 				key={next.kind}
 				variants={prefersReducedMotion ? fadeVariants : revealVariants}
@@ -413,4 +361,4 @@ function ReviewNextStep({ next, className }: { next: ReviewNext; className?: str
 	);
 }
 
-export { PublishPanel, ReadyToBuild, ReviewNextStep, type BuildFlag, type ReadyCheck, type ReviewNext };
+export { ReadyToBuild, ReviewNextStep, type BuildFlag, type ReadyCheck, type ReviewNext };

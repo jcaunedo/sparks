@@ -18,6 +18,7 @@ import {
 	sampleAdvancedReader,
 	sampleAdvancedUser,
 	sampleAdvancedVersion,
+	sampleAdvancedVersions,
 	samplePublishedAt,
 	samplePublishedBy,
 	samplePublishedConcept,
@@ -27,6 +28,7 @@ import {
 	samplePublishedReviewer,
 	samplePublishedUser,
 	samplePublishedVersion,
+	samplePublishedVersions,
 } from "./sample-published";
 
 const fitCheck = directionPrototypes["fit-check"];
@@ -60,10 +62,11 @@ const meta = {
 		publishedBy: samplePublishedBy,
 		version: samplePublishedVersion,
 		publishedAt: samplePublishedAt,
+		versions: samplePublishedVersions,
 		invitation: samplePublishedInvitation,
 		concept: samplePublishedConcept,
 		prototype: {
-			label: "1. Fit check before you buy",
+			label: "Fit check before you buy",
 			audiences: fitCheck.audiences,
 			screens: fitCheck.screens.length,
 			screenList: fitCheck.screens.map((name, view) => ({ name, audience: screenAudience(fitCheck, view).id })),
@@ -84,7 +87,7 @@ type Story = StoryObj<typeof meta>;
  */
 export const Default: Story = {};
 
-/** Their view sent: "Advance", with why; "Change your view" opens it again. */
+/** Their assessment sent: "Advance", with why; "Change your assessment" opens it again. */
 export const ViewSent: Story = {
 	args: { view: { view: "Advance", why: "Saved vehicles are there. About 6 weeks for the web team, after the holiday freeze." } },
 };
@@ -103,11 +106,12 @@ export const Advanced: Story = {
 		user: sampleAdvancedUser,
 		reviewer: sampleAdvancedReader,
 		version: sampleAdvancedVersion,
+		versions: sampleAdvancedVersions,
 		concept: sampleAdvancedConcept,
 		advanced: sampleAdvanced,
 		invitation: undefined,
 		prototype: {
-			label: "1. Fit check before you buy",
+			label: "Fit check before you buy",
 			audiences: fitCheck.audiences,
 			screens: fitCheck.screens.length,
 			screenList: fitCheck.screens.map((name, view) => ({ name, audience: screenAudience(fitCheck, view).id })),

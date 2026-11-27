@@ -1,4 +1,5 @@
 import * as React from "react";
+import { AnimatePresence, motion } from "motion/react";
 import { Building2, Check, ChevronDown, ChevronUp, CirclePlus, Link2 } from "lucide-react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/data-display/avatar";
@@ -9,6 +10,8 @@ import { handlePeopleKeys, matchPeople, PeopleList, type PeopleOption } from "@/
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/overlays/popover";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/overlays/tooltip";
 import { Typography } from "@/components/typography/typography";
+import { expandVariants, iconSwapReducedVariants, iconSwapVariants, useExpandClip, useMotionPreference } from "@/lib/motion";
+import { cn } from "@/lib/utils";
 
 /*
  * Share: a popover from a "Share" button (prds/sparks.md, "Sharing a concept"). The owner adds a person or a department
@@ -79,8 +82,8 @@ type SharePopoverProps = {
 	/**
 	 * The people and teams recommended for it (in Sparks: the reviewers for the idea, prds/sparks-review.md, "Who to
 	 * invite"), each with their `detail` as in "Who has access". `label` (default "View recommended reviewers"), under who
-	 * has access, opens the ones not there yet, each added with its circle-plus or by selecting its row; hidden once
-	 * they all are.
+	 * has access, shows the ones not there yet, open each time Share opens (it folds them away), each added with its
+	 * circle-plus or by selecting its row; hidden once they all are.
 	 */
 	recommended?: {
 		label?: string;
@@ -90,6 +93,9 @@ type SharePopoverProps = {
 	};
 	/** The link to what's shared, for "Copy link". */
 	link: string;
+	/** Open it from elsewhere (e.g. "Manage reviewers" in `PublishPopover`): controlled `open`, with `onOpenChange`. */
+	open?: boolean;
+	onOpenChange?: (open: boolean) => void;
 	/** The trigger: a "Share" button. */
 	children: React.ReactNode;
 };
@@ -132,6 +138,8 @@ function SharePopover({
 	onTeamPeopleChange,
 	recommended,
 	link,
+	open,
+	onOpenChange,
 	children,
 }: SharePopoverProps) {
 	// Who's unchecked in a suggested team not added yet; an added team keeps it on its member (`excluded`).
@@ -153,7 +161,13 @@ const [value, setValue] = React.useState("");
 	const listId = React.useId();
 	const has = new Set(members.map((member) => member.name.toLowerCase()));
 	const recommendedLeft = (recommended?.people ?? []).filter((reviewer) => !has.has(reviewer.name.toLowerCase()));
-	const [showRecommended, setShowRecommended] = React.useState(false);
+	// The recommended reviewers are open each time Share opens; she can fold them away.
+	const [showRecommended, setShowRecommended] = React.useState(true);
+	const { prefersReducedMotion } = useMotionPreference();
+	const recommendedClip = useExpandClip();
+	React.useEffect(() => {
+		if (open) setShowRecommended(true);
+	}, [open]);
 	const recommendedId = React.useId();
 	const matches = value.trim() ? matchPeople(directory.filter((option) => !has.has(option.name.toLowerCase())), value) : [];
 	const listOpen = matches.length > 0 && !listClosed;
@@ -168,6 +182,7 @@ const [value, setValue] = React.useState("");
 	const [copied, setCopied] = React.useState(false);
 	const inputId = React.useId();
 	const inputRef = React.useRef<HTMLInputElement>(null);
+	const formRef = React.useRef<HTMLFormElement>(null);
 	const descriptionId = React.useId();
 	const rolesHintId = React.useId();
 
@@ -190,7 +205,13 @@ const [value, setValue] = React.useState("");
 	};
 
 	return (
-		<Popover>
+		<Popover
+			open={open}
+			onOpenChange={(next) => {
+				if (next) setShowRecommended(true);
+				onOpenChange?.(next);
+			}}
+		>
 			<PopoverTrigger asChild>{children}</PopoverTrigger>
 			<PopoverContent align='end' sideOffset={8} aria-labelledby={`${inputId}-title`} className='scrollbar-subtle flex max-h-(--radix-popover-content-available-height) w-[460px] flex-col gap-4 overflow-y-auto p-5'
 				// Opening it, she's here to add someone: the field takes focus, not "Copy link".
@@ -219,7 +240,8 @@ const [value, setValue] = React.useState("");
 				</div>
 				<div className='flex flex-col gap-2'>
 					<form
-						className='relative flex gap-2'
+						ref={formRef}
+						className='flex gap-2'
 						onSubmit={(event) => {
 							event.preventDefault();
 							invite();
@@ -265,7 +287,7 @@ const [value, setValue] = React.useState("");
 								Invite
 							</Button>
 						) : null}
-						{/* What matches, under the field, as wide as it (the role and "Invite" stay visible). */}
+						{/* What matches, under the field, as wide as it (the role and "Invite" stay visible), over Share: never cut off. */}
 						{listOpen ? (
 							<PeopleList
 								id={listId}
@@ -274,7 +296,7 @@ const [value, setValue] = React.useState("");
 								active={active}
 								onActiveChange={setActive}
 								onPick={pick}
-								className='absolute inset-x-0 top-full mt-1'
+								anchor={formRef}
 							/>
 						) : null}
 					</form>
@@ -286,11 +308,15 @@ const [value, setValue] = React.useState("");
 					) : null}
 				</div>
 				<div className='flex flex-col gap-2'>
-					<p className='text-sm text-muted-foreground'>Who has access</p>
+					<p className='text-sm text-foreground'>Who has access</p>
 					{/* No height of its own: every row shows, and the whole popover scrolls if it's taller than the window. */}
-					<ul aria-label='Who has access' className='flex flex-col gap-3'>
+					{/* Someone added comes in, and someone removed leaves, with Expand (`ExpandRow`): the rows under them, and what's
+					    below the list, slide instead of jumping. The 12px between rows is inside each row, so it goes with it. */}
+					<ul aria-label='Who has access' className='flex flex-col'>
+						<AnimatePresence initial={false}>
 						{members.map((member) => (
-							<li key={member.id} className='flex items-center gap-3'>
+							<ExpandRow key={member.id} space='pt-3'>
+							<div className='flex items-center gap-3'>
 								<MemberAvatar member={member} />
 								<MemberName member={member} team={member.kind === "department" ? teamPeople(member.name, member) : undefined} />
 								{/* Their role's menu, with "Remove" last. A role that isn't in `roles` is the only one in it; with nothing to
@@ -308,12 +334,20 @@ const [value, setValue] = React.useState("");
 										label={`Role for ${member.name}`}
 									/>
 								)}
-							</li>
+							</div>
+							</ExpandRow>
 						))}
+						</AnimatePresence>
 					</ul>
-					{/* The reviewers Sparks recommends for this idea, not added yet: closed until she asks, each added on its own. */}
+					{/* The reviewers Sparks recommends for this idea, not added yet: open when Share opens, each added on its own.
+					    A line between them and who has access, 16px on either side. */}
+					{/* The last one added, the section closes with Expand too (the column's 8px gap taken back above and given back
+					    inside, so nothing jumps). */}
+					<AnimatePresence initial={false}>
 					{recommendedLeft.length ? (
-						<>
+						<ExpandBlock key='recommended-section' className='-mt-2'>
+							<div className='flex flex-col gap-2 pt-2'>
+							<hr className='mt-2 border-border' />
 							<Button
 								variant='link'
 								// 8px more above it than between the rows; regular weight, as a link in the text.
@@ -323,51 +357,155 @@ const [value, setValue] = React.useState("");
 								onClick={() => setShowRecommended((open) => !open)}
 							>
 								{recommended?.label ?? "View recommended reviewers"} ({recommendedLeft.length})
-								{showRecommended ? <ChevronUp aria-hidden /> : <ChevronDown aria-hidden />}
+								{/* Up while open, down while closed: one replacing the other in place (MOTION.md → `iconSwapVariants`). */}
+								<span className='relative grid size-4 place-items-center'>
+									<AnimatePresence initial={false}>
+										<motion.span
+											key={showRecommended ? "up" : "down"}
+											className='absolute inset-0 grid place-items-center'
+											variants={prefersReducedMotion ? iconSwapReducedVariants : iconSwapVariants}
+											initial='hidden'
+											animate='shown'
+											exit='hidden'
+										>
+											{showRecommended ? <ChevronUp aria-hidden /> : <ChevronDown aria-hidden />}
+										</motion.span>
+									</AnimatePresence>
+								</span>
 							</Button>
+							{/* Expand (MOTION.md): the list opens and closes in place, its height and the 8px above it together (the
+							    -8px takes back the column's gap, the 8px inside gives it back), so nothing jumps; clipped only while it
+							    moves. Reduced motion: at once. */}
+							<AnimatePresence initial={false}>
 							{showRecommended ? (
-								<ul id={recommendedId} aria-label='Recommended reviewers' className='flex flex-col gap-1'>
+								<motion.div
+									key='recommended'
+									{...recommendedClip}
+									variants={expandVariants}
+									initial={prefersReducedMotion ? false : "initial"}
+									animate='animate'
+									exit={prefersReducedMotion ? undefined : "exit"}
+									className='-mt-2'
+								>
+								<ul id={recommendedId} aria-label='Recommended reviewers' className='flex flex-col pt-2'>
+									{/* Added, a row leaves (and comes back if they're removed from "Who has access"), with Expand. */}
+									<AnimatePresence initial={false}>
 									{recommendedLeft.map((reviewer) => {
 										const add = () => recommended?.onAdd(reviewer.name, pendingExcluded[reviewer.name] ?? []);
 										return (
-											// The whole row adds it, on a click (the circle-plus is the button for the keyboard). A team's name opens its
-											// people instead; a click inside that popover (a portal, outside the row's DOM) doesn't add it.
-											<li
-												key={reviewer.name}
-												className='-mx-2 flex cursor-pointer items-center gap-3 rounded-lg px-2 py-1 hover:bg-accent'
-												onClick={(event) => {
-													if (!event.currentTarget.contains(event.target as Node)) return;
-													if ((event.target as HTMLElement).closest("button")) return;
-													add();
-												}}
-											>
+											<ExpandRow key={reviewer.name} space='pt-1'>
+											<RecommendedRow name={reviewer.name} onAdd={add}>
 												<MemberAvatar member={{ id: reviewer.name, kind: reviewer.kind, name: reviewer.name, role: "commenter", avatarSrc: reviewer.avatarSrc }} />
 												<MemberName
 													member={{ name: reviewer.name, detail: reviewer.detail }}
 													team={reviewer.kind === "department" ? teamPeople(reviewer.name) : undefined}
 												/>
-												{/* A ghost icon button with an 18px circle-plus, named in its tooltip ("Add UX team"). */}
-												<Tooltip>
-													<TooltipTrigger asChild>
-														<Button variant='ghost' size='icon' aria-label={`Add ${reviewer.name}`} className='shrink-0 text-icon [&_svg]:size-[18px]' onClick={add}>
-															<CirclePlus aria-hidden />
-														</Button>
-													</TooltipTrigger>
-													<TooltipContent side='bottom' sideOffset={6}>
-														Add {reviewer.name}
-													</TooltipContent>
-												</Tooltip>
-											</li>
+											</RecommendedRow>
+											</ExpandRow>
 										);
 									})}
+									</AnimatePresence>
 								</ul>
+								</motion.div>
 							) : null}
-						</>
+							</AnimatePresence>
+							</div>
+						</ExpandBlock>
 					) : null}
+					</AnimatePresence>
 				</div>
 
 			</PopoverContent>
 		</Popover>
+	);
+}
+
+/**
+ * A row coming into a list or leaving it, with Expand (MOTION.md): its height and opacity together, so what's under it
+ * slides; clipped only while it moves (`useExpandClip`), so a focus ring or a menu's trigger isn't cut once it's there.
+ * Rows shown when the list opens don't animate (`AnimatePresence initial={false}` around them). Reduced motion: at once.
+ * Space above a row goes inside it (`space`, e.g. `pt-3`, on a wrapper: never padding on the animated element itself,
+ * which its height can't go below), so it opens and closes with the row.
+ */
+function ExpandRow({ space, children }: { space: string; children: React.ReactNode }) {
+	// The space goes on a wrapper inside: on the animated element, its height couldn't go below its padding, and the
+	// space would jump in or out at once. None above the first row.
+	return (
+		<ExpandBlock as='li' className='[&:first-child>*]:pt-0'>
+			<div className={space}>{children}</div>
+		</ExpandBlock>
+	);
+}
+
+/** `ExpandRow` for any block: a `div` (or an `li`). */
+function ExpandBlock({ as = "div", className, children }: { as?: "div" | "li"; className?: string; children: React.ReactNode }) {
+	const { prefersReducedMotion } = useMotionPreference();
+	const clip = useExpandClip<HTMLElement>();
+	const Element = as === "li" ? motion.li : motion.div;
+	return (
+		<Element
+			{...clip}
+			ref={clip.ref as React.RefObject<never>}
+			variants={expandVariants}
+			initial={prefersReducedMotion ? false : "initial"}
+			animate='animate'
+			exit={prefersReducedMotion ? undefined : "exit"}
+			className={className}
+		>
+			{children}
+		</Element>
+	);
+}
+
+/**
+ * A recommended person or team, not added yet: the whole row adds it on a click (the circle-plus is the button for the
+ * keyboard). A team's name opens its people instead; a click inside that popover (a portal, outside the row's DOM)
+ * doesn't add it. While the row is hovered, or the button has focus, the circle-plus turns solid in the link color: the
+ * outline icon gives way to the filled one (MOTION.md: `iconSwapVariants`; reduced motion: at once).
+ */
+function RecommendedRow({ name, onAdd, children }: { name: string; onAdd: () => void; children: React.ReactNode }) {
+	const { prefersReducedMotion } = useMotionPreference();
+	const swap = prefersReducedMotion ? iconSwapReducedVariants : iconSwapVariants;
+	const [hovered, setHovered] = React.useState(false);
+	const [focused, setFocused] = React.useState(false);
+	const hot = hovered || focused;
+	return (
+		<div
+			className='-mx-2 flex cursor-pointer items-center gap-3 rounded-lg px-2 py-1 hover:bg-accent'
+			onPointerEnter={() => setHovered(true)}
+			onPointerLeave={() => setHovered(false)}
+			onClick={(event) => {
+				if (!event.currentTarget.contains(event.target as Node)) return;
+				if ((event.target as HTMLElement).closest("button")) return;
+				onAdd();
+			}}
+		>
+			{children}
+			{/* A ghost icon button with an 18px circle-plus, named in its tooltip ("Add UX team"). */}
+			<Tooltip>
+				<TooltipTrigger asChild>
+					<Button
+						variant='ghost'
+						size='icon'
+						aria-label={`Add ${name}`}
+						className='relative shrink-0 text-icon hover:bg-transparent [&_svg]:size-[18px]'
+						onClick={onAdd}
+						onFocus={(event) => setFocused(event.currentTarget.matches(":focus-visible"))}
+						onBlur={() => setFocused(false)}
+					>
+						<AnimatePresence initial={false}>
+							<motion.span key={hot ? "solid" : "outline"} className='absolute inset-0 grid place-items-center' variants={swap} initial='hidden' animate='shown' exit='hidden'>
+								{/* Solid: the circle filled with the link color, the plus in the background color. */}
+								{hot ? <CirclePlus aria-hidden className='fill-link text-link [&_path]:stroke-background' /> : <CirclePlus aria-hidden />}
+							</motion.span>
+						</AnimatePresence>
+					</Button>
+				</TooltipTrigger>
+				<TooltipContent side='bottom' sideOffset={6}>
+					Add {name}
+				</TooltipContent>
+			</Tooltip>
+		</div>
 	);
 }
 
@@ -392,7 +530,8 @@ function MemberName({
 	const text = (
 		<>
 			<span className='truncate text-sm font-semibold text-foreground'>{member.name}</span>
-			{detail ? <span className='truncate text-xs text-muted-foreground'>{detail}</span> : null}
+			{/* A team's size opens its people: in the link color, underlined on hover, so it reads as something to select. */}
+			{detail ? <span className={cn("truncate text-xs", team ? "text-link underline-offset-2 group-hover/team:underline group-focus-visible/team:underline" : "text-muted-foreground")}>{detail}</span> : null}
 		</>
 	);
 	if (!team) return <div className='flex min-w-0 flex-1 flex-col'>{text}</div>;
@@ -405,7 +544,7 @@ function MemberName({
 					<button
 						type='button'
 						aria-label={`${member.name}, ${detail ?? `${people.length} people`}: see who's in it`}
-						className='-mx-1.5 -my-0.5 flex min-w-0 flex-col items-start rounded-md px-1.5 py-0.5 text-start outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring'
+						className='group/team -mx-1.5 -my-0.5 flex min-w-0 flex-col items-start rounded-md px-1.5 py-0.5 text-start outline-none focus-visible:ring-2 focus-visible:ring-ring'
 					>
 						{text}
 					</button>

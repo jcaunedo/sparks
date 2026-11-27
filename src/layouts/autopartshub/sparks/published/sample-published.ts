@@ -5,7 +5,7 @@ import { sampleDirectionFitCheck, sampleDirections, sampleRecommended } from "..
 import { sampleSuccessSuggestedTarget } from "../plan/sample-success";
 import type { PrototypeComment, PrototypeCommentAuthor } from "../prototype/prototype-comments";
 import type { ConceptForReview } from "../review/review-panel";
-import type { AdvancedIdea } from "./published-idea";
+import type { AdvancedIdea, PublishedVersion } from "./published-idea";
 import {
 	sampleBuildFlag,
 	sampleConceptForReview,
@@ -38,6 +38,12 @@ const dana: PrototypeCommentAuthor = { name: samplePublishedBy, avatarSrc: sampl
 
 export const samplePublishedVersion = 3;
 export const samplePublishedAt = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
+
+/** The versions Dana published to the teams, oldest first: the first build, then version 3 (version 2 was never published). */
+export const samplePublishedVersions: PublishedVersion[] = [
+	{ version: 1, name: "First build", publishedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString() },
+	{ version: samplePublishedVersion, name: "Fit message names the vehicle first", publishedAt: samplePublishedAt },
+];
 
 /** Dana's invitation, as Sparks drafted it for engineering. */
 export const samplePublishedInvitation = {
@@ -85,6 +91,12 @@ export const sampleAdvancedReader: PrototypeCommentAuthor = sampleTeamMember;
 export const sampleAdvancedVersion = 4;
 const advancedChanges = { fitAbovePrice: true };
 const advancedEvaluation = sampleEvaluation(advancedChanges, sampleAdvancedVersion);
+
+/** Version 4, the one advanced, after the two published for review. */
+export const sampleAdvancedVersions: PublishedVersion[] = [
+	...samplePublishedVersions,
+	{ version: sampleAdvancedVersion, name: "Fit message above the price", publishedAt: samplePublishedAt },
+];
 
 /** The idea as it was advanced. */
 export const sampleAdvancedConcept: ConceptForReview = sampleConceptForReview({

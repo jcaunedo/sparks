@@ -22,14 +22,16 @@ function PeopleField({ initial = "" }: { initial?: string }) {
 	const id = React.useId();
 	const matches = matchPeople(options, value);
 	const open = matches.length > 0 && !closed;
+	const fieldRef = React.useRef<HTMLInputElement>(null);
 	const pick = (option: PeopleOption) => {
 		setPicked(option.name);
 		setValue("");
 	};
 	return (
 		<div className='flex w-80 flex-col gap-2'>
-			<div className='relative'>
+			<div>
 				<input
+					ref={fieldRef}
 					value={value}
 					onChange={(event) => {
 						setValue(event.target.value);
@@ -48,7 +50,7 @@ function PeopleField({ initial = "" }: { initial?: string }) {
 					className='h-9 w-full rounded-input border border-input bg-background px-3 text-sm outline-none'
 				/>
 				{open ? (
-					<PeopleList id={id} label='People and departments' options={matches} active={active} onActiveChange={setActive} onPick={pick} className='absolute inset-x-0 top-full mt-1' />
+					<PeopleList id={id} label='People and departments' options={matches} active={active} onActiveChange={setActive} onPick={pick} anchor={fieldRef} />
 				) : null}
 			</div>
 			{picked ? <p className='text-sm text-muted-foreground'>Picked: {picked}</p> : null}

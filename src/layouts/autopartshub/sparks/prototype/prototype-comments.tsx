@@ -96,6 +96,12 @@ type PrototypeCommentsProps = {
 	 * pinned where the selection starts, with the text quoted (the idea for review; not the prototype, whose text is UI).
 	 */
 	selectable?: boolean;
+	/**
+	 * The layer takes its container's full height (`h-full`, default: the prototype's device). Off, it's as tall as what's
+	 * in it (the idea for review, in a scrolling card: with the full height, the text would run past it and the card's
+	 * bottom padding would be lost).
+	 */
+	fill?: boolean;
 	children: React.ReactNode;
 };
 
@@ -206,6 +212,8 @@ function CommentForm({
 	const [active, setActive] = React.useState(0);
 	const [dismissed, setDismissed] = React.useState<number>();
 	const ref = React.useRef<HTMLTextAreaElement>(null);
+	// The box the "@" list opens under.
+	const boxRef = React.useRef<HTMLDivElement>(null);
 	const listId = React.useId();
 
 	const query = mentionable.length ? mentionQuery(text, caret) : undefined;
@@ -263,7 +271,7 @@ function CommentForm({
 				submit();
 			}}
 		>
-			<div className='relative'>
+			<div ref={boxRef}>
 				<textarea
 					ref={ref}
 					autoFocus={autoFocus}
@@ -301,7 +309,8 @@ function CommentForm({
 						active={active}
 						onActiveChange={setActive}
 						onPick={pick}
-						className='absolute inset-x-2 top-full mt-1'
+						anchor={boxRef}
+						inset={8}
 					/>
 				) : null}
 			</div>
@@ -453,6 +462,7 @@ function PrototypeComments({
 	openId: openIdProp,
 	onOpenChange,
 	selectable = false,
+	fill = true,
 	children,
 }: PrototypeCommentsProps) {
 	const contentRef = React.useRef<HTMLDivElement>(null);
@@ -609,6 +619,26 @@ function PrototypeComments({
 		document.getSelection()?.removeAllRanges();
 	};
 
+	// Where a comment goes when it's put on `target` at a point (client coordinates; none: its middle): the part it's on
+	// (`data-point`) or the element itself, where inside it, and its screen.
+	const anchorOn = (target: HTMLElement, client?: { x: number; y: number }): CommentAnchor | null => {
+		const content = contentRef.current;
+		if (!content?.contains(target)) return null;
+		const pointable = target.closest<HTMLElement>("[data-point]");
+		const element = pointable && content.contains(pointable) ? pointable : target;
+		const rect = element.getBoundingClientRect();
+		const at = client
+			? { fx: (client.x - rect.left) / (rect.width || 1), fy: (client.y - rect.top) / (rect.height || 1) }
+			: { fx: 0.5, fy: 0.5 };
+		// Its screen, and where on it, so it opens there later.
+		const { root, view, part } = screenIn(content);
+		const r = root?.getBoundingClientRect();
+		const screenAt = r && { fx: (rect.left + at.fx * rect.width - r.left) / (r.width || 1), fy: (rect.top + at.fy * rect.height - r.top) / (r.height || 1) };
+		const point = element === pointable ? pointable.dataset.point : undefined;
+		const nth = point ? [...content.querySelectorAll(`[data-point="${CSS.escape(point)}"]`)].indexOf(element) : undefined;
+		return { point, nth, node: element, view, part, screenAt, where: describe(element, element === pointable), ...at };
+	};
+
 	// With "Add comment" on, a click on the prototype starts a comment there instead of using it; Enter starts one on
 	// the element with focus, in its middle.
 	const start = (event: React.MouseEvent | React.KeyboardEvent) => {
@@ -616,25 +646,74 @@ function PrototypeComments({
 		if (!active || !contentRef.current?.contains(target)) return;
 		event.preventDefault();
 		event.stopPropagation();
-		const pointable = target.closest<HTMLElement>("[data-point]");
-		const element = pointable && contentRef.current.contains(pointable) ? pointable : target;
-		const rect = element.getBoundingClientRect();
-		const at =
-			"clientX" in event
-				? { fx: (event.clientX - rect.left) / (rect.width || 1), fy: (event.clientY - rect.top) / (rect.height || 1) }
-				: { fx: 0.5, fy: 0.5 };
-		// Its screen, and where on it, so it opens there later.
-		const { root, view, part } = screenIn(contentRef.current);
-		const r = root?.getBoundingClientRect();
-		const screenAt = r && { fx: (rect.left + at.fx * rect.width - r.left) / (r.width || 1), fy: (rect.top + at.fy * rect.height - r.top) / (r.height || 1) };
-		const point = element === pointable ? pointable.dataset.point : undefined;
-		const nth = point ? [...contentRef.current.querySelectorAll(`[data-point="${CSS.escape(point)}"]`)].indexOf(element) : undefined;
+		const anchor = anchorOn(target, "clientX" in event ? { x: event.clientX, y: event.clientY } : undefined);
+		if (!anchor) return;
 		setOpenId(undefined);
-		setDraft({ point, nth, node: element, view, part, screenAt, where: describe(element, element === pointable), ...at });
+		setDraft(anchor);
 	};
 
+	// Dragging a pin (the one being written, or her own once added) moves it: it follows the pointer, and where it's
+	// dropped (its corner) is where it sits now, on whatever is there. A click without moving opens it, as before.
+	const [dragged, setDragged] = React.useState<{ id: string; x: number; y: number } | null>(null);
+	const drag = React.useRef<{ id: string; pointer: number; from: { x: number; y: number }; at: { x: number; y: number }; k: number; moved: boolean } | null>(null);
+	const justDragged = React.useRef(false);
+	const dragHandlers = (id: string, onDrop: (anchor: CommentAnchor) => void) => ({
+		onPointerDown: (event: React.PointerEvent<HTMLButtonElement>) => {
+			justDragged.current = false;
+			const at = positions[id];
+			const wrapper = wrapperRef.current;
+			if (event.button !== 0 || !at || !wrapper) return;
+			const origin = wrapper.getBoundingClientRect();
+			const k = origin.width / (wrapper.offsetWidth || origin.width || 1) || 1;
+			drag.current = { id, pointer: event.pointerId, from: { x: event.clientX, y: event.clientY }, at, k, moved: false };
+			event.currentTarget.setPointerCapture(event.pointerId);
+			// Focus stays where it is (the comment being written keeps its caret); a click still opens it.
+			event.preventDefault();
+		},
+		onPointerMove: (event: React.PointerEvent<HTMLButtonElement>) => {
+			const d = drag.current;
+			if (!d || d.pointer !== event.pointerId) return;
+			const dx = event.clientX - d.from.x;
+			const dy = event.clientY - d.from.y;
+			// A few pixels first, so a click that wobbles still opens it.
+			if (!d.moved && Math.hypot(dx, dy) < 4) return;
+			d.moved = true;
+			setDragged({ id, x: d.at.x + dx / d.k, y: d.at.y + dy / d.k });
+		},
+		onPointerUp: (event: React.PointerEvent<HTMLButtonElement>) => {
+			const d = drag.current;
+			drag.current = null;
+			if (!d?.moved) return;
+			justDragged.current = true;
+			setDragged(null);
+			const wrapper = wrapperRef.current;
+			const content = contentRef.current;
+			if (!wrapper || !content) return;
+			// The pin's corner, where it was dropped.
+			const origin = wrapper.getBoundingClientRect();
+			const x = origin.left + d.at.x * d.k + (event.clientX - d.from.x);
+			const y = origin.top + d.at.y * d.k + (event.clientY - d.from.y);
+			const target = document.elementsFromPoint(x, y).find((el): el is HTMLElement => el instanceof HTMLElement && el !== content && content.contains(el));
+			// Dropped off the prototype: it goes back where it was.
+			const anchor = target ? anchorOn(target, { x, y }) : null;
+			if (anchor) onDrop(anchor);
+		},
+		onPointerCancel: () => {
+			drag.current = null;
+			setDragged(null);
+		},
+		// The click that ends a drag doesn't open or close it.
+		onClick: (event: React.MouseEvent) => {
+			if (!justDragged.current) return;
+			justDragged.current = false;
+			event.preventDefault();
+		},
+	});
+	// Moved onto another element, a quote's place in the text no longer applies (the quote itself stays).
+	const moved = <T extends CommentAnchor>(from: T, anchor: CommentAnchor): T => ({ ...from, ...anchor, quote: from.quote, quoteAt: anchor.node === from.node ? from.quoteAt : undefined });
+
 	return (
-		<div ref={wrapperRef} className='relative h-full'>
+		<div ref={wrapperRef} className={cn("relative", fill && "h-full")}>
 			{/* The open comment's quoted text: the highlight's color (corn-100, as a marker pen). */}
 			{selectable ? <style>{`::highlight(${quoteHighlight}) { background-color: var(--corn-100); color: inherit; }`}</style> : null}
 			<div
@@ -644,13 +723,15 @@ function PrototypeComments({
 				onMouseDownCapture={(event) => active && contentRef.current?.contains(event.target as Node) && event.preventDefault()}
 				onKeyDownCapture={(event) => (event.key === "Enter" ? start(event) : undefined)}
 				// `isolate`: the screens' own stacking (the sticky header and bottom bar) stays under the pins.
-				className={cn("isolate h-full", active && "cursor-crosshair [&_*]:cursor-crosshair")}
+				className={cn("isolate", fill && "h-full", active && "cursor-crosshair [&_*]:cursor-crosshair")}
 			>
 				{children}
 			</div>
 			{shown.map((comment) => {
-				const at = positions[comment.id];
+				const at = dragged?.id === comment.id ? dragged : positions[comment.id];
 				if (!at) return null;
+				// Her own comment can be moved (and kept: `onUpdate`).
+				const movable = Boolean(onUpdate) && comment.author.name === author.name;
 				const time = formatRelativeDate(comment.createdAt);
 				return (
 					<Popover key={comment.id} open={openId === comment.id} onOpenChange={(open) => setOpenId(open ? comment.id : undefined)}>
@@ -660,6 +741,8 @@ function PrototypeComments({
 								open={openId === comment.id}
 								aria-label={`${comment.author.name}'s comment: ${comment.text}${comment.replies?.length ? `, ${comment.replies.length} ${comment.replies.length === 1 ? "reply" : "replies"}` : ""}`}
 								style={{ left: at.x, top: at.y }}
+								className={cn(movable && "cursor-grab touch-none active:cursor-grabbing", dragged?.id === comment.id && "z-10")}
+								{...(movable ? dragHandlers(comment.id, (anchor) => onUpdate?.(moved(comment, anchor))) : {})}
 							/>
 						</PopoverTrigger>
 						{/* The thread: the comment, its replies, a box to reply; resolve or reopen, and delete her own. */}
@@ -668,6 +751,8 @@ function PrototypeComments({
 							align='start'
 							sideOffset={8}
 							aria-label={`${comment.author.name}'s comment`}
+							// It follows its pin while the pin is dragged.
+							updatePositionStrategy='always'
 							className='flex w-80 flex-col gap-3 p-0 outline-none'
 							// Focus on the thread, not on its first button, whose tooltip would cover the comment and take the first Esc.
 							onOpenAutoFocus={(event) => {
@@ -768,7 +853,16 @@ function PrototypeComments({
 			{draft && positions.draft ? (
 				<Popover open onOpenChange={(open) => !open && setDraft(null)}>
 					<PopoverAnchor asChild>
-						<Pin author={author} open tabIndex={-1} aria-hidden style={{ left: positions.draft.x, top: positions.draft.y }} />
+						<Pin
+							author={author}
+							open
+							tabIndex={-1}
+							aria-hidden
+							data-comment-draft=''
+							style={dragged?.id === "draft" ? { left: dragged.x, top: dragged.y } : { left: positions.draft.x, top: positions.draft.y }}
+							className='cursor-grab touch-none active:cursor-grabbing'
+							{...dragHandlers("draft", (anchor) => setDraft((current) => (current ? moved(current, anchor) : current)))}
+						/>
 					</PopoverAnchor>
 					<PopoverContent
 						side='bottom'
@@ -776,8 +870,14 @@ function PrototypeComments({
 						sideOffset={8}
 						aria-label='New comment'
 						className='w-80 overflow-hidden p-0'
-						// A click elsewhere on the prototype starts another comment instead; don't let it drop this one first.
-						onInteractOutside={(event) => contentRef.current?.contains(event.target as Node) && event.preventDefault()}
+						// It follows its pin while the pin is dragged.
+						updatePositionStrategy='always'
+						// A click elsewhere on the prototype starts another comment instead, and dragging its pin moves it: don't let
+						// either drop this one first.
+						onInteractOutside={(event) => {
+							const target = event.target as Element;
+							if (contentRef.current?.contains(target) || target.closest?.("[data-comment-draft]")) event.preventDefault();
+						}}
 					>
 						{draft.quote ? <Quote text={draft.quote} className='mx-4 mt-4' /> : null}
 						<CommentForm

@@ -1,7 +1,7 @@
 import * as React from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 
-import { goToStory, openStoryInNewTab, storyIds, withStoryLinks } from "../../../story-links";
+import { goToStory, openStoryInNewTab, storyHref, storyIds, withStoryLinks } from "../../../story-links";
 import { conceptStoryLinks } from "../start-page/concept-story-links";
 import { EmptyState } from "@/components/feedback/empty-state";
 import { sampleUser } from "../../sample-data/sample-user";
@@ -82,10 +82,19 @@ import {
 } from "../prototype/fit-check-prototype";
 import { PrototypePanel } from "../prototype/prototype-panel";
 import type { PrototypeComment } from "../prototype/prototype-comments";
-import { clearDemoConcept, demoConceptHref, loadDemoConcept, returnToIdeas, saveDemoConcept } from "../shared/demo-session";
+import {
+	clearDemoConcept,
+	continueDemoConcept,
+	demoConceptHref,
+	isContinuingDemoConcept,
+	loadDemoConcept,
+	returnToIdeas,
+	saveDemoConcept,
+} from "../shared/demo-session";
 import { sampleFitCheck } from "../prototype/sample-fit-check";
 import { directionPrototypes, screenAudience } from "../prototype/direction-prototypes";
 import type { ReviewDecision } from "../review/sample-review-directions";
+import type { IdeaStatus } from "../shared/idea-status";
 import type { SparksStep } from "../shared/steps";
 import type { PlanPartId } from "./plan-parts";
 import {
@@ -152,7 +161,6 @@ import {
 	sampleRunStepMs,
 	sampleValidateStartedReply,
 } from "../validate/sample-validate";
-import { PublishPanel } from "../review/review-next";
 import { ReviewPanel, reviewPartTitles, type IdeaComment, type Reviewer, type ReviewNext, type ReviewStatus } from "../review/review-panel";
 import {
 	sampleConceptForReview,
@@ -180,9 +188,9 @@ import {
 	sampleReviewProposals,
 	sampleNotEvaluatedNote,
 	sampleReviewStartedReply,
+	sampleInvitationEmail,
 	sampleReviewSummary,
-	sampleInvitation,
-	sampleDepartmentsInWords,
+sampleDepartmentsInWords,
 } from "../review/sample-review";
 import { sampleDirectory, sampleMentionable, samplePeopleIn, sampleShareDepartment, sampleShareLink, sampleShareMemberFor, sampleShareOwner } from "../shared/sample-share";
 import type { ShareMember } from "@/components/overlays/share-popover";
@@ -525,7 +533,8 @@ function WorkspacePrototype(props: SparksWorkspaceProps) {
 	// that starts past Plan has its pick built. Review is about one path; on Review, that's the one shown.
 	const [paths, setPaths] = React.useState<string[]>(() => ((props.reachedStep ?? props.currentStep) === "plan" ? [] : [planChoiceId]));
 	const [activePath, setActivePath] = React.useState<string>();
-	const [reviewPath, setReviewPath] = React.useState<string>();
+	// The path in Review. A story that starts on Review (or past it) has the plan's choice there.
+	const [reviewPath, setReviewPath] = React.useState<string | undefined>(() => ((props.reachedStep ?? props.currentStep) === "review" ? planChoiceId : undefined));
 	const chosenId = step === "review" && reviewPath ? reviewPath : (activePath ?? planChoiceId);
 	const built = directionPrototypes[chosenId] ?? directionPrototypes["fit-check"];
 	// Evaluate and Review follow the path shown: its "What we'll build" (drafted here when a story starts later, or for a
@@ -536,12 +545,9 @@ function WorkspacePrototype(props: SparksWorkspaceProps) {
 	const chosenDraftFor = (d: (typeof sampleDirections)[number]) =>
 		[...chosenParts].reverse().find((c) => c.name === d.name) ?? sampleChosenFrom(d, sampleDirections, targetText);
 	const chosenDraft = chosenDraftFor(direction);
-	// A path's label, numbered as in Sparks's list of directions ("2. Flag often-returned parts").
-	const directionOrder = directionsFrom(messages).length ? directionsFrom(messages) : sampleDirections;
+	// A path's label: the direction's name alone ("Flag often-returned parts"), the idea, not a card in the plan's list.
 	const pathLabel = (id: string) => {
-		const index = directionOrder.findIndex((d) => d.id === id);
-		const name = (sampleDirections.find((d) => d.id === id) ?? sampleDirectionFitCheck).name;
-		return index >= 0 ? `${index + 1}. ${name}` : name;
+		return (sampleDirections.find((d) => d.id === id) ?? sampleDirectionFitCheck).name;
 	};
 
 	// Each path's own build progress (how many of `sampleBuildSteps` are finished), versions and Evaluate runs. A story that
@@ -624,7 +630,7 @@ function WorkspacePrototype(props: SparksWorkspaceProps) {
 	};
 	// "Edit element": on while she picks; then the element she picked, until she says what to change.
 	const [pointing, setPointing] = React.useState(false);
-	// Adding a comment on the prototype: turned on with "Add comment" in the Comments panel.
+	// Adding a comment: turned on with "Add comment" on the prototype's toolbar, on the prototype and, in Review, on the idea.
 	const [addingComment, setAddingComment] = React.useState(false);
 	// Her comments on the prototype, kept here so the Comments panel lists them; the one opened from there.
 	const [prototypeComments, setPrototypeComments] = React.useState<PrototypeComment[]>(() =>
@@ -794,7 +800,14 @@ function WorkspacePrototype(props: SparksWorkspaceProps) {
 		return unique.sort((a, b) => a.at.view - b.at.view || (a.at.part ? 1 : 0) - (b.at.part ? 1 : 0));
 	})();
 	// Review (prds/sparks-review.md): where it stands, the reviewers, what changed after the reviews, and her recommendation.
-	const [review, setReview] = React.useState<{
+	// Review, by path (prds/sparks-review.md, "Review's screen"): each path sent to Review keeps its own review, so
+	// switching paths there and back finds it as it was.
+	const [reviews, setReviews] = React.useState<
+		Record<
+			string,
+			{
+		/** What she wrote with "Add a note" in "Publish your idea": added to the invitation email, after Sparks's message. */
+		note?: string;
 		status: ReviewStatus;
 		reviewers: Reviewer[];
 		ticks: number;
@@ -811,15 +824,14 @@ function WorkspacePrototype(props: SparksWorkspaceProps) {
 		/** When it started, for the time counting up; how long it took, once it's done. */
 		startedAt?: number;
 		seconds?: number;
-		/** Her invitation to the teams, once she's edited it. */
-		invitation?: string;
-		/** The reviews' proposed changes: made (what that did) or left. */
+/** The reviews' proposed changes: made (what that did) or left. */
 		changes?: { made: boolean; done?: string };
 		/** She edited her recommendation; she shared the advanced idea with the reviewers' departments. */
 		recommendationEdited?: boolean;
 		shared?: boolean;
-		/** The prototype version the teams see, once she's published (prds/sparks-review.md, "Publishing"). */
+		/** The prototype version the teams see, once she's published (prds/sparks-review.md, "Publishing"), and when (ISO). */
 		published?: number;
+		publishedAt?: string;
 		/**
 		 * Advanced and shared: what the team who builds it flagged as unclear, Sparks's fix (hers to edit) and what she did
 		 * (prds/sparks-review.md, "Something unclear after it advances").
@@ -827,16 +839,30 @@ function WorkspacePrototype(props: SparksWorkspaceProps) {
 		buildFlag?: { commentId: string; text: string; criterion: string; suggestion: string; why: string; edited?: boolean; outcome?: "made" | "skipped" };
 		/** Clarifications she made after it advanced: a criterion as it was, and as it reads now. */
 		clarified?: { from: string; to: string }[];
-	}>(() =>
+			}
+		>
+	>(() =>
 		// A story (or an idea reopened) that starts on Review, or past it: the idea, put together.
 		(props.reachedStep ?? props.currentStep) === "review"
-			? { status: { kind: "ready" }, reviewers: [], ticks: 0, skipped: initialRuns.length === 0, openQuestions: [] }
-			: undefined,
+			? { [planChoiceId]: { status: { kind: "ready" }, reviewers: [], ticks: 0, skipped: initialRuns.length === 0, openQuestions: [] } }
+			: {},
 	);
 	const lastFinished = (list: Run[]) => [...list].reverse().find((r) => !r.stopped && sampleRunFinished(r.evaluation, r.step))?.evaluation;
 	const lastEvaluation = lastFinished(runs);
 	// What Review is about: the path sent there (the one shown, before any is).
 	const reviewId = reviewPath ?? chosenId;
+	type ReviewState = (typeof reviews)[string];
+	type ReviewUpdate = ReviewState | undefined | ((current: ReviewState | undefined) => ReviewState | undefined);
+	const review: ReviewState | undefined = reviews[reviewId];
+	const setReviewFor = (id: string, next: ReviewUpdate) =>
+		setReviews((map) => {
+			const value = typeof next === "function" ? next(map[id]) : next;
+			const copy = { ...map };
+			if (value) copy[id] = value;
+			else delete copy[id];
+			return copy;
+		});
+	const setReview = (next: ReviewUpdate) => setReviewFor(reviewId, next);
 	const reviewData = dataFor(reviewId);
 	const reviewChanges = reviewData.versions[reviewData.versions.length - 1].changes;
 	const reviewDirection = sampleDirections.find((d) => d.id === reviewId) ?? sampleDirectionFitCheck;
@@ -860,12 +886,24 @@ function WorkspacePrototype(props: SparksWorkspaceProps) {
 	const enterReview = (skipped: boolean) => {
 		setStep("review");
 		setReached("review");
-		if (review?.published !== undefined && !review.decision && reviewPath === chosenId) {
-			setReview({ ...review, skipped });
+		setReviewPath(chosenId);
+		const existing = reviews[chosenId];
+		if (existing?.published !== undefined && !existing.decision) {
+			setReviewFor(chosenId, { ...existing, skipped });
 			return;
 		}
-		setReviewPath(chosenId);
-		setReview({ status: { kind: "ready" }, reviewers: [], ticks: 0, skipped, openQuestions: [], buildStep: 0, startedAt: Date.now() });
+		setReviewFor(chosenId, { status: { kind: "ready" }, reviewers: [], ticks: 0, skipped, openQuestions: [], buildStep: 0, startedAt: Date.now() });
+	};
+	/**
+	 * The paths menu on the idea's name, in Review (with more than one path): Review on that path, and its prototype on the
+	 * right. One already in Review opens as it was; another is put together, Evaluate skipped if it has no finished run.
+	 */
+	const switchReviewPath = (id: string) => {
+		if (id === reviewId) return;
+		setActivePath(id);
+		setReviewPath(id);
+		if (!reviews[id])
+			setReviewFor(id, { status: { kind: "ready" }, reviewers: [], ticks: 0, skipped: !lastFinished(dataFor(id).runs), openQuestions: [], buildStep: 0, startedAt: Date.now() });
 	};
 	/**
 	 * "Add to Review", in Evaluate and on Review's empty state: it needs a run on the current version; with no run at all,
@@ -911,11 +949,32 @@ function WorkspacePrototype(props: SparksWorkspaceProps) {
 		suggestedReviewers.some((s) => s.reviewer.id === reviewer.id && shareMembers.some((m) => m.id === s.member.id && m.role !== "owner")),
 	);
 	const addedReviewers = shareMembers.filter((m) => m.role === "commenter" || m.role === "viewer");
-	const inWords = (names: string[]) => (names.length < 2 ? names.join("") : `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}`);
-	/** The teams she added with "Share" get this version of the idea and its prototype, and the invitation. */
-	const publishIt = () =>
-		setReview((current) => (current ? { ...current, status: { kind: "in-review" }, reviewers: reviewersInShare, published: reviewData.versions.length } : current));
-	const publishUpdate = (version: number) => setReview((current) => (current ? { ...current, published: version } : current));
+	// How many people it goes to: each person, and the people in each team she added, without those she unchecked.
+	const reviewerCount = addedReviewers.reduce((count, member) => {
+		if (member.kind === "person") return count + 1;
+		const people = samplePeopleIn(member.name);
+		return count + (people.length ? people.filter((p) => !member.excluded?.includes(p.name)).length : Number.parseInt(member.detail ?? "", 10) || 0);
+	}, 0);
+	/** The people and teams she added with "Share" get this version of the idea and its prototype, and the email invitation. */
+	// What's shared when she publishes: every path built, the one in Review first, each at its latest version.
+	const sharedPaths = [reviewId, ...paths.filter((id) => id !== reviewId)];
+	const publishIt = () => {
+		const publishedAt = new Date().toISOString();
+		for (const id of sharedPaths)
+			setReviewFor(id, (current) => ({
+				...(current ?? { status: { kind: "ready" }, reviewers: [], ticks: 0, skipped: !lastFinished(dataFor(id).runs), openQuestions: [] }),
+				status: { kind: "in-review" },
+				reviewers: reviewersInShare,
+				published: dataFor(id).versions.length,
+				publishedAt,
+			}));
+	};
+	// Published, for the path on screen: its version and when, under the prototype's title in every step.
+	const publishedInfo =
+		review?.published !== undefined && review.publishedAt && reviewId === chosenId ? { version: review.published, at: review.publishedAt } : undefined;
+	// "Publish your idea", open (from the header's Publish).
+	const [publishOpen, setPublishOpen] = React.useState(false);
+	const publishUpdate = (version: number) => setReview((current) => (current ? { ...current, published: version, publishedAt: new Date().toISOString() } : current));
 	/** "Publish", "Publish update" or "Published", in the header, on Review (prds/sparks-review.md, "Publishing"). */
 	const publishAction = (() => {
 		const latest = reviewData.versions.length;
@@ -924,6 +983,20 @@ function WorkspacePrototype(props: SparksWorkspaceProps) {
 		if (review.published === undefined) return { label: "Publish", onClick: publishIt };
 		if (latest > review.published) return { label: "Publish update", onClick: () => publishUpdate(latest) };
 		return { label: "Published", disabled: true, hint: `The teams see the latest version, ${review.published}.` };
+	})();
+	/**
+	 * Where the idea stands, in the badge after its name and on its start-page row (prds/sparks.md, "Where an idea
+	 * stands"): decided or waiting for a decision on any path; in review once any path is published; ready to publish
+	 * once Review has put a path together; a draft until then.
+	 */
+	const ideaStatus = ((): { status: IdeaStatus; date?: string } => {
+		const all = Object.values(reviews);
+		const advanced = all.find((r) => r.status.kind === "advanced")?.status;
+		if (advanced?.kind === "advanced") return { status: "advanced", date: advanced.date.replace(/, \d{4}$/, "") };
+		if (all.some((r) => r.status.kind === "waiting")) return { status: "waiting" };
+		// Published: with the teams, until she asks for a decision.
+		if (all.some((r) => r.published !== undefined)) return { status: "in-review" };
+		return { status: all.some((r) => r.buildStep === undefined) ? "ready" : "draft" };
 	})();
 	/** What Review is waiting for, at the top of the idea for review (`ReviewNextStep`). */
 	const reviewsIn = Boolean(review?.reviewers.length && review.reviewers.every((r) => r.status === "view"));
@@ -1037,10 +1110,6 @@ function WorkspacePrototype(props: SparksWorkspaceProps) {
 		return {
 			kind: "publish",
 			version: latest,
-			invitation: review.invitation ?? sampleInvitation(review.skipped, reviewId),
-			onInvitationChange: (invitation) => update({ invitation }),
-			goesTo: inWords(addedReviewers.map((member) => member.name)),
-			onEvaluate: review.skipped ? evaluateIt : undefined,
 		};
 	})();
 	/** The first change to a published prototype: Sparks says what the teams still see, once per version published. */
@@ -1172,7 +1241,8 @@ function WorkspacePrototype(props: SparksWorkspaceProps) {
 	// panel. Leaving it stops adding one.
 	const commentable = (step === "prototype" && isBuilt) || (step === "review" && Boolean(review) && review?.buildStep === undefined);
 	React.useEffect(() => {
-		if (!commentable) setAddingComment(false);
+		if (commentable) return;
+		setAddingComment(false);
 	}, [commentable]);
 
 	// The screen being built, shown as it's assembled; the last one stays while Sparks checks it all.
@@ -1751,6 +1821,8 @@ function WorkspacePrototype(props: SparksWorkspaceProps) {
 	const tracksDemo = React.useRef(
 		(() => {
 			if (props.messages.length === 0) return true;
+			// A shortcut ("Go to Review" in "+") opened this story on her concept: it carries on with it.
+			if (isContinuingDemoConcept()) return true;
 			const saved = loadDemoConcept()?.workspace.messages ?? [];
 			return saved.length === props.messages.length && saved[saved.length - 1]?.id === props.messages[props.messages.length - 1]?.id;
 		})(),
@@ -1762,7 +1834,6 @@ function WorkspacePrototype(props: SparksWorkspaceProps) {
 		const now = new Date().toISOString();
 		demoCreatedAt.current ??= now;
 		const others = shareMembers.length - 1;
-		const reviewKind = review?.status.kind;
 		saveDemoConcept({
 			summary: {
 				id: "demo",
@@ -1774,13 +1845,14 @@ function WorkspacePrototype(props: SparksWorkspaceProps) {
 				validation: lastEvaluation
 					? Math.round((lastEvaluation.scenarios.filter((x) => x.outcome === "done").length / lastEvaluation.scenarios.length) * 100)
 					: undefined,
-				status: reviewKind === "waiting" || reviewKind === "advanced" ? reviewKind : reached,
-				statusDate: reviewKind === "waiting" || reviewKind === "advanced" ? now : undefined,
+				// A draft shows the step it's on; then where it stands, as in its header.
+				status: ideaStatus.status === "draft" ? reached : ideaStatus.status,
+				statusDate: ideaStatus.status === "waiting" || ideaStatus.status === "advanced" ? now : undefined,
 				href: demoConceptHref,
 			},
 			workspace: { conceptName, currentStep: step, reachedStep: reached, messages },
 		});
-	}, [tracksDemo, messages, step, reached, conceptName, shareMembers.length, review?.status.kind, lastEvaluation]);
+	}, [tracksDemo, messages, step, reached, conceptName, shareMembers.length, ideaStatus.status, lastEvaluation]);
 
 	// "Add Plan" in the "+" menu (demo only): Plan's whole conversation, up to the directions, as the Directions story
 	// has it. The workspace opens again on it (a new key), so it shows whole, at the directions, like a concept reopened.
@@ -1800,6 +1872,8 @@ function WorkspacePrototype(props: SparksWorkspaceProps) {
 			glideToLatest={planAdded > 0}
 			conceptName={conceptName}
 			defaultConceptName={defaultName}
+			status={ideaStatus.status}
+			statusDate={ideaStatus.date}
 			onRename={(name) => setHerName(name === defaultName ? undefined : name)}
 			onUseDefaultName={() => setHerName(undefined)}
 			currentStep={step}
@@ -1844,14 +1918,36 @@ function WorkspacePrototype(props: SparksWorkspaceProps) {
 				onRemove: (id) => setLibraryRemoved((current) => [...current, id]),
 			}}
 			// In the header, on Review only.
-			// The first time, "Publish" opens who reviews it and the invitation, to check and change before it goes.
+			// The first time, "Publish" opens what's shared, what happens next and who it goes to, to check before it goes.
 			publish={
 				step === "review" && publishAction
 					? {
 							...publishAction,
-							panel: reviewNext?.kind === "publish" ? <PublishPanel next={reviewNext} /> : undefined,
+							// What's shared: the idea, then the prototype in Review, each at the version that goes out.
+							details:
+								reviewNext?.kind === "publish"
+									? {
+											// The idea, and every path built (the one in Review first), each at the version that goes out.
+											items: [{ name: conceptName, paths: sharedPaths.map((id) => ({ name: pathLabel(id), version: dataFor(id).versions.length })) }],
+											reviewers: reviewerCount,
+											// The invitation: Sparks's standard message, due a week after publishing; her note goes after it.
+											// The email lists the same items, so it matches what's shared.
+											email: {
+												from: `${props.user.firstName} Morales`,
+												message: sampleInvitationEmail.message,
+												due: sampleInvitationEmail.due,
+												onReview: () => openStoryInNewTab(storyIds.sparksPublishedIdea),
+											},
+											note: review?.note,
+											onNoteChange: (note) => setReview((current) => (current ? { ...current, note } : current)),
+											// The idea's address opens the reviewers' page (the story), here or on the Netlify site.
+											linkHref: storyHref(storyIds.sparksPublishedIdea),
+										}
+									: undefined,
 							// No one to send it to until she adds reviewers with "Share".
 							blocked: !reviewersInShare.length,
+							open: publishOpen,
+							onOpenChange: setPublishOpen,
 						}
 					: undefined
 			}
@@ -1901,9 +1997,19 @@ function WorkspacePrototype(props: SparksWorkspaceProps) {
 			onAnswerChange={changeAnswer}
 			onAddPlan={reached === "plan" ? addPlan : undefined}
 			// The demo's way to the reviewers' page, from any step: the published idea, in its own tab.
-			onSeeTeamsView={() => openStoryInNewTab(storyIds.sparksPublishedIdea)}
+			// The reviewers' page, in its own tab: at the version they see once published; once advanced and shared, the
+			// page the team who builds it opens (what to build first).
+			onSeeTeamsView={() =>
+				review?.shared && review.decision?.kind === "advance"
+					? openStoryInNewTab(storyIds.sparksAdvancedIdea)
+					: openStoryInNewTab(storyIds.sparksPublishedIdea, review?.published !== undefined ? { version: review.published } : undefined)
+			}
 			// The demo's jump to Review, with the idea put together (story "Review Ready").
-			onGoToReview={() => goToStory(storyIds.sparksReviewReady)}
+			onGoToReview={() => {
+				// Her concept carries on in Review: its row in "Your ideas" follows it there.
+				if (tracksDemo) continueDemoConcept();
+				goToStory(storyIds.sparksReviewReady);
+			}}
 			// Comments: the reviewers' feedback once it's in review; the dot while there's feedback she hasn't opened yet.
 			comments={{
 				reviewers: review?.status.kind === "ready" ? [] : (review?.reviewers ?? []),
@@ -1913,8 +2019,7 @@ function WorkspacePrototype(props: SparksWorkspaceProps) {
 					if (status) setReadFeedback((current) => ({ ...current, [id]: status }));
 				},
 				prototype: prototypeComments,
-				adding: commentable ? { on: addingComment, onChange: setAddingComment } : undefined,
-				// Opening one shows its path first.
+// Opening one shows its path first.
 				idea: ideaComments,
 				// From any step: Review opens, with the part brought into view.
 				onOpenIdeaComment: (id) => {
@@ -1942,10 +2047,14 @@ function WorkspacePrototype(props: SparksWorkspaceProps) {
 					<div className='flex min-h-0 flex-1 gap-4'>
 						<ReviewPanel
 							className='min-w-0 basis-0'
+							// The idea's name, the direction she chose: "Fit check before you buy".
+							title={pathLabel(reviewId)}
+							// With more than one path, the name switches between them, as in Prototype: Review on that path.
+							paths={paths.map((id) => ({ id, label: pathLabel(id) }))}
+							path={reviewId}
+							onPathChange={switchReviewPath}
 							concept={concept()}
-							status={review.status}
 							reviewers={review.reviewers}
-							reviewsIn={reviewsIn && !review.decision}
 							// In the idea once it's sent; before, it's hers to edit in the next step.
 							recommendation={review.submitted ? review.recommendation : undefined}
 							next={reviewNext}
@@ -1958,9 +2067,8 @@ function WorkspacePrototype(props: SparksWorkspaceProps) {
 										}
 							}
 							building={review.buildStep === undefined ? undefined : sampleReviewBuilt(reviewPartTitles, review.skipped, review.buildStep)}
-							published={review.published}
 							focusPart={focusPart}
-							// Her comments on parts of the idea, with the teams': "Comment" on each part, or "Add comment" in Comments.
+							// Her comments on parts of the idea, with the teams': "Add comment" on the prototype's toolbar, or selected text.
 							comments={{
 								items: ideaComments,
 								onChange: setIdeaComments,
@@ -1970,13 +2078,6 @@ function WorkspacePrototype(props: SparksWorkspaceProps) {
 								openId: openIdeaComment,
 								onOpenChange: setOpenIdeaComment,
 							}}
-							// Opens the reviewers' page for the version they see, in its own tab.
-							// Once advanced and shared, the page the team who builds it opens: what to build first.
-							onOpenPublished={() =>
-								review.shared && review.decision?.kind === "advance"
-									? openStoryInNewTab(storyIds.sparksAdvancedIdea)
-									: openStoryInNewTab(storyIds.sparksPublishedIdea, { version: review.published })
-							}
 						/>
 						{/* As the teams get it: to try and comment on; changed in Prototype, so no "Edit element" and no restoring. */}
 						<PrototypePanel
@@ -1987,6 +2088,9 @@ function WorkspacePrototype(props: SparksWorkspaceProps) {
 							versions={versions}
 							paths={[{ id: chosenId, label: pathLabel(chosenId) }]}
 							path={chosenId}
+							published={publishedInfo}
+							// The idea's panel has the name: the title is the version, with when it was published under it.
+							titleShows='version'
 							{...prototypeCommenting}
 						>
 							{(audience, screen, part) => built.render({ data: sampleFitCheck, audience, openOn: screen, openPart: part, changes })}
@@ -2069,6 +2173,7 @@ function WorkspacePrototype(props: SparksWorkspaceProps) {
 							path={chosenId}
 							onPathChange={setActivePath}
 							versions={versions}
+							published={publishedInfo}
 							// Restoring is a change to the prototype: Sparks says so in Prototype's conversation.
 							onRestore={(id) => setMessages((current) => [...current, { ...withNewId(withTeamsNote(restore(id))), step: "prototype" }])}
 							// The go-ahead needs a run on the current version; with no run at all, Review opens with Evaluate skipped.
@@ -2127,6 +2232,7 @@ function WorkspacePrototype(props: SparksWorkspaceProps) {
 						}}
 						versions={versions}
 						onRestore={(id) => setMessages((current) => [...current, withNewId(withTeamsNote(restore(id)))])}
+						published={publishedInfo}
 						// Built from an earlier version of the plan: the note, and the way to update it (prds/sparks-prototype.md, "When the plan changes").
 						notice={
 							outdated.length
@@ -2518,7 +2624,7 @@ export const ValidateRunning: Story = {
 
 /**
  * The run finished: the evaluation on the left (Sparks's read first), the prototype on the right opened where the
- * first open finding happens, with its numbered marker; "Add to Review" for the go-ahead, "Run again" after a fix.
+ * first open finding happens, with its numbered marker; "Add to Review" for the go-ahead, "Run" after a fix.
  */
 export const ValidateResults: Story = {
 	args: {

@@ -20,8 +20,9 @@ const buttonVariants = cva(
 					"border border-input bg-background text-foreground shadow-xs hover:border-input-ring hover:bg-accent hover:text-accent-foreground",
 				// The dark neutral tone (Figma colors/tone/neutral/neutral), e.g. Sparks's "New idea"; sparks.ds Style=Solid.
 				// Hover: a 20% white layer on the fill (Figma), so it lightens, as color-mix.
+				// Disabled: the muted fill and subtle text (Figma: Sparks "Publish your idea", "Publish & invite"), not faded to 50%.
 				neutral:
-					"bg-neutral text-neutral-foreground hover:bg-[color-mix(in_srgb,var(--neutral)_80%,white)]",
+					"bg-neutral text-neutral-foreground hover:bg-[color-mix(in_srgb,var(--neutral)_80%,white)] disabled:bg-neutral-muted disabled:text-foreground-subtle disabled:opacity-100",
 				secondary:
 					"bg-secondary text-secondary-foreground hover:bg-secondary/80",
 				// sparks.ds Style=Ghost, Tone=Neutral. Hover: the hover fill (colors/states/hover, `accent`).

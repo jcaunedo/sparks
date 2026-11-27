@@ -28,6 +28,23 @@ type ClarificationCardProps = Omit<React.ComponentProps<"div">, "children"> & {
 	defaultEditing?: boolean;
 };
 
+/** A web address in an answer ("https://shop.autopartsco.example/search"). */
+const urlPattern = /(https?:\/\/[^\s]+)/g;
+
+/** The answer's text with each web address as a link, in the link color, opening in a new tab. */
+function withLinks(text: string) {
+	return text.split(urlPattern).map((part, index) =>
+		index % 2 ? (
+			<a key={index} href={part} target='_blank' rel='noreferrer' className='rounded-sm text-link underline-offset-2 outline-none hover:underline focus-visible:ring-[3px] focus-visible:ring-ring/50'>
+				{part}
+				<span className='sr-only'> (opens in a new tab)</span>
+			</a>
+		) : (
+			part
+		),
+	);
+}
+
 /**
  * A question from the AI assistant in the conversation, with its answer for the user to confirm with a reply, edit in
  * place or correct (sparks.ds "clarification-card", node 55:2585: State=Default and State=Edit).
@@ -136,8 +153,8 @@ function ClarificationCard({
 								</div>
 							</div>
 						) : (
-							// A blank line in the answer starts a new paragraph.
-							<p className='whitespace-pre-line wrap-anywhere'>{answer}</p>
+							// A blank line in the answer starts a new paragraph. A web address in it is a link.
+							<p className='whitespace-pre-line wrap-anywhere'>{withLinks(answer)}</p>
 						)}
 					</div>
 					{onEdit && !editing ? (

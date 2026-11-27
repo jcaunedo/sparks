@@ -33,6 +33,11 @@ export type ReviewProfile = {
 	effort: { short: string; line: string };
 	/** What the invitation asks of engineering. */
 	ask: string;
+	/**
+	 * "For engineering to check": what Sparks couldn't settle about building it (speed, systems, data), each with how to
+	 * check it ("… How: …"), as "For the UX team to test with real people" does for the experience.
+	 */
+	engineering: string[];
 	openQuestions: string[];
 	/**
 	 * Once it's advanced and shared: what someone on the team who builds it flags as unclear (an acceptance criterion),
@@ -117,6 +122,11 @@ const fitCheck: ReviewProfile = {
 	question: () => "Who fills the fit data gaps for older vehicles, and by when?",
 	effort: { short: "about 6 weeks", line: "Effort: about 6 weeks for the web team, after the holiday freeze (from engineering)." },
 	ask: "From engineering, I'd most like your view on the fit data.",
+	engineering: [
+		"Can every product page ask the catalog whether a part fits the saved vehicle without slowing the page down? How: a load test with a busy day's traffic.",
+		"Reading VINs and invoices: build it, or use an outside service? How: a short spike comparing the two.",
+		"Where saved vehicles live: in the customer accounts Sales already has, or somewhere new? How: a check with the Sales accounts team.",
+	],
 	openQuestions: ["Do professional mechanics need more than one saved vehicle?"],
 	buildFlag: {
 		part: "What people need to do (user stories), and how to know it’s done (acceptance criteria)",
@@ -186,6 +196,10 @@ const flagReturns: ReviewProfile = {
 	question: () => 'Can the counts include only "doesn\'t fit" returns before launch?',
 	effort: { short: "about 2 weeks", line: "Effort: about 2 weeks for the web team, before the holiday freeze (from engineering)." },
 	ask: "From engineering, I'd most like your view on the return counts.",
+	engineering: [
+		"Can the return counts be split by reason, so only \"doesn't fit\" returns count? How: a query on last quarter's returns.",
+		"Can search results read the counts without slowing down, and how fresh do they need to be? How: a load test on search.",
+	],
 	openQuestions: ['How should the flag be worded so it reads as a reminder, not a warning?'],
 	recommendation: (evaluation) =>
 		`I'd recommend going back to the choice. Business data and the simulation are inconclusive: "doesn't fit" returns would likely drop ${rangeOf(evaluation)}, below the 25% target, and ${evaluation.findings.some((f) => f.id === "flag-quality" && f.status === "fixed") ? "even worded as a reminder, the flag doesn't say whether a part fits" : "the UX team worries the flag reads as a warning about quality"}. It's quick to build, so it could still come later, alongside a fit check.`,
@@ -249,6 +263,10 @@ const checkoutCheck: ReviewProfile = {
 	question: () => "Who fills the fit data gaps for older vehicles, and by when?",
 	effort: { short: "about 4 weeks", line: "Effort: about 4 weeks for the web team, before January (from engineering)." },
 	ask: "From engineering, I'd most like your view on changing checkout before January.",
+	engineering: [
+		"Can checkout check each part against the saved vehicle and offer a swap without slowing the order down? How: a load test on checkout.",
+		"Can the order system change a part at checkout? How: a check with the orders team.",
+	],
 	openQuestions: [],
 	recommendation: (evaluation) =>
 		`I'd recommend advancing, with a small live test first. Business data supports the hypothesis: "doesn't fit" returns are likely to drop ${rangeOf(evaluation)}, against a target of 25%. ${
@@ -331,6 +349,10 @@ const fitData: ReviewProfile = {
 	question: () => "Can the supplier feed update weekly, so fixes reach customers sooner?",
 	effort: { short: "about 3 weeks", line: "Effort: about 3 weeks for engineering, plus about a day a week for the catalog team (from engineering)." },
 	ask: "From engineering, I'd most like your view on the counter screen.",
+	engineering: [
+		"Can the counter screen find the customer's account from the order fast enough at the counter? How: a test on the store system.",
+		"Can the weekly list be built from return reasons and the supplier feed without anyone putting it together? How: a sample run on last month's returns.",
+	],
 	openQuestions: ["Who owns the weekly list once it's running?"],
 	recommendation: (evaluation) =>
 		`I'd recommend going back to the choice. It's low risk and fixes the cause, but business data and the simulation are inconclusive: "doesn't fit" returns would likely drop ${rangeOf(evaluation)} in 3 months, below the 25% target, and ${

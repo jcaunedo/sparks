@@ -34,6 +34,8 @@ const motionDuration = {
 	assembleFill: 1.2,
 	/** A long auto-scroll meant to be watched: after "Add Plan", the filled-in Plan going by on the way to the directions. */
 	glideScroll: 1.2,
+	/** Every tooltip: how long the pointer rests on its control before it shows (keyboard focus shows it at once). */
+	tooltipDelay: 1,
 } as const;
 
 /** Pixels. */

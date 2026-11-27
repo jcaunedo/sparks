@@ -132,10 +132,10 @@ type ValidatePanelProps = {
 	 * it, scenarios are done in order, as many as `done`.
 	 */
 	agentStatus?: Record<string, "running" | "done">;
-	/** "Run" (or "Run again"), and Stop while it runs, in the panel's header. */
+	/** "Run" (the same before and after a run), and Stop while it runs, in the panel's header. */
 	onRun?: () => void;
 	onStop?: () => void;
-	/** The prototype's version now, when it's newer than the one evaluated: "Run again" stands out. */
+	/** The prototype's version now, when it's newer than the one evaluated: "Run" stands out. */
 	currentVersion?: number;
 	/** Findings fixed in the prototype since this run, by id: the version that fixed them. */
 	fixedSince?: Record<string, number>;
@@ -222,13 +222,14 @@ function FindingFix({
 			)}
 			{finding.fixable ? (
 				onFix ? (
-					<Button variant='neutral' onClick={() => onFix(finding.id)}>
+					// Outlined: a finding's actions sit under the panel's dark buttons ("Run", "Add to Review"), not beside them.
+					<Button variant='outline' onClick={() => onFix(finding.id)}>
 						<WandSparkles aria-hidden data-icon='inline-start' /> {fixed ? "Change the fix in the prototype" : "Fix in the prototype"}
 					</Button>
 				) : null
 			) : finding.direction && tryDirection ? (
 				// Another direction: tried as another path beside this one, which stays as it is.
-				<Button variant='neutral' onClick={tryDirection.onClick}>
+				<Button variant='outline' onClick={tryDirection.onClick}>
 					<GitBranchPlus aria-hidden data-icon='inline-start' /> {tryDirection.built ? "Open" : "Try"} "{finding.direction.name}"
 				</Button>
 			) : null}
@@ -458,7 +459,8 @@ function ValidatePanel({
 				</Button>
 			) : onRun ? (
 				<Button variant='neutral' onClick={onRun}>
-					<Play aria-hidden data-icon='inline-start' /> {evaluation ? "Run again" : "Run"}
+					<Play aria-hidden data-icon='inline-start' />
+					Run
 				</Button>
 			) : null}
 		</div>

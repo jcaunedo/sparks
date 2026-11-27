@@ -82,7 +82,7 @@ export const WithIconBefore: Story = {
 		children: (
 			<>
 				<Play aria-hidden='true' data-icon='inline-start' />
-				Run again
+				Run
 			</>
 		),
 	},

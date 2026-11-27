@@ -34,6 +34,7 @@
 	--color-foreground-defined: var(--foreground-defined);
 	--color-foreground-strong: var(--foreground-strong);
 	--color-background-subtle: var(--background-subtle);
+	--color-background-soft: var(--background-soft);
 	--color-background-defined: var(--background-defined);
 	--color-card-subtle: var(--card-subtle);
 	--color-card-muted: var(--card-muted);
@@ -730,6 +731,7 @@
 	--foreground-defined: var(--gray-600); /* colors/foreground/defined */
 	--foreground-strong: var(--gray-900); /* colors/foreground/strong */
 	--background-subtle: var(--gray-50); /* colors/background/subtle */
+	--background-soft: oklch(0.984 0.001 197.14); /* colors/background/soft, #f9fafa (a raw value in sparks.ds, no primitive) */
 	--background-defined: var(--gray-200); /* colors/background/defined */
 	--card-subtle: var(--gray-50); /* colors/card/subtle */
 	--card-muted: var(--gray-100); /* colors/card/muted */
@@ -892,6 +894,7 @@
 	--foreground-prominent: var(--white);
 	--on-foreground: var(--gray-950);
 	--background-subtle: var(--gray-900);
+	--background-soft: var(--gray-900);
 	--background-defined: var(--gray-800);
 	--card-subtle: var(--gray-800);
 	--card-muted: var(--gray-800);

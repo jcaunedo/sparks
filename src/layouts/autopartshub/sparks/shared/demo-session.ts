@@ -20,6 +20,12 @@ const key = "sparks:demo-concept";
 /** Set by "All ideas" as it goes to the start page, which takes it: this visit comes from an idea. */
 const returningKey = "sparks:demo-returning";
 
+/**
+ * Set by a demo shortcut that opens another workspace story on her concept ("Go to Review" in "+"): that story carries
+ * on with it, so its row follows (name, step, status). Cleared when the start page opens.
+ */
+const continuingKey = "sparks:demo-continuing";
+
 /** The row's link, mapped to the workspace story by `conceptStoryLinks`. */
 const demoConceptHref = "#demo-concept";
 
@@ -44,8 +50,27 @@ function saveDemoConcept(concept: DemoConcept) {
 function clearDemoConcept() {
 	try {
 		sessionStorage.removeItem(key);
+		sessionStorage.removeItem(continuingKey);
 	} catch {
 		// No storage: there's no concept to clear.
+	}
+}
+
+/** A shortcut is about to open another workspace story on her concept: it keeps tracking it. */
+function continueDemoConcept() {
+	try {
+		if (sessionStorage.getItem(key)) sessionStorage.setItem(continuingKey, "yes");
+	} catch {
+		// No storage: there's no concept to carry on.
+	}
+}
+
+/** For a workspace story as it opens: whether a shortcut brought her concept here. */
+function isContinuingDemoConcept() {
+	try {
+		return sessionStorage.getItem(continuingKey) === "yes";
+	} catch {
+		return false;
 	}
 }
 
@@ -63,10 +88,21 @@ function openDemoConcept(): DemoConcept | undefined {
 	try {
 		if (!sessionStorage.getItem(returningKey)) sessionStorage.removeItem(key);
 		sessionStorage.removeItem(returningKey);
+		sessionStorage.removeItem(continuingKey);
 	} catch {
 		// No storage: there's no concept.
 	}
 	return loadDemoConcept();
 }
 
-export { clearDemoConcept, demoConceptHref, loadDemoConcept, openDemoConcept, returnToIdeas, saveDemoConcept, type DemoConcept };
+export {
+	clearDemoConcept,
+	continueDemoConcept,
+	demoConceptHref,
+	isContinuingDemoConcept,
+	loadDemoConcept,
+	openDemoConcept,
+	returnToIdeas,
+	saveDemoConcept,
+	type DemoConcept,
+};

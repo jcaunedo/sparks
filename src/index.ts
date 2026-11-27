@@ -142,6 +142,7 @@ export { Badge, badgeVariants, type BadgeProps } from "@/components/data-display
 /* -------------------------------------------------------------------------- */
 
 export { EmptyState, type EmptyStateProps } from "@/components/feedback/empty-state";
+export { InlineAlert, inlineAlertVariants, type InlineAlertProps, type InlineAlertTone } from "@/components/feedback/inline-alert";
 
 /* -------------------------------------------------------------------------- */
 /* Overlays                                                                   */
@@ -185,6 +186,7 @@ export {
 	PopoverTitle,
 	PopoverDescription,
 } from "@/components/overlays/popover";
+export { PublishItems, PublishPopover, type PublishItem, type PublishPath, type PublishPopoverProps } from "@/components/overlays/publish-popover";
 export {
 	SharePopover,
 	shareRoles,

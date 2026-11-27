@@ -13,11 +13,15 @@ import { cn } from "@/lib/utils";
 import type { AutoPartsHubUser } from "../../autopartshub";
 import { HeaderActions } from "../../header-actions";
 import type { NotificationsPopoverProps } from "../../notifications-popover";
+import { ideaStatusBadge, type IdeaStatus } from "../shared/idea-status";
 import { OutlineIconButton } from "../shared/outline-icon-button";
 import { sparksSteps, type SparksStep } from "../shared/steps";
 
-/** Where a concept is (prds/sparks.md → "The start page"): the step it's on, or where the decision stands. */
-type SparksConceptStatus = SparksStep | "waiting" | "advanced" | "stopped";
+/**
+ * Where a concept is (prds/sparks.md → "The start page"): the step it's on while it's a draft, then where it stands with
+ * the teams (`IdeaStatus`, as in the concept's header).
+ */
+type SparksConceptStatus = SparksStep | Exclude<IdeaStatus, "draft">;
 
 /** One concept in "Your concepts" or "Shared with you". */
 type SparksConceptSummary = {
@@ -70,10 +74,13 @@ const statusBadge: Record<SparksConceptStatus, { label: string; tone: BadgeProps
 		{ label: string; tone: BadgeProps["tone"] }
 	>),
 	// Not the step's name alone: with the teams, it's being reviewed (prds/sparks.md, "The start page").
-	review: { label: "In review", tone: stepTone.review },
-	waiting: { label: "Waiting for a decision", tone: "amber" },
-	advanced: { label: "Advanced", tone: "green" },
-	stopped: { label: "Stopped", tone: "neutral" },
+	review: ideaStatusBadge["in-review"],
+	// Published: the same labels and colors as the badge by the concept's name.
+	ready: ideaStatusBadge.ready,
+	"in-review": ideaStatusBadge["in-review"],
+	waiting: ideaStatusBadge.waiting,
+	advanced: ideaStatusBadge.advanced,
+	stopped: ideaStatusBadge.stopped,
 };
 
 /* Figma: the preview tiles are the Sparks logo's colors at 10% on white, in the logo's order. */

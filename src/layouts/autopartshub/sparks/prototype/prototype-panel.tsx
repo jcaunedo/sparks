@@ -50,9 +50,14 @@ type PrototypePanelProps = {
 	pointing?: boolean;
 	onPointingChange?: (pointing: boolean) => void;
 	/** Every version, oldest first; the last is the current one (prds/sparks-prototype.md, "Versions"). */
-	versions?: { id: string; name: string }[];
+	versions?: { id: string; name: string; number?: number; publishedAt?: string }[];
 	/** Restoring a version saves it as the newest. */
 	onRestore?: (id: string) => void;
+	/** Published (Review): the version the teams see and when, after "Version {n}" under the title. */
+	published?: { version: number; at: string };
+	/** The reviewers' page: the published version shown and opening another (`VersionsMenu`'s view mode), instead of `onRestore`. */
+	viewingVersion?: string;
+	onViewVersion?: (id: string) => void;
 	/** Who adds comments ("Add comment"): her name and photo on each pin. Without it, there's no "Add comment". */
 	commentAuthor?: PrototypeCommentAuthor;
 	/** Who can be tagged with "@" in a comment: people and departments (`PrototypeComments` `mentionable`). */
@@ -64,8 +69,8 @@ type PrototypePanelProps = {
 	comments?: PrototypeComment[];
 	onCommentsChange?: (comments: PrototypeComment[]) => void;
 	/**
-	 * Adding a comment (a click on the prototype drops a pin), kept outside: "Add comment" is in the Comments panel
-	 * (`AddCommentButton`), not on this toolbar. Without `onCommentingChange`, the panel keeps it and has its own button.
+	 * Adding a comment (a click on the prototype drops a pin), kept outside, so the toolbar's "Add comment" also turns it on
+	 * for the idea in Review (the idea's `comments.adding`). Without `onCommentingChange`, the panel keeps it.
 	 */
 	commenting?: boolean;
 	onCommentingChange?: (on: boolean) => void;
@@ -76,6 +81,11 @@ type PrototypePanelProps = {
 	paths?: { id: string; label: string }[];
 	path?: string;
 	onPathChange?: (id: string) => void;
+	/**
+	 * What the title says: `name` (default), the path's name with "Version {n}" under it; `version`, "Version {n}" as the
+	 * menu with when it was published under it, for Review, where the idea's panel already has the name.
+	 */
+	titleShows?: "name" | "version";
 	/**
 	 * A note above the prototype, e.g. that it was built from an earlier version of the plan (prds/sparks-prototype.md, "When the
 	 * plan changes"), with an optional action ("Update prototype"). It stays until the story clears it.
@@ -274,6 +284,10 @@ function PrototypePanel({
 	onPointingChange,
 	versions = [],
 	onRestore,
+	published,
+	titleShows,
+	viewingVersion,
+	onViewVersion,
 	notice,
 	action,
 	commentAuthor,
@@ -510,7 +524,7 @@ function PrototypePanel({
 			    (beside the plan), the actions keep their width and the direction's name truncates. */}
 			<div className='grid grid-cols-[1fr_auto_1fr] items-center gap-4'>
 				<div className='flex min-w-0 items-center gap-2'>
-					{/* Which direction this is, numbered as on its card, in the style of a heading in Sparks's messages (base
+					{/* Which direction this is, by its name, in the style of a heading in Sparks's messages (base
 					    semibold, foreground-prominent), with "Version {n}" under it. The title is the menu: the versions, newest
 					    first, with "Restore", and with more than one path, the paths to switch between (prds/sparks-prototype.md,
 					    "Versions", "Paths"). */}
@@ -523,6 +537,10 @@ function PrototypePanel({
 							paths={paths}
 							path={path}
 							onPathChange={onPathChange}
+							published={building ? undefined : published}
+							shows={titleShows}
+							viewing={viewingVersion}
+							onView={onViewVersion}
 						/>
 					) : null}
 				</div>
@@ -565,9 +583,9 @@ function PrototypePanel({
 							<MousePointerClick aria-hidden />
 						</HeaderIconButton>
 					) : null}
-					{/* "Add comment": a click on the prototype drops a pin and opens the comment's popover (Esc stops it). Here only
-					    when the panel keeps it; otherwise it's in the Comments panel. */}
-					{commentAuthor && !onCommentingChange ? (
+					{/* "Add comment": a click on the prototype drops a pin and opens the comment's popover (Esc stops it). Also in
+					    the Comments panel's header when the page keeps it (`onCommentingChange`); both show the same state. */}
+					{commentAuthor ? (
 						<HeaderIconButton
 							label='Add comment'
 							aria-pressed={commenting}

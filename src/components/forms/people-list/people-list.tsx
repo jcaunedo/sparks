@@ -1,4 +1,5 @@
 import type * as React from "react";
+import * as PopoverPrimitive from "@radix-ui/react-popover";
 import { Building2 } from "lucide-react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/data-display/avatar";
@@ -62,6 +63,8 @@ function PeopleList({
 	active,
 	onActiveChange,
 	onPick,
+	anchor,
+	inset = 0,
 	className,
 }: {
 	id: string;
@@ -70,38 +73,68 @@ function PeopleList({
 	active: number;
 	onActiveChange: (index: number) => void;
 	onPick: (option: PeopleOption) => void;
+	/** The field it opens under: the list is as wide as it (less `inset` on each side), 4px below it. */
+	anchor: React.RefObject<HTMLElement | null>;
+	/** How far in from the field's sides the list starts and ends (px). */
+	inset?: number;
 	className?: string;
 }) {
+	// Its own layer, in a portal (DESIGN.md → "The people list floats over its container"): a scrolling or clipped
+	// container around the field (Share's popover, a comments panel) never cuts it off. The field keeps focus.
 	return (
-		<ul
-			id={id}
-			role='listbox'
-			aria-label={label}
-			className={cn("z-10 flex flex-col gap-[2px] rounded-input border border-border bg-popover p-1 shadow-xl", className)}
-		>
-			{options.map((option, index) => (
-				<li
-					key={option.id}
-					id={`${id}-${index}`}
-					role='option'
-					aria-selected={index === active}
-					// Picking doesn't take focus from the field.
-					onMouseDown={(event) => {
-						event.preventDefault();
-						onPick(option);
-					}}
-					onMouseEnter={() => onActiveChange(index)}
-					className={cn(
-						"flex h-9 cursor-default items-center gap-2 rounded-md px-2 text-sm font-medium text-foreground",
-						index === active && "bg-accent text-accent-foreground",
-					)}
+		<PopoverPrimitive.Root open>
+			<PopoverPrimitive.Anchor virtualRef={anchor as React.RefObject<HTMLElement>} />
+			<PopoverPrimitive.Portal>
+				<PopoverPrimitive.Content
+					side='bottom'
+					align='start'
+					sideOffset={4}
+					alignOffset={inset}
+					collisionPadding={8}
+					// Focus stays in the field; Esc and clicks outside are the field's to handle (`handlePeopleKeys`, its blur).
+					onOpenAutoFocus={(event) => event.preventDefault()}
+					onCloseAutoFocus={(event) => event.preventDefault()}
+					onEscapeKeyDown={(event) => event.preventDefault()}
+					onPointerDownOutside={(event) => event.preventDefault()}
+					onFocusOutside={(event) => event.preventDefault()}
+					style={{ width: `calc(var(--radix-popover-trigger-width) - ${inset * 2}px)` }}
+					className='z-50 outline-hidden'
 				>
-					<PeopleAvatar option={option} className='size-6' />
-					<span className='truncate'>{option.name}</span>
-					{option.detail ? <span className='ms-auto shrink-0 text-xs font-normal text-muted-foreground'>{option.detail}</span> : null}
-				</li>
-			))}
-		</ul>
+					<ul
+						id={id}
+						role='listbox'
+						aria-label={label}
+						className={cn(
+							"scrollbar-subtle flex max-h-(--radix-popover-content-available-height) flex-col gap-[2px] overflow-y-auto rounded-input border border-border bg-popover p-1 shadow-xl",
+							className,
+						)}
+					>
+						{options.map((option, index) => (
+							<li
+								key={option.id}
+								id={`${id}-${index}`}
+								role='option'
+								aria-selected={index === active}
+								// Picking doesn't take focus from the field.
+								onMouseDown={(event) => {
+									event.preventDefault();
+									onPick(option);
+								}}
+								onMouseEnter={() => onActiveChange(index)}
+								className={cn(
+									"flex h-9 shrink-0 cursor-default items-center gap-2 rounded-md px-2 text-sm font-medium text-foreground",
+									index === active && "bg-accent text-accent-foreground",
+								)}
+							>
+								<PeopleAvatar option={option} className='size-6' />
+								<span className='truncate'>{option.name}</span>
+								{option.detail ? <span className='ms-auto shrink-0 text-xs font-normal text-muted-foreground'>{option.detail}</span> : null}
+							</li>
+						))}
+					</ul>
+				</PopoverPrimitive.Content>
+			</PopoverPrimitive.Portal>
+		</PopoverPrimitive.Root>
 	);
 }
 

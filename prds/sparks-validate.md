@@ -1,9 +1,9 @@
 <!--
 Created: Nov 21, 2026
 Created by: Julio Caunedo
-Last updated: Nov 25, 2026
-Latest update: "Run again" is always dark (Button Solid · Neutral), like "Run", instead of outlined once there are results; the fix buttons on a finding ("Fix in the prototype", Try "{direction}") are dark too. Why: running again is the step that checks a fix, so it stays as easy to find as the first run.
-Recent updates: a path with no run yet has "Evaluate the prototype" (outlined) under its empty state, which starts the run. Evaluate has no conversation: the evaluation on the left, the prototype on the right, with every agent working the prototype at once and findings dropping on the element as they're found. "Fix in the prototype" opens Prototype on the finding's page with Sparks's plan, and after the fix Evaluate comes back to that finding.
+Last updated: Nov 26, 2026
+Latest update: the run button reads "Run" before and after a run (no "Run again"), and the buttons on a finding ("Fix in the prototype", Try "{direction}") are outlined, no longer dark. Why: one button, one name; a finding's actions sit under the panel's dark "Run" and "Add to Review" instead of competing with them.
+Recent updates: the run button is always dark (Button Solid · Neutral), instead of outlined once there are results. A path with no run yet has "Evaluate the prototype" (outlined) under its empty state, which starts the run. Evaluate has no conversation: the evaluation on the left, the prototype on the right; "Fix in the prototype" opens Prototype on the finding's page with Sparks's plan.
 Scope: the Evaluate step of a Sparks concept, the third of four (Plan, Prototype, Evaluate, Review): the scenario-based AI evaluation (scenarios worked through the prototype, and checks against business data, previous experiments, engineering context and the design system), the findings, the evidence status of the hypothesis, Dana's go-ahead, and the Evaluation section of the concept.
 Purpose: defines how Dana learns, on her own and in minutes, what could go wrong with her concept and whether it can be built, before anyone else sees it, and how the evaluation stays honest about what an AI evaluation can and can't show.
 -->
@@ -35,7 +35,7 @@ When Prototype made another testable artifact instead of a clickable prototype (
 
 Evaluate has no conversation. Under the header, two panels of the same width sit side by side (Figma Sparks "Evaluate", 72:660):
 
-- **The evaluation, ~~on the right~~ on the left.** On top, "Evaluation" and "Run" ("Run again" once there's a run; Stop while it runs). Below, on a card: the run's progress, then the results ("The results").
+- **The evaluation, ~~on the right~~ on the left.** On top, "Evaluation" and "Run" (~~"Run again" once there's a run;~~ "Run" before and after a run; Stop while it runs). Below, on a card: the run's progress, then the results ("The results").
 - **The prototype, ~~on the left~~ on the right.** On top, the path's name with its menu (the versions, and the other paths), as in Prototype, and "Add to Review", her go-ahead ("Go ahead or keep improving"). ~~Below, the prototype in its device, the same as in Prototype. She can try it whenever no scenario is working on it.~~ Below, the prototype's screens on a strip, the one in focus in a phone with a dark bezel, with the agents over it ("The agents"). She can try the one in focus whenever the agents aren't working.
 
   ✅ **Resolved:** the evaluation is on the left and the prototype on the right. Why: "Add to Review", the way forward, ends up at the top right, where every step has it ([sparks.md](sparks.md), "Moving through the steps"), and the prototype stays where Prototype shows it. Figma (72:660) draws them the other way round.
@@ -230,11 +230,13 @@ What an AI evaluation can't answer well: whether customers trust the fit message
 ## Fixing and running again
 
 - ~~**"Fix this in the prototype"** opens Prototype with the suggested fix ready as a suggestion. Dana accepts it or changes it there, and comes back to Evaluate.~~ ~~✅ **Resolved:** **"Fix this in the prototype"** makes the change right away, in Evaluate, as a new version of the prototype (in its versions, as any change). The prototype shows where it changed, the finding's marker turns into a check, the finding says "Fixed in version {n} · run again to check it", and the card says "The prototype changed since this run". "Run again" stands out (dark) until she runs it. Why: the prototype is on screen, so going to Prototype to accept the change only moved her away from the results.~~
+- ✅ **Resolved:** the button that runs the evaluation reads "Run" before and after a run, not "Run again". Why: the same button doing the same thing keeps one name; what's new since the last run shows in the results.
+- ✅ **Resolved:** the buttons on a finding, "Fix in the prototype" and Try "{direction}", are outlined (Button Outlined), ~~dark~~. Why: they're one finding's actions, under the panel's dark buttons ("Run", "Add to Review"); a dark button on every finding competed with them.
 - ✅ **Resolved:** **"Fix in the prototype"**, on a finding and on a scenario that ran into it, opens Prototype on the page where the finding happens. Sparks shows its plan first, with suggested follow-ups to pick from; nothing changes until she says so ([sparks-prototype.md](sparks-prototype.md), "Fixing a finding"). Why: a one-click fix left her no part in it; in Prototype she works the solution out with Sparks, in her own words.
 - **Back in Evaluate after a fix,** its finding is in view, on both panels: the marker is a check, the finding and the scenario say "Fixed in version {n} · run again to check it", with **"Change the fix in the prototype"** to go on with it, and the card says "The prototype changed since this run". ~~"Run again" stands out (dark) until she runs it.~~ "Run again" is dark, as always.
 - The button shows only once a run is finished: not while one is going, nor after one was stopped.
 - Dana can also go back to the part of Plan a finding points to: the choice, if the direction doesn't hold; the success criteria, if a target turns out unrealistic. Sparks reopens that part in the conversation ([sparks.md](sparks.md), "Plan"). From Evaluate, "Go back to the choice" is under Sparks's read when it's "Needs another look".
-- **"Run again"** runs the plan on the current prototype version. Sparks shows what changed since the last run: "3 of 4 findings fixed. 'Doesn't fit' returns: now likely 40–55% fewer."
+- **~~"Run again"~~ "Run"**, after a run, runs the plan again on the current prototype version. Sparks shows what changed since the last run: "3 of 4 findings fixed. 'Doesn't fit' returns: now likely 40–55% fewer."
 - Every run is kept, with the prototype version it evaluated.
 
 ## Go ahead or keep improving

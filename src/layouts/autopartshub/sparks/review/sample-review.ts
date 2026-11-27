@@ -5,9 +5,14 @@ import type { ChosenDraft } from "../plan/chosen-card";
 import type { DirectionDraft } from "../plan/direction-card";
 import { ideaCommentAt, type ConceptForReview, type IdeaComment, type Reviewer } from "./review-panel";
 import type { ReadyCheck } from "./review-next";
+import type { InvitationEmailProps } from "../invitation-email/invitation-email";
 import type { CommentScope, PrototypeComment, PrototypeCommentAuthor } from "../prototype/prototype-comments";
 import { reviewProfileFor, type ReviewDecision } from "./sample-review-directions";
 import { samplePersonPhoto } from "../../sample-data/sample-people";
+
+/** Sources as the evidence names them, each once: "from " dropped, "a and b" split. */
+const evidenceSourcesOf = (sources: string[]) =>
+	[...new Set(sources.flatMap((source) => source.replace(/^from /, "").split(" and ")).map((source) => source.trim()))];
 
 /*
  * Review for "Wrong-part returns" (prds/sparks-review.md): the concept for review, put together from what was decided
@@ -97,6 +102,14 @@ export function sampleConceptForReview({
 				? [`The evaluation: ${evaluation.scenarios.length} scenarios and ${evaluation.checks.length} checks on prototype version ${evaluation.version} (AI simulation and business data analysis).`]
 				: []),
 		],
+		// Each source in the evidence's brackets, once, without its dates ("business performance, Aug–Oct 2026" → "business
+		// performance"; "from Dana" → "Dana"; "AI simulation and business data analysis" → both).
+		evidenceSources: evidenceSourcesOf([
+			"business performance",
+			"previous experiments",
+			"from Dana",
+			...(evaluation ? ["AI simulation and business data analysis"] : []),
+		]),
 		build: (evaluation?.build ?? [`Rough effort: ${direction.effort.size}, as estimated in Plan.`]).map((line) =>
 			engineeringEffort && line.startsWith("Rough effort") ? profile.effort.line : line,
 		),
@@ -112,6 +125,7 @@ export function sampleConceptForReview({
 			changes.lightText ? "Light gray secondary text departs from the design system (kept by Dana)." : "Text contrast meets the standard.",
 		],
 		knownIssues: open.map((f) => `${f.title} (${f.severity}, ${f.method}).`),
+		engineering: profile.engineering,
 		realPeople: (evaluation?.realPeople ?? []).map((r) => `${r.question} How: ${r.how}`),
 		teams: (evaluation?.teams ?? []).map((t) => `${t.team}: ${t.change}`),
 		decisions: [
@@ -337,9 +351,26 @@ export const sampleReviewStartedReply: SparksReply = {
 /** On Review's empty state, before it's evaluated. */
 export const sampleNotEvaluatedNote = "Evaluating it first is optional, but it makes your recommendation stronger.";
 
-/** The invitation Sparks drafts for the teams. */
-export const sampleInvitation = (skipped: boolean, directionId?: string) =>
-	`I've been working on a way to cut wrong-part returns. It's defined, prototyped and ${skipped ? "not yet evaluated" : "evaluated with AI scenarios, not yet with real customers"}. Could you review it by Friday? You can try the prototype and comment on any part. ${reviewProfileFor(directionId).ask}`;
+
+/**
+ * The invitation email's standard message, which Sparks writes for the idea (prds/sparks-review.md, "The invitation");
+ * Dana's note ("Add a note" in "Publish your idea") goes after it.
+ */
+export const sampleInviteMessage =
+	"I've been working on an idea to reduce wrong-part returns and would love your feedback. Explore the prototype and share your thoughts to help us assess its feasibility, refine the solution, and bring it to our customers as soon as possible.";
+
+/** When the teams should review it by: a week after it's published ("December 3"). */
+export const sampleReviewDue = (published: Date = new Date()) =>
+	new Date(published.getTime() + 7 * 24 * 60 * 60 * 1000).toLocaleDateString("en-US", { month: "long", day: "numeric" });
+
+/** The invitation email for the "Wrong-part returns" idea and its prototype, version 1, with the standard message. */
+export const sampleInvitationEmail: Omit<InvitationEmailProps, "variant"> = {
+	from: "Dana Morales",
+	// One idea and the path it was prototyped on, at the version that goes out.
+	items: [{ name: "Wrong-part returns", paths: [{ name: "Fit check before you buy", version: 1 }] }],
+	message: sampleInviteMessage,
+	due: sampleReviewDue(),
+};
 
 /** A change to a published prototype (its first): the teams still see `published`, until she publishes an update in Review. */
 export function sampleWithTeamsNote(reply: SparksReply, published: number): SparksReply {

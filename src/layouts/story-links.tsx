@@ -46,11 +46,19 @@ function goToStory(storyId: string, args?: StoryArgs) {
 }
 
 /**
+ * A story's address on its own (`iframe.html`, no Storybook around it), relative, so it works wherever Storybook runs:
+ * on localhost and on the Netlify site alike. For a link (`href`) that opens a story.
+ */
+function storyHref(storyId: string) {
+	return `iframe.html?id=${storyId}&viewMode=story`;
+}
+
+/**
  * Opens a story on its own in a new tab (`iframe.html`, no Storybook around it), like an app opening in its own tab.
  * `args` opens it with those args changed; they go through localStorage, since a new tab doesn't share sessionStorage.
  */
 function openStoryInNewTab(storyId: string, args?: StoryArgs, tab?: string) {
-	const url = `iframe.html?id=${storyId}&viewMode=story`;
+	const url = storyHref(storyId);
 	// A named tab that's already open (an app she opened before) comes to the front as it is, without reloading:
 	// `window.open("", name)` finds it, or opens a blank one, which then loads the story.
 	if (tab) {
@@ -175,4 +183,4 @@ const storyIds = {
 	sparksAdvancedIdea: "layouts-autopartshub-sparks-published-idea--advanced",
 } as const;
 
-export { goToStory, openStoryInNewTab, closeStoryTab, withStoryLinks, withTabName, storyIds, type StoryLink };
+export { goToStory, openStoryInNewTab, closeStoryTab, storyHref, withStoryLinks, withTabName, storyIds, type StoryLink };

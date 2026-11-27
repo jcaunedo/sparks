@@ -49,6 +49,8 @@ type EvaluationPrototypeProps = {
 	onPathChange?: (id: string) => void;
 	versions?: { id: string; name: string }[];
 	onRestore?: (id: string) => void;
+	/** Published: the version the teams see and when, after "Version {n}" under the title (as in Prototype and Review). */
+	published?: { version: number; at: string };
 	/** "Add to Review": her go-ahead (prds/sparks-validate.md, "Go ahead or keep improving"). Disabled while it runs. */
 	onAddToReview?: () => void;
 	/** Why "Add to Review" can't be used now (a run is going, or the prototype changed after the last one): disabled, with this in its tooltip. */
@@ -213,6 +215,7 @@ function EvaluationPrototype({
 	onPathChange,
 	versions = [],
 	onRestore,
+	published,
 	onAddToReview,
 	addToReviewBlocked,
 	agents,
@@ -532,6 +535,7 @@ function EvaluationPrototype({
 							paths={paths}
 							path={path}
 							onPathChange={busy ? undefined : onPathChange}
+							published={published}
 						/>
 					) : null}
 				</div>

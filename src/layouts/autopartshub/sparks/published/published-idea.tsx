@@ -17,10 +17,12 @@ import type { AutoPartsHubUser } from "../../autopartshub";
 import { HeaderIconButton } from "../../header-icon-button";
 import { NotificationsPopover, type NotificationsPopoverProps } from "../../notifications-popover";
 import { UserAvatar } from "../../user-avatar";
+import { TeamMemberStatusBadge } from "../shared/idea-status";
 import { MentionText, type CommentMention, type PrototypeComment, type PrototypeCommentAuthor } from "../prototype/prototype-comments";
-import { AddCommentButton, PrototypePanel, type PrototypeAudience } from "../prototype/prototype-panel";
+import { PrototypePanel, type PrototypeAudience } from "../prototype/prototype-panel";
+import { CommentFiltersMenu, defaultCommentFilters, showsComment } from "../workspace/comments-panel";
 import { ReadyToBuild, type ReadyCheck } from "../review/review-next";
-import { buildContextTitles, buildPartTitles, IdeaCommentLayer, ReviewDocument, viewTone, type ConceptForReview, type IdeaComment, type Reviewer } from "../review/review-panel";
+import { buildContextTitles, buildPartTitles, IdeaCommentLayer, ReviewDocument, SectionsMenu, viewTone, type ConceptForReview, type IdeaComment, type Reviewer } from "../review/review-panel";
 import { SidePanel, SidePanelResizer, useSidePanelWidth } from "../workspace/side-panel";
 
 /*
@@ -36,6 +38,9 @@ type AdvancedIdea = { owner: string; date: string; reason: string; ready: ReadyC
 type ReviewerView = { view: NonNullable<Reviewer["view"]>; why: string };
 
 
+/** A version published to the teams: its number, what changed (its name, as in Dana's versions) and when (ISO). */
+type PublishedVersion = { version: number; name: string; publishedAt: string };
+
 type PublishedIdeaProps = {
 	/** The signed-in reviewer (or, advanced, someone on the team who builds it), for the header's avatar. */
 	user: AutoPartsHubUser;
@@ -48,6 +53,11 @@ type PublishedIdeaProps = {
 	/** The version published, and when (ISO). */
 	version: number;
 	publishedAt: string;
+	/**
+	 * Every version she's published to them, oldest first, the last being `version`: "Version {n}" on the prototype is a menu
+	 * of them, to open an earlier one. Without it, "Version {n}" is a heading alone.
+	 */
+	versions?: PublishedVersion[];
 	/** Dana's invitation, and when she'd like their view by. Not for an advanced idea. */
 	invitation?: { text: string; due: string };
 	/**
@@ -57,7 +67,7 @@ type PublishedIdeaProps = {
 	advanced?: AdvancedIdea;
 	/** The idea, as published: every part of "What's reviewed". */
 	concept: ConceptForReview;
-	/** The prototype at the published version: its name ("1. Fit check before you buy"), audiences, screens, and the prototype for an audience. */
+	/** The prototype at the published version: its name ("Fit check before you buy"), audiences, screens, and the prototype for an audience. */
 	prototype: {
 		label: string;
 		audiences: PrototypeAudience[];
@@ -179,7 +189,7 @@ function CommentRow({
 
 /**
  * The page a reviewer opens from Dana's invitation (prds/sparks-review.md, "What reviewers see and do"), laid out as Dana's
- * Review: the idea for review, as published, on the left, and its prototype on the right. "Share your review" in the header
+ * Review: the idea for review, as published, on the left, and its prototype on the right. "Share your assessment" in the header
  * opens their view in a popover (Advance, Advance with changes, Don't advance yet, and why); Dana's invitation is the email
  * that brought them here. Each part has
  * "Comment", which opens its comments and the box under its heading; the prototype takes pinned comments, with threads.
@@ -190,8 +200,9 @@ function PublishedIdea({
 	reviewer,
 	ideaName,
 	publishedBy,
-	version,
-	publishedAt,
+	version: latestVersion,
+	publishedAt: latestPublishedAt,
+	versions = [],
 	invitation,
 	advanced,
 	concept,
@@ -209,13 +220,18 @@ function PublishedIdea({
 	const { prefersReducedMotion } = useMotionPreference();
 	const documentRef = React.useRef<HTMLDivElement>(null);
 	const firstName = publishedBy.split(" ")[0];
+	// The version shown: the latest to start; "Version {n}" on the prototype opens an earlier one.
+	const [viewing, setViewing] = React.useState(latestVersion);
+	const viewed = versions.find((v) => v.version === viewing);
+	const version = viewed?.version ?? latestVersion;
+	const publishedAt = viewed?.publishedAt ?? latestPublishedAt;
 	const published = formatRelativeDate(publishedAt);
 
-	// Their view: picked, with why, then sent; "Change your view" opens it again.
+	// Their assessment: picked, with why, then sent; "Change your assessment" opens it again.
 	const [choice, setChoice] = React.useState<ReviewerView["view"] | undefined>(view?.view);
 	const [why, setWhy] = React.useState(view?.why ?? "");
 	const [editingView, setEditingView] = React.useState(!view);
-	// The popover with their view, from the header's "Share your review".
+	// The popover with their view, from the header's "Share your assessment".
 	const [reviewOpen, setReviewOpen] = React.useState(false);
 	const viewTitleId = React.useId();
 	const whyRef = React.useRef<HTMLTextAreaElement>(null);
@@ -233,10 +249,11 @@ function PublishedIdea({
 	const [commentsOpen, setCommentsOpen] = React.useState(false);
 	const [commentsWidth, setCommentsWidth] = useSidePanelWidth();
 	const commentsButtonRef = React.useRef<HTMLButtonElement>(null);
-	// Adding a comment on the prototype: "Add comment" is in the Comments panel; closing the panel stops it.
+	// Adding a comment: "Add comment" on the prototype's toolbar turns it on for the prototype and the idea (one button).
 	const [addingComment, setAddingComment] = React.useState(false);
+	// The Comments panel's filters (the icon beside its X): open and resolved, on the idea and on the prototype.
+	const [filters, setFilters] = React.useState(defaultCommentFilters);
 	const closeComments = () => {
-		setAddingComment(false);
 		setCommentsOpen(false);
 		commentsButtonRef.current?.focus();
 	};
@@ -254,10 +271,11 @@ function PublishedIdea({
 	};
 
 // Every comment, newest first; resolved ones on the prototype last.
-	const all = [
-		...ideaComments.map((comment) => ({ kind: "idea" as const, comment, resolved: false })),
+	const everything = [
+		...ideaComments.map((comment) => ({ kind: "idea" as const, comment, resolved: Boolean(comment.resolved) })),
 		...prototypeComments.map((comment) => ({ kind: "prototype" as const, comment, resolved: Boolean(comment.resolved) })),
 	].sort((a, b) => Number(a.resolved) - Number(b.resolved) || b.comment.createdAt.localeCompare(a.comment.createdAt));
+	const all = everything.filter((entry) => showsComment(filters, entry.comment, entry.kind));
 
 	return (
 		<div className='flex h-screen bg-background text-foreground'>
@@ -267,12 +285,17 @@ function PublishedIdea({
 				<AppHeader
 					logo={
 						<>
-							<Typography as='h1' size='xl' weight='semibold' className='min-w-0 truncate text-foreground'>
+							{/* As the concept's name in Dana's header (2xl bold, 24/30), without the dotted underline: it isn't theirs to
+							    rename. Then where it stands for them, 12px after it, as her status badge (the version is the
+							    prototype's title). */}
+							<Typography as='h1' size='2xl' weight='bold' className='min-w-0 truncate leading-[30px] text-foreground'>
 								{ideaName}
 							</Typography>
-							<Badge variant='flat' tone='blue' size='sm' className='shrink-0'>
-								Version {version}
-							</Badge>
+							<TeamMemberStatusBadge
+								status={advanced ? "advanced" : view ? "assessed" : "assess"}
+								date={advanced?.date}
+								className='-ms-1 shrink-0'
+							/>
 						</>
 					}
 				>
@@ -298,18 +321,18 @@ function PublishedIdea({
 							<PopoverTrigger asChild>
 								{view ? (
 									<Button variant='outline' className='px-3.5'>
-										Your view: {view.view}
+										Your assessment: {view.view}
 									</Button>
 								) : (
 									<Button variant='neutral' className='px-3.5'>
-										Share your review
+										Share your assessment
 									</Button>
 								)}
 							</PopoverTrigger>
 							<PopoverContent align='end' sideOffset={8} aria-labelledby={viewTitleId} className='flex w-[440px] flex-col gap-3 p-5'>
 								<div className='flex flex-col gap-1'>
 									<Typography as='h2' id={viewTitleId} size='lg' weight='semibold' className='text-foreground-prominent'>
-										Your review
+										Your assessment
 									</Typography>
 									<p className='text-sm text-foreground'>Should it move forward? {firstName} asks for a decision once the teams have given theirs.</p>
 									<p className='text-xs text-muted-foreground'>
@@ -324,7 +347,7 @@ function PublishedIdea({
 									</Badge>
 									<p className='text-sm text-foreground'>"{view.why}"</p>
 									<Button variant='link' className='h-auto w-fit p-0 text-sm font-medium' onClick={() => setEditingView(true)}>
-										Change your view
+										Change your assessment
 									</Button>
 								</div>
 								) : (
@@ -340,10 +363,10 @@ function PublishedIdea({
 								>
 									{/* One option per row, each a radio button with its label. */}
 									<RadioGroup
-										aria-label='Your review'
+										aria-label='Your assessment'
 										value={choice ?? ""}
 										onValueChange={(next) => {
-											// The first choice brings in "Why" and "Submit review", with the field ready to type in; moving between
+											// The first choice brings in "Why" and "Submit assessment", with the field ready to type in; moving between
 											// options afterwards (arrow keys) leaves focus on them.
 											if (!choice) requestAnimationFrame(() => whyRef.current?.focus());
 											setChoice(next as ReviewerView["view"]);
@@ -359,7 +382,7 @@ function PublishedIdea({
 											</div>
 										))}
 									</RadioGroup>
-									{/* Only once an option is chosen: why, and "Submit review". */}
+									{/* Only once an option is chosen: why, and "Submit assessment" (Button default, brand color, 36px). */}
 									{choice ? (
 										<motion.div
 											variants={prefersReducedMotion ? fadeVariants : revealVariants}
@@ -378,12 +401,12 @@ function PublishedIdea({
 											/>
 											<div className='flex justify-end gap-2'>
 												{view ? (
-													<Button type='button' variant='outline' size='sm' onClick={() => setEditingView(false)}>
+													<Button type='button' variant='outline' onClick={() => setEditingView(false)}>
 														Cancel
 													</Button>
 												) : null}
-												<Button type='submit' size='sm' disabled={!why.trim()}>
-													Submit review
+												<Button type='submit' disabled={!why.trim()}>
+													Submit assessment
 												</Button>
 											</div>
 										</motion.div>
@@ -400,15 +423,15 @@ function PublishedIdea({
 				<main className='flex min-h-0 flex-1 gap-4 px-6 pb-6'>
 					<section aria-label='Idea for review' className='flex min-h-0 min-w-0 flex-1 basis-0 flex-col rounded-card bg-background-subtle'>
 						<div className='flex h-[68px] shrink-0 items-center gap-3 px-5'>
-							<Typography as='h2' size='xl' weight='semibold' className='shrink-0 text-foreground'>
-								{advanced ? "Advanced idea" : "Idea for review"}
+							{/* The idea's name, as on Dana's Review; it gives way (truncates) before the badge does. */}
+							<Typography as='h2' size='xl' weight='semibold' className='min-w-0 truncate text-foreground' title={prototype.label}>
+								{prototype.label}
 							</Typography>
-							{advanced ? (
-								<Badge variant='flat' tone='green' size='sm' className='shrink-0'>
-									Advanced · {advanced.date}
-								</Badge>
-							) : null}
-							<span className='min-w-0 truncate text-xs text-muted-foreground'>{concept.evidenceStatus.split(".")[0]}</span>
+							{/* On the right: "Jump to a section", as on Dana's Review. The evidence is at the end of the Summary; where it
+							    stands is the header's badge ("Advanced"). */}
+							<div className='ms-auto flex shrink-0 items-center'>
+								<SectionsMenu container={documentRef} />
+							</div>
 						</div>
 						<div
 							ref={documentRef}
@@ -469,6 +492,12 @@ function PublishedIdea({
 						screens={prototype.screenList}
 						paths={[{ id: "published", label: prototype.label }]}
 						path='published'
+						// As Dana's Review: the idea's panel has the name; the title is the version, with when it was published under it.
+						titleShows='version'
+						published={{ version, at: publishedAt }}
+						versions={versions.map((v) => ({ id: String(v.version), name: v.name, number: v.version, publishedAt: v.publishedAt }))}
+						viewingVersion={String(version)}
+						onViewVersion={(id) => setViewing(Number(id))}
 						commentAuthor={reviewer}
 						comments={prototypeComments}
 						onCommentsChange={onPrototypeCommentsChange}
@@ -497,7 +526,7 @@ function PublishedIdea({
 						<SidePanelResizer width={commentsWidth} onWidthChange={setCommentsWidth} label='Resize comments' />
 						<SidePanel
 							title='Comments'
-							actions={<AddCommentButton pressed={addingComment} onPressedChange={setAddingComment} />}
+							actions={<CommentFiltersMenu filters={filters} onChange={setFilters} />}
 							closeLabel='Close comments'
 							onClose={closeComments}
 							autoFocus
@@ -537,8 +566,14 @@ onOpen={() => openIdeaComment(entry.comment.id)}
 								</ul>
 							) : (
 								<div className='flex flex-col gap-1'>
-									<p className='text-sm font-medium text-foreground'>No comments yet</p>
-									<p className='text-sm text-muted-foreground'>Select "Add comment" above, then a part of the idea or a spot on the prototype.</p>
+									{everything.length ? (
+										<p className='text-sm text-muted-foreground'>No comments here with these filters.</p>
+									) : (
+										<>
+											<p className='text-sm font-medium text-foreground'>No comments yet</p>
+											<p className='text-sm text-muted-foreground'>Select "Add comment" on the idea or the prototype, then a spot on it, or select text in the idea.</p>
+										</>
+									)}
 								</div>
 							)}
 						</SidePanel>
@@ -549,4 +584,4 @@ onOpen={() => openIdeaComment(entry.comment.id)}
 	);
 }
 
-export { PublishedIdea, type AdvancedIdea, type IdeaComment, type PublishedIdeaProps, type ReviewerView };
+export { PublishedIdea, type PublishedVersion, type AdvancedIdea, type IdeaComment, type PublishedIdeaProps, type ReviewerView };

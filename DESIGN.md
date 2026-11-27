@@ -394,6 +394,8 @@ The scroller is the whole conversation area, edge to edge (~~`px-8`~~ `px-6`, th
 
 Exception: the pencil on Dana's answers in Sparks opens its tooltip above ("Changing an answer").
 
+**Rule (the delay, every tooltip):** a tooltip shows after the pointer has rested on its control for `motionDuration.tooltipDelay` (1s, ~~500ms~~; `TooltipProvider`'s default `delayDuration`, so every `Tooltip` gets it); keyboard focus shows it at once. Don't pass `delayDuration={0}` to a tooltip. Why: opening at once, tooltips flashed on everything the pointer crossed, and one stayed on a button after a menu closed back onto it ("Jump to a section"); a short rest means the person is asking what it is.
+
 **Why:** an icon alone doesn't say what it does; `title` shows late, unstyled and never on keyboard focus. One tooltip everywhere keeps icon buttons reading the same.
 
 **How to apply:** a new icon-only button uses `HeaderIconButton`, or wraps its button in `Tooltip` > `TooltipTrigger asChild`. With another trigger on the same button (a menu, a popover), the tooltip goes outside: `Tooltip` > `TooltipTrigger asChild` > `DropdownMenuTrigger asChild` > `Button`.
@@ -413,6 +415,60 @@ Exception: the pencil on Dana's answers in Sparks opens its tooltip above ("Chan
 **Why:** Figma's side panel is a full-height column of the screen, not a card inside the content area; and two panels that look or close differently read as two different things. Changes go in `SidePanel`, not in one panel. There's no token for #f9fafa, so the color is the mix the workspace's background already uses.
 
 **How to apply:** a new panel beside the conversation (history, sources) is a `SidePanel` in the same `aside` and closes the others when it opens. Don't put the panel back inside `main` (the header would stay full width over it). Check: open Comments at 1600px: the panel is 380 wide and the full height, the header ends where it starts; dragging the edge stops at 300 and at 800; narrowing the window to 1200 brings an 800px panel down to 600.
+
+---
+
+## Share's add button turns solid on hover (`overlays/share-popover/share-popover.tsx`: `RecommendedRow`)
+
+**Rule:** in "View recommended reviewers", while a row is hovered (`onPointerEnter`/`onPointerLeave` on the `li`) or its circle-plus has keyboard focus (`:focus-visible`), the 18px outline `CirclePlus` (`text-icon`) swaps for a solid one: `fill-link text-link [&_path]:stroke-background`, through `AnimatePresence` + `iconSwapVariants` (`iconSwapReducedVariants` under reduced motion). The ghost button has no hover fill of its own (`hover:bg-transparent`): the row's `hover:bg-accent` is the hover.
+
+**Why:** the solid icon says the row adds something; a CSS color change alone (the first version) wasn't Motion's icon swap (MOTION.md). Not in Figma.
+
+**How to apply:** check: hover a recommended row, the icon turns solid blue with a white plus, cross-fading; Tab to the button, the same. Keep the swap in `RecommendedRow`, not as `group-hover` classes.
+
+---
+
+## The dark button, disabled, is muted gray (`buttons/button/button.tsx`: `neutral`)
+
+**Rule:** `Button` `variant="neutral"` disabled is `disabled:bg-neutral-muted disabled:text-foreground-subtle disabled:opacity-100`: colors/tone/neutral/muted (#edeff2) with colors/foreground/subtle text (#9aa1ac), not the base `disabled:opacity-50`. The other variants still fade.
+
+**Why:** Figma's disabled "Publish & invite" (Sparks 81:1030) is the muted fill with subtle text; a 50% dark button reads as a different gray. sparks.ds's Button set has no Solid · Neutral variant yet, so a resync from it wouldn't carry this.
+
+**How to apply:** check: Review with no reviewers, "Publish" → "Publish & invite" is light gray with gray text. Keep `opacity-100` with it, or the base class fades it again.
+
+---
+
+## Publish's note field: room for its focus ring while it opens (`overlays/publish-popover/publish-popover.tsx`)
+
+**Rule:** the note's `motion.div` (Expand, with `useExpandClip`) has `-mx-1 -mb-1 px-1 pb-1`: 4px of room on the sides and bottom, taken back by the negative margins, so the layout doesn't move.
+
+```tsx
+<motion.div key='note' {...noteClip} className='-mx-1 -mb-1 px-1 pb-1' variants={expandVariants} …>
+```
+
+**Why:** "Add a note" focuses the field at once (`autoFocus`), so its 3px focus ring shows while the height is still animating and `useExpandClip` has the wrapper on `overflow: hidden`. Without the room, the ring's sides and bottom are cut until the animation ends.
+
+**How to apply:** check: "Add a note" → the field's blue ring is whole on every side during the opening, not only after. Keep the room on any expanding wrapper whose content is focused as it opens.
+
+---
+
+## Inline alert colors (`feedback/inline-alert/inline-alert.tsx`)
+
+**Rule:** every tone is its subtle fill, its muted border and its own color for the icon, text and action: `border-info-muted bg-info-subtle text-info`, `success`, `destructive`, `warning` the same way. Padding is 1px less than Figma's (`py-[7px] ps-[11px] pe-[7px]`), since Figma draws the border inside its padding and CSS adds it: 40px tall.
+
+**Why:** sparks.ds "Inline Alert" (124:1584) mixes three treatments: Info and Danger on 5% tints with no token (`tone/info/info-05`, `alerts/danger-05`, the border the same as the fill), Success on the tone tokens, Warning on two unbound colors (#fffbea, #e8e4d5). Decided: the tone tokens for all, as Publish's audience box, so the four read as one set. Success uses circle-check, not Figma's "info" icon. ⚠️ Contrast, as in Figma's colors: Info 4.4:1, Success 2.8:1 (#01a746 on #e6f6ec) and Warning 2.5:1 (#f37a00 on #fef3e7) are below 4.5:1 for 16px text; only Danger (4.8:1) passes. Check with design before using it for text people must read (the `-emphasis` shades would pass).
+
+**How to apply:** a resync from 124:1584 shouldn't bring back the 5% tints, the raw warning colors or the info icon on Success. Update Figma to the tone tokens instead.
+
+---
+
+## `background-soft` is a raw value (`src/styles/theme.css`)
+
+**Rule:** `--background-soft: oklch(0.984 0.001 197.14)` (#f9fafa), sparks.ds colors/background/soft, mapped to `bg-background-soft`; `.dark` uses gray-900 as a placeholder. Not used yet (Publish's "who it goes to" box moved to the info colors).
+
+**Why:** in sparks.ds it's a raw color, not an alias of a primitive (unlike `background-subtle`, gray-50, #f5f6f7, which is close but not the same). Don't "fix" it to gray-50.
+
+**How to apply:** check `theme.css` against sparks.ds's semantic colors/background/soft on a resync.
 
 ---
 
@@ -619,11 +675,13 @@ const selectedMarker = focus?.fromScreen ? undefined : markers.find((m) => m.id 
 
 ## Prototype title is the versions menu (`sparks/shared/versions-menu.tsx`)
 
-**Rule:** the direction's name on the left of the prototype's toolbar is a `DropdownMenu` trigger (inside the `h2`): base semibold `text-foreground-prominent`, a 16px `ChevronDown` (`text-icon`) 4px after it, and "Version {n}" under it, outside the trigger (`text-xs text-foreground-subtle`). The menu opens with `sideOffset={26}`: 8px under "Version {n}" (its 18px line). No history icon among the toolbar's actions. With more than one path, the paths are radio items at the top of the same menu ("Paths"); there's no separate path `Select`.
+**Rule:** the direction's name on the left of the prototype's toolbar is a `DropdownMenu` trigger (inside the `h2`): base semibold `text-foreground-prominent`, a 16px `ChevronDown` (`text-icon`) 4px after it, and "Version {n}" under it, outside the trigger (`text-xs` ~~`text-foreground-subtle`~~ `text-muted-foreground`, colors/foreground/muted: stronger, so the version and when it was published read). The menu opens with `sideOffset={26}`: 8px under "Version {n}" (its 18px line). No history icon among the toolbar's actions. With more than one path, the paths are radio items at the top of the same menu ("Paths"); there's no separate path `Select`.
 
 **Why:** the trigger is only the name, so the heading stays a heading and "Version {n}" isn't in the button; with the default 8px offset, the menu covered "Version {n}".
 
 **How to apply:** if "Version {n}" changes size or the gap under the name changes, change `sideOffset` with it. A resync of the toolbar shouldn't bring back the History icon button.
+
+**By version** (`shows="version"`, Review and the reviewers' page): the trigger is "Version {n}" and the line under it is when it was published (`published`), or "Not published yet"; the button's `aria-label` keeps the name ("Version 2 of Fit check before you buy"), since the heading no longer says it. With `onView` (reviewers), the menu lists published versions as radio items (`number`, `publishedAt`), no "Restore". Don't use it where the idea's name isn't on screen elsewhere (Prototype, Evaluate).
 
 ---
 
@@ -634,6 +692,42 @@ const selectedMarker = focus?.fromScreen ? undefined : markers.find((m) => m.id 
 **Why:** two lists for the same people would drift ("one element, one behavior"). A pick on `click` would blur the field first and close the list; and with `requestAnimationFrame`, typing right after a pick went in before the caret moved ("Can @Lee Carter the fit wording?check").
 
 **How to apply:** a new place to pick people uses `PeopleList`. Check: in the comment box, "@", "ca", Enter, then type at once: the text reads "@Lee Carter " followed by what was typed.
+
+**Rule (it floats over its container):** `PeopleList` renders in its own Radix Popover layer, in a portal, anchored to the field with `anchor` (a ref; `PopoverPrimitive.Anchor virtualRef`), 4px below it, as wide as it less `inset` on each side (`width: calc(var(--radix-popover-trigger-width) - 2 × inset)`; the comment box passes `inset={8}`). The layer never takes focus or dismisses itself (`onOpenAutoFocus`, `onCloseAutoFocus`, `onEscapeKeyDown`, `onPointerDownOutside`, `onFocusOutside` all `preventDefault`): the field opens and closes it. The `ul` scrolls past `--radix-popover-content-available-height`. Callers never position it (no `absolute top-full`).
+
+**Why:** Share's popover scrolls (`overflow-y-auto`), so a list placed `absolute` inside it was cut off at the popover's bottom edge after three rows. In a portal it goes over the popover (and the page), and since it's a Radix layer rendered inside Share's React tree, a click in it doesn't count as outside Share, and Esc reaches the field's `handlePeopleKeys` instead of closing Share.
+
+**How to apply:** check on `--review-ready` with the window 700px tall: Share, type "m": 8 rows, the last below Share's bottom edge, nothing cut off; Esc closes the list and Share stays; a click on a row adds them and the field keeps focus.
+
+---
+
+## Comment pins drag without taking focus (`sparks/prototype/prototype-comments.tsx`: `dragHandlers`)
+
+**Rule:** a pin that can move (the one being written, `data-comment-draft`; a posted one whose author is the viewer, with `onUpdate`) handles `pointerdown` with `setPointerCapture` **and `event.preventDefault()`**, moves after 4px (`dragged` overrides its position), and on `pointerup` re-anchors with `anchorOn(target, point)` (the same as a click with "Add comment" on) on the element under its corner (`document.elementsFromPoint`, inside `contentRef`). The click that ends a drag is cancelled (`justDragged`, `preventDefault` before Radix's toggle). Both popovers use `updatePositionStrategy='always'` so they follow the pin; the draft's `onInteractOutside` ignores its own pin.
+
+**Why:** without `preventDefault` on `pointerdown`, the button takes focus from the comment box, the draft popover re-renders and the pin is replaced under the pointer: the drag stops after one move and the typed text loses its caret. Without the cancelled click, dropping a pin would also open or close its thread. Radix's default position updates don't notice a `left`/`top` change, so the popover would stay behind.
+
+**How to apply:** check on `--review-ready`: "Add comment", click the phone, drag the new pin 80px: the box follows and keeps focus; type and Enter; drag the posted pin: it moves and stays closed; click it: it opens.
+
+---
+
+## The idea's comment layer is as tall as the idea (`sparks/review/review-panel.tsx`: `IdeaCommentLayer`)
+
+**Rule:** `IdeaCommentLayer` passes `fill={false}` to `PrototypeComments`, so its wrapper and content are as tall as the idea (`relative`, `isolate`), not `h-full`. The prototype keeps `fill` (default `true`): the device fills its panel.
+
+**Why:** in a scrolling card (`overflow-y-auto p-8`), an `h-full` layer stopped at the card's height while the idea ran past it, so the card's 32px bottom padding sat mid-content and the last part ("What comes later") touched the card's bottom edge (the reviewers' page).
+
+**How to apply:** check on the reviewers' page (`published-idea--default`): scrolled to the end, 32px below the last part, as on the sides.
+
+---
+
+## Expanding rows keep their spacing inside (`overlays/share-popover/share-popover.tsx`: `ExpandRow`, `ExpandBlock`)
+
+**Rule:** a row that opens or closes with Expand (`expandVariants`, height 0 ↔ auto) has no padding or margin that sets the space around it on the animated element itself: the space goes on a wrapper inside it (`ExpandRow` `space='pt-3'`, the first row's taken off with `[&:first-child>*]:pt-0`); a block that also needs the column's gap taken back uses `-mt-2` on the animated element and `pt-2` inside.
+
+**Why:** with `box-sizing: border-box`, an element at `height: 0` is still as tall as its padding, so the 12px between rows appeared at once when a row came in and vanished at once when it left (a 12px jump in Share's lists, measured frame by frame); inside, it opens and closes with the row.
+
+**How to apply:** check on `--review-ready`, Share: add a recommended reviewer, then remove them: "View recommended reviewers" moves smoothly, no step over ~8px between frames.
 
 ---
 
@@ -649,7 +743,7 @@ const selectedMarker = focus?.fromScreen ? undefined : markers.find((m) => m.id 
 
 ## Sparks Project header (`navigation/app-header/app-header.tsx`, `navigation/step-nav/step-nav.tsx`)
 
-**Rule:** sparks.ds "header-autopartshub" → "Sparks Project" (32:1145): on the left, only the concept's name, ~~2xl semibold (24/32, `Typography size='2xl'`)~~ ~~xl bold (20/30, `Typography size='xl' weight='bold'`, Figma "xl -bold")~~ xl semibold (20/30, `Typography size='xl' weight='semibold'`, Figma "xl -semibold") in `text-foreground` (Figma colors/foreground/foreground, not prominent), with a 22px chevron 4px after it (`ConceptName`: the `h1` holds the `DropdownMenuTrigger`; menu "Rename", "All ideas"; the rename field is `text-xl font-semibold text-foreground` too). ~~The Sparks logo (`h-[26px]`) before it, back to the start page, 16px apart.~~ No logo: "All ideas" is the way back; the steps centered; on the right, 12px apart (`gap-3`): Comments (`HeaderIconButton` `dot`: an 8px `bg-(--sky-500)` dot at the top right, Figma's #0f9efe Ellipse), notifications, ~~who has access (`AccessAvatars`, only once someone besides the owner has access: up to three 36px avatars, `border-2 border-background`, `-ms-[7px]`) and Share 8px apart (`gap-2`)~~ Share, with no avatars beside it (who has access is in Share's popover; `AccessAvatars` is gone), ~~then "Blueprint" last~~ last: no "Blueprint" button ("Plan becomes a document"). Share ~~and Blueprint are~~ is Button Outlined lg · 36, ~~with a 16px icon (`Share`~~, ~~`TextAlignStart`~~)~~ its label alone, no icon (sparks.ds 39:1608): `headerButtonClasses` in `workspace.tsx`, `px-3.5` (14px each side), ~~`gap-1.5 ps-2.5 pe-3.5`~~. No close button, no back button, no avatar. Every header in the set is 92px tall (28 + 36 + 28). "All ideas" goes back to the start page, in the same tab (prds/sparks.md, "The concept workspace"). A resync from an older Figma screen must not bring back the logo, the symbol, the ×, the back button or the avatars beside Share~~, or put "Blueprint" before Share~~, or the "Blueprint" button, which 32:1145 still draws. The start page follows "Sparks" (32:1146): the Sparks logo, 26px tall (`<Logo className='h-[26px]' />`), then on the right comments, notifications and the avatar (`HeaderActions` with `comments`; the AutoPartsHUB shell's has no comments: `HeaderIconButton`s, ghost, 36px, an 18px icon, then `<Avatar size='lg' className='size-9'>`, 36px), 12px apart: AppHeader's right side is `gap-3` (every variant's "Right" gap 12), its left side `gap-4`.
+**Rule:** sparks.ds "header-autopartshub" → "Sparks Project" (32:1145): on the left, ~~only the concept's name~~ the back button (114:1345: Button `neutral`, `size='icon'` with `size-8 rounded-button-md [&_svg]:size-4`, 32px, 12px corners, a 16px `ArrowLeft`; `aria-label` and tooltip "All ideas", `onClose`), then 16px later (`gap-4`) the concept's name, ~~2xl semibold (24/32, `Typography size='2xl'`)~~ ~~xl semibold (20/30, Figma "xl -semibold")~~ ~~xl bold (20/30, `Typography size='xl' weight='bold'`, Figma 39:1671)~~ 2xl bold on a 30px line (24/30: `Typography size='2xl' weight='bold'` with `leading-[30px]`, Figma 39:1671 `font-size/2xl` with `line-height/xl`; the rename field `text-2xl leading-[30px]`, so nothing moves; the reviewers' page name the same, without the underline). Then the status, `IdeaStatusBadge` (Badge flat `xs`: 24px, 14px medium; Figma 124:1752), 12px after the name (`-ms-1` on the 16px gap; Figma 79:7175 gap 12) in `text-foreground` (Figma colors/foreground/foreground, not prominent), with a dotted underline 5px under the text (`underline decoration-dotted decoration-from-font underline-offset-[5px]`; the Roll's clip has `pt-1 pb-2` with `-mt-1 -mb-2` so the line isn't cut) and no chevron (`ConceptName`: the `h1` holds a button that opens the rename field, tooltip "Rename", with `cursor-text`, not the pointer: it's text she edits; ~~a `DropdownMenuTrigger`; menu "Rename", "All ideas"~~; the field ~~is `text-xl font-bold text-foreground` too~~ has no box: no border, background, padding or ring, `h-[30px] leading-[30px]`, the same dotted underline and `field-sizing-content`, so it sits exactly where the name was and nothing moves; it opens with the caret at the end (`setSelectionRange(end, end)`), not the name selected). Once she's renamed it, "Use default name" sits after the name (sparks.ds 114:1444: lucide `Undo2`, 18px, `text-icon`, a 32px ghost icon button, tooltip "Use default name: {name}"), ~~`opacity-0` until the name's group is hovered (`group-hover/name:opacity-100`) or it has keyboard focus~~ mounted only while the name's group is hovered or has keyboard focus (`hovered`/`focused` state; focus counts only when `:focus-visible`, so the focus put back on the name after a rename doesn't show it): it fades in and out (`fadeVariants`, `AnimatePresence initial={false} mode='popLayout'`, the group `relative`), and the status badge after it slides to make room and back (`motion.span layout="position"`, `layoutSpring`; no `layout` with reduced motion). Without hover, the badge stays 12px after the name, renamed or not. Why: a hidden button that kept its 32px left a gap the badge didn't have before the rename. ~~The Sparks logo (`h-[26px]`) before it, back to the start page, 16px apart.~~ No logo: ~~"All ideas" is~~ the back button is the way back; the steps centered; on the right, 12px apart (`gap-3`): Comments (`HeaderIconButton` `dot`: an 8px `bg-(--sky-500)` dot at the top right, Figma's #0f9efe Ellipse), notifications, ~~who has access (`AccessAvatars`, only once someone besides the owner has access: up to three 36px avatars, `border-2 border-background`, `-ms-[7px]`) and Share 8px apart (`gap-2`)~~ Share, with no avatars beside it (who has access is in Share's popover; `AccessAvatars` is gone) last. Share is Button Outlined lg · 36, ~~with a 16px icon (`Share`)~~ its label alone, no icon (sparks.ds 39:1608): `headerButtonClasses` in `workspace.tsx`, `px-3.5` (14px each side), ~~`gap-1.5 ps-2.5 pe-3.5`~~. No close button, ~~no back button,~~ no avatar. Every header in the set is 92px tall (28 + 36 + 28). "All ideas" goes back to the start page, in the same tab (prds/sparks.md, "The concept workspace"). A resync from an older Figma screen must not bring back the logo, the symbol, the ×~~, the back button~~ or the avatars beside Share, or the chevron menu on the name. The start page follows "Sparks" (32:1146): the Sparks logo, 26px tall (`<Logo className='h-[26px]' />`), then on the right comments, notifications and the avatar (`HeaderActions` with `comments`; the AutoPartsHUB shell's has no comments: `HeaderIconButton`s, ghost, 36px, an 18px icon, then `<Avatar size='lg' className='size-9'>`, 36px), 12px apart: AppHeader's right side is `gap-3` (every variant's "Right" gap 12), its left side `gap-4`.
 
 ~~**Rule:** Sparks → "Sparks Project" (node 27:1932; sparks.ds "header-autopartshub" → "Sparks Project", 39:1598): on the left, the Sparks symbol (`<Logo variant='symbol' className='h-[27.137px]' />`, 34×27, Figma's instance size), a button back to the start page (`aria-label='Sparks home'`), then the concept's name, 16px apart (`gap-4`); the steps centered; on the right a close button (×) and, Share from Review in every step. No back button and no avatar. Every header in the set is 92px tall (28 + 36 + 28). The symbol and the × both go back to the start page, in the same tab (prds/sparks.md, "The concept workspace"). A resync must not bring back the back button or the avatar, and must not replace the symbol with the wordmark (`Logo`'s default) or round its height to `h-7`. The start page follows "Sparks" (node 32:1146): the Sparks logo, 28px tall (`<Logo className='h-7' />`), then on the right comments, notifications and the avatar (`HeaderActions` with `comments`; the AutoPartsHUB shell's has no comments: `HeaderIconButton`s, ghost, 36px, an 18px icon, the close button's style, then `<Avatar size='lg' className='size-9'>`, 36px), 12px apart: AppHeader's right side is `gap-3` (every variant's "Right" gap 12), its left side `gap-4`. The concept's header, right side: "Concept", then who has access (`AccessAvatars`, only once someone besides the owner has access: up to three 36px avatars, `border-2 border-background`, `-ms-[7px]`) and Share 8px apart (`gap-2`), then Comments (`HeaderIconButton` `dot`: an 8px `bg-(--sky-500)` dot at the top right, Figma's #0f9efe Ellipse), notifications and ×, no back button, because Sparks opens in its own tab (prds/sparks.md, "Reaching Sparks"). A resync must not bring the back button back from an older Figma screen. The variant's optional Share button (`showShareButton`, off by default) isn't used on the start page.~~
 
@@ -734,6 +828,8 @@ const selectedMarker = focus?.fromScreen ? undefined : markers.find((m) => m.id 
 
 **How to apply:** don't add `cursor-pointer` to components. A new clickable element that isn't a button, link or one of the roles above gets its role (or is added to this rule). `theme.css` ships to consumers, so the apps' own buttons get the pointer too.
 
+
+**Exception:** the concept's name in the Sparks Project header (`ConceptName`) is a button with `cursor-text`: selecting it turns it into a field, so it shows the text cursor, like the text it is ("Sparks Project header").
 ---
 
 ## Figma → theme.css token map (`src/styles/theme.css`)

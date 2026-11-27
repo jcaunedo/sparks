@@ -1,5 +1,5 @@
 import * as React from "react";
-import { ArrowLeft, Bell, ChevronDown, ClipboardCheck, Eye, FlaskConical, Folder, ListChecks, MessageCircle, MousePointerClick, Paperclip, Pencil, RotateCcw, Users, X, Zap } from "lucide-react";
+import { ArrowLeft, Bell, ClipboardCheck, Undo2, Eye, FlaskConical, Folder, ListChecks, MessageCircle, MousePointerClick, Paperclip, Pencil, RotateCcw, Users, X, Zap } from "lucide-react";
 import { animate, AnimatePresence, motion, useAnimationControls, useIsPresent, usePresenceData, type Variants } from "motion/react";
 
 import { ActivityFeed } from "@/components/chat/activity-feed";
@@ -8,13 +8,7 @@ import { ClarificationCard } from "@/components/chat/clarification-card";
 import { Badge } from "@/components/data-display/badge";
 import { UserMessage } from "@/components/chat/user-message";
 import { PromptComposer } from "@/components/chat/prompt-composer";
-import {
-	DropdownMenu,
-	DropdownMenuContent,
-	DropdownMenuItem,
-	DropdownMenuSeparator,
-	DropdownMenuTrigger,
-} from "@/components/overlays/dropdown-menu";
+import { DropdownMenuItem, DropdownMenuSeparator } from "@/components/overlays/dropdown-menu";
 import { QuickReplies } from "@/components/chat/quick-replies";
 import { SectionDivider } from "@/components/chat/section-divider";
 import { ThinkingIndicator } from "@/components/chat/thinking-indicator";
@@ -31,6 +25,7 @@ import {
 	easeOutTransition,
 	glideScrollTransition,
 	fadeVariants,
+	layoutSpring,
 	motionDistance,
 	motionDuration,
 	overlayVariants,
@@ -52,6 +47,7 @@ import { ChosenCard, type ChosenDraft } from "../plan/chosen-card";
 import { ProblemCard, type ProblemDraft } from "../plan/problem-card";
 import { DirectionCard, type DirectionDraft } from "../plan/direction-card";
 import { SuccessCard, type SuccessDraft } from "../plan/success-card";
+import { IdeaStatusBadge, type IdeaStatus } from "../shared/idea-status";
 import type { PanelActionProps } from "../shared/panel-action";
 import { sparksSteps, type SparksStep } from "../shared/steps";
 import type { IdeaComment } from "../review/review-panel";
@@ -62,10 +58,12 @@ import { assetName, libraryIcon } from "../../library/library-assets";
 import { LibraryDialog, type LibraryDialogProps, type LibraryPick } from "./library-dialog";
 import { SidePanelResizer, useSidePanelWidth } from "./side-panel";
 import { directionActionFor, type DirectionPaths } from "./plan-parts";
+import { PublishPopover, type PublishItem } from "@/components/overlays/publish-popover";
 import { SharePopover, type SharePopoverProps } from "@/components/overlays/share-popover";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/overlays/popover";
 import { HeaderIconButton } from "../../header-icon-button";
 import { NotificationsPopover, type NotificationsPopoverProps } from "../../notifications-popover";
+import { InvitationEmail, type InvitationEmailProps } from "../invitation-email/invitation-email";
 
 /** One of Dana's messages, as she wrote it, line breaks included. */
 type SparksUserMessage = {
@@ -532,11 +530,6 @@ type SparksWorkspaceProps = {
 		idea?: IdeaComment[];
 		/** Selecting one opens its part in Review. */
 		onOpenIdeaComment?: (id: string) => void;
-		/**
-		 * "Add comment" in the panel's header, while a prototype that takes comments is on screen: adding one on it, on or
-		 * off. Closing the panel turns it off.
-		 */
-		adding?: { on: boolean; onChange: (on: boolean) => void };
 	};
 	/**
 	 * Opens Comments: set as the idea opens, from the notification about its new comments (prds/sparks.md, "New comments"),
@@ -596,10 +589,27 @@ type SparksWorkspaceProps = {
 	 * "Publish" in the header, after Share, on Review only (prds/sparks-review.md, "Publishing"): gives the teams who review
 	 * a fixed copy of the idea and its prototype. `label`: "Publish", "Publish update" once she's changed it since,
 	 * "Published" when they have the latest. `hint`: why it can't be selected now (a tooltip). Not for collaborators.
-	 * `panel`: what she checks before it goes (who reviews it, the invitation): "Publish" opens it in a popover, with
-	 * "Cancel" and "Publish", which calls `onClick`. Without it, "Publish" publishes at once (e.g. "Publish update").
+	 * `details`: what she checks before it goes, in UCL's `PublishPopover` ("Publish your idea"): what's shared (the idea and
+	 * its prototype, each with its version) and how many people it goes to, with "Manage reviewers" (opens Share); `email`,
+	 * the invitation reviewers get ("View invite email", in a dialog); `note`, what she wrote with "Add a note", added to
+	 * the email after its message. "Publish & invite" calls `onClick`. Without `details`, "Publish" publishes at once
+	 * (e.g. "Publish update"). `blocked`: "Publish & invite" can't be selected yet (no one to send it to).
 	 */
-	publish?: PanelActionProps & { panel?: React.ReactNode; /** The popover's "Publish" can't be selected yet (no one to send it to). */ blocked?: boolean };
+	publish?: PanelActionProps & {
+		details?: {
+			items: PublishItem[];
+			reviewers: number;
+			email: Omit<InvitationEmailProps, "variant" | "items">;
+			note?: string;
+			onNoteChange?: (note: string) => void;
+			/** Where the idea's address under the description opens (the reviewers' page); the address itself by default. */
+			linkHref?: string;
+		};
+		blocked?: boolean;
+		/** "Publish your idea" open, kept outside so something else can open it (Review's "Publish now"). */
+		open?: boolean;
+		onOpenChange?: (open: boolean) => void;
+	};
 	/**
 	 * "All ideas" in the menu on the concept's name: closes the concept, back to the Sparks start page in the same tab
 	 * (prds/sparks.md, "The concept workspace").
@@ -613,6 +623,12 @@ type SparksWorkspaceProps = {
 	 */
 	defaultConceptName?: string;
 	onUseDefaultName?: () => void;
+	/**
+	 * Where the idea stands (`IdeaStatus`: "Draft", "Ready to publish", "In review"…), a badge
+	 * after its name (prds/sparks.md, "Where an idea stands"), with `statusDate` after it once decided.
+	 */
+	status?: IdeaStatus;
+	statusDate?: string;
 };
 
 /** Starting a step from its empty state: the button, and the prototype it's about. */
@@ -620,7 +636,7 @@ type UpcomingAction = {
 	label: string;
 	onClick: () => void;
 	disabled?: boolean;
-	/** The prototype she's on, e.g. "1. Fit check before you buy", "Version 2 · Not evaluated yet". */
+	/** The prototype she's on, e.g. "Fit check before you buy", "Version 2 · Not evaluated yet". */
 	prototype: { name: string; detail: string };
 	/** What to know before starting it, or why it can't start now. */
 	note?: string;
@@ -655,9 +671,11 @@ const upcomingIcons = { prototype: MousePointerClick, validate: FlaskConical, re
 
 
 /**
- * The concept's name in its header (sparks.ds "Sparks Project", 79:7175): xl semibold (20/30), `foreground`, with a 22px chevron, 4px after it, opening a menu:
- * "Rename" turns the name into a field (Enter or leaving it saves, Esc cancels), "All ideas" goes back to the start
- * page.
+ * The left of the concept's header (sparks.ds "Sparks Project", 39:1598): the back button, then the concept's name, 16px
+ * apart. Back (Button neutral, 32px, 12px corners, a 16px arrow; "All ideas" in its tooltip) closes the concept, to the
+ * start page. The name (79:7175: 2xl bold, 24/30, `foreground`, a dotted underline) is selected to rename it: it turns
+ * into a field (Enter or leaving it saves, Esc cancels). Once she's renamed it, hovering the name shows "Use default
+ * name" on its right (an undo arrow, sparks.ds 114:1444), back to the name Sparks gave it.
  */
 function ConceptName({
 	name,
@@ -665,19 +683,31 @@ function ConceptName({
 	onRename,
 	onUseDefaultName,
 	onClose,
+	status,
+	statusDate,
 }: {
 	name: string;
 	defaultName?: string;
 	onRename?: (name: string) => void;
 	onUseDefaultName?: () => void;
 	onClose?: () => void;
+	status?: IdeaStatus;
+	statusDate?: string;
 }) {
 	const [shown, setShown] = React.useState(name);
 	const [editing, setEditing] = React.useState(false);
-	const triggerRef = React.useRef<HTMLButtonElement>(null);
+	const nameRef = React.useRef<HTMLButtonElement>(null);
 	const { prefersReducedMotion } = useMotionPreference();
+	const renamed = Boolean(defaultName && onUseDefaultName && shown !== defaultName);
 	React.useEffect(() => setShown(name), [name]);
+	// "Use default name" is there only while the name (or it) is hovered or has keyboard focus: otherwise the badge sits 12px after
+	// the name, as it does before she renames it.
+	const [hovered, setHovered] = React.useState(false);
+	const [focused, setFocused] = React.useState(false);
+	const showUndo = renamed && (hovered || focused);
 
+	// Focus put back on the name after renaming (Enter, Esc, or leaving the field) isn't her asking for "Use default name".
+	const restoring = React.useRef(false);
 	const finish = (value?: string) => {
 		const next = value?.trim();
 		setEditing(false);
@@ -687,74 +717,129 @@ function ConceptName({
 				setShown(next);
 				onRename?.(next);
 			}
-			triggerRef.current?.focus();
+			restoring.current = true;
+			nameRef.current?.focus();
+			restoring.current = false;
 		});
 	};
 
-	if (editing) {
-		return (
-			<input
-				aria-label='Idea name'
-				defaultValue={shown}
-				autoFocus
-				onFocus={(event) => event.currentTarget.select()}
-				onBlur={(event) => finish(event.currentTarget.value)}
-				onKeyDown={(event) => {
-					if (event.key === "Enter") finish(event.currentTarget.value);
-					if (event.key === "Escape") finish();
-				}}
-				className='h-10 min-w-0 flex-1 rounded-input border border-input-ring bg-background px-2 font-display text-xl font-semibold text-foreground outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50'
-			/>
-		);
-	}
 	return (
-		<Typography as='h1' size='xl' weight='semibold' className='min-w-0 text-foreground'>
-			<DropdownMenu>
-				<DropdownMenuTrigger asChild>
-					<button
-						ref={triggerRef}
-						type='button'
-						className='flex max-w-full items-center gap-1 rounded-md outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50'
-					>
-						{/* Roll (MOTION.md): when the name changes ("New idea" named by Sparks, or renamed), the old one moves up
-						    and out and the new one comes up from below, clipped to the line. Not on the first render. */}
-						{/* `text-start`: a button centers its text, which would center the shorter name while both share the cell. */}
-						<span className='-my-1 inline-grid min-w-0 overflow-hidden py-1 text-start'>
-							<AnimatePresence initial={false}>
-								<motion.span
-									key={shown}
-									variants={prefersReducedMotion ? fadeVariants : rollVariants}
-									initial='initial'
-									animate='animate'
-									exit='exit'
-									className='col-start-1 row-start-1 truncate'
-								>
-									{shown}
-								</motion.span>
-							</AnimatePresence>
-						</span>
-						<ChevronDown aria-hidden className='size-[22px] shrink-0 text-icon' />
-					</button>
-				</DropdownMenuTrigger>
-				<DropdownMenuContent align='start' sideOffset={8} onCloseAutoFocus={(event) => editing && event.preventDefault()}>
-					<DropdownMenuItem onSelect={() => setEditing(true)}>
-						<Pencil aria-hidden />
-						Rename
-					</DropdownMenuItem>
-					{/* Only once she's renamed it: back to the name Sparks gave it (it rolls, as any change of name). */}
-					{defaultName && onUseDefaultName && defaultName !== shown ? (
-						<DropdownMenuItem onSelect={onUseDefaultName}>
-							<RotateCcw aria-hidden />
-							Use default name
-						</DropdownMenuItem>
-					) : null}
-					<DropdownMenuItem onSelect={onClose}>
-						<ArrowLeft aria-hidden />
+		<div className='flex min-w-0 flex-1 items-center gap-4'>
+			{onClose ? (
+				<Tooltip>
+					<TooltipTrigger asChild>
+						<Button variant='neutral' size='icon' aria-label='All ideas' onClick={onClose} className='size-8 shrink-0 rounded-button-md [&_svg]:size-4'>
+							<ArrowLeft aria-hidden />
+						</Button>
+					</TooltipTrigger>
+					<TooltipContent side='bottom' sideOffset={6}>
 						All ideas
-					</DropdownMenuItem>
-				</DropdownMenuContent>
-			</DropdownMenu>
-		</Typography>
+					</TooltipContent>
+				</Tooltip>
+			) : null}
+			{editing ? (
+				<input
+					aria-label='Idea name'
+					defaultValue={shown}
+					autoFocus
+					// The caret blinks at the end of the name, nothing selected.
+					onFocus={(event) => {
+						const end = event.currentTarget.value.length;
+						event.currentTarget.setSelectionRange(end, end);
+					}}
+					onBlur={(event) => finish(event.currentTarget.value)}
+					onKeyDown={(event) => {
+						if (event.key === "Enter") finish(event.currentTarget.value);
+						if (event.key === "Escape") finish();
+					}}
+					// No box: the same text, in the same place (2xl bold, 30px line, the dotted underline), so nothing moves; it
+					// grows with what she types (`field-sizing-content`).
+					className='field-sizing-content h-[30px] max-w-full min-w-[1ch] bg-transparent p-0 font-display text-2xl leading-[30px] font-bold text-foreground underline decoration-dotted decoration-from-font underline-offset-[5px] outline-none'
+				/>
+			) : (
+				// The name and, once she's renamed it, "Use default name" after it: shown while the name is hovered, or focused.
+				<div
+					// `relative`: "Use default name" leaving is popped out of the flow (`popLayout`), placed against this.
+					className='relative flex min-w-0 items-center gap-1'
+					onMouseEnter={() => setHovered(true)}
+					onMouseLeave={() => setHovered(false)}
+					// Keyboard focus only: clicked (or focused again after a rename), the name keeps the badge where it is.
+					onFocus={(event) => setFocused(!restoring.current && event.target.matches(":focus-visible"))}
+					onBlur={(event) => !event.currentTarget.contains(event.relatedTarget) && setFocused(false)}
+				>
+					<Typography as='h1' size='2xl' weight='bold' className='min-w-0 leading-[30px] text-foreground'>
+						<Tooltip>
+							<TooltipTrigger asChild>
+								<button
+									ref={nameRef}
+									type='button'
+									onClick={() => {
+										// The name becomes a field: the hover and focus on it end here (it unmounts, so no "leave" comes).
+										setHovered(false);
+										setFocused(false);
+										setEditing(true);
+									}}
+									className='flex max-w-full cursor-text rounded-md underline decoration-dotted decoration-from-font underline-offset-[5px] outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50'
+								>
+									{/* Roll (MOTION.md): when the name changes ("New idea" named by Sparks, or renamed), the old one moves up
+									    and out and the new one comes up from below, clipped to the line. Not on the first render. */}
+									{/* `text-start`: a button centers its text, which would center the shorter name while both share the cell. */}
+									<span className='-mt-1 -mb-2 inline-grid min-w-0 overflow-hidden pt-1 pb-2 text-start'>
+										<AnimatePresence initial={false}>
+											<motion.span
+												key={shown}
+												variants={prefersReducedMotion ? fadeVariants : rollVariants}
+												initial='initial'
+												animate='animate'
+												exit='exit'
+												className='col-start-1 row-start-1 truncate'
+											>
+												{shown}
+											</motion.span>
+										</AnimatePresence>
+									</span>
+								</button>
+							</TooltipTrigger>
+							<TooltipContent side='bottom' sideOffset={6}>
+								Rename
+							</TooltipContent>
+						</Tooltip>
+					</Typography>
+					{/* It fades in (and out) while the badge slides over to make room (`layout`, below); `popLayout`: leaving, it
+					    gives its room back at once, so the badge slides back as it fades. */}
+					<AnimatePresence initial={false} mode='popLayout'>
+						{showUndo ? (
+							<motion.span key='undo' variants={fadeVariants} initial='initial' animate='animate' exit='exit' className='flex shrink-0'>
+								<Tooltip>
+									<TooltipTrigger asChild>
+										<Button
+											variant='ghost'
+											size='icon'
+											aria-label='Use default name'
+											onClick={onUseDefaultName}
+											className='size-8 shrink-0 rounded-button-md text-icon [&_svg]:size-[18px]'
+										>
+											<Undo2 aria-hidden />
+										</Button>
+									</TooltipTrigger>
+									<TooltipContent side='bottom' sideOffset={6}>
+										Use default name: {defaultName}
+									</TooltipContent>
+								</Tooltip>
+							</motion.span>
+						) : null}
+					</AnimatePresence>
+				</div>
+			)}
+			{/* Where the idea stands, 12px after the name (or "Use default name", while it shows); it never shrinks: the name
+			    truncates first. It slides when what's before it changes width (`layout`, `layoutSpring`): "Use default name"
+			    showing or going, a new name rolling in. Reduced motion: it moves at once. */}
+			{status ? (
+				<motion.span layout={prefersReducedMotion ? false : "position"} transition={layoutSpring} className='-ms-1 flex shrink-0'>
+					<IdeaStatusBadge status={status} date={statusDate} />
+				</motion.span>
+			) : null}
+		</div>
 	);
 }
 
@@ -858,48 +943,6 @@ function pictureOf(phone: HTMLElement) {
  * Where Dana works on a concept: the header with the concept's name and the four steps, the conversation with Sparks
  * centered (Sparks's introduction first), and the message box at the bottom. Figma: Sparks → "Sparks Project" (node 27:1932).
  */
-/**
- * "Publish" with what she checks before it goes (prds/sparks-review.md, "Publishing"): the header's dark button opens a
- * popover, "Publish your idea", with `children` (who reviews it, the invitation), then "Cancel" and "Publish".
- */
-function PublishPopover({ label, onPublish, blocked = false, children }: { label: string; onPublish?: () => void; blocked?: boolean; children: React.ReactNode }) {
-	const [open, setOpen] = React.useState(false);
-	const titleId = React.useId();
-	return (
-		<Popover open={open} onOpenChange={setOpen}>
-			<PopoverTrigger asChild>
-				<Button variant='neutral'>{label}</Button>
-			</PopoverTrigger>
-			<PopoverContent
-				align='end'
-				sideOffset={8}
-				aria-labelledby={titleId}
-				className='flex max-h-[min(640px,var(--radix-popover-content-available-height))] w-[520px] flex-col gap-4 p-0'
-			>
-				<Typography as='h2' id={titleId} size='lg' weight='semibold' className='px-5 pt-5 text-foreground-prominent'>
-					Publish your idea
-				</Typography>
-				<div className='scrollbar-subtle min-h-0 overflow-y-auto px-5'>{children}</div>
-				<div className='flex justify-end gap-2 px-5 pb-5'>
-					<Button variant='outline' onClick={() => setOpen(false)}>
-						Cancel
-					</Button>
-					<Button
-						variant='neutral'
-						disabled={blocked}
-						onClick={() => {
-							setOpen(false);
-							onPublish?.();
-						}}
-					>
-						Publish
-					</Button>
-				</div>
-			</PopoverContent>
-		</Popover>
-	);
-}
-
 function SparksWorkspace({
 	user,
 	conceptName,
@@ -932,8 +975,15 @@ function SparksWorkspace({
 	onClose,
 	onRename,
 	defaultConceptName,
+	status,
+	statusDate,
 	onUseDefaultName,
 }: SparksWorkspaceProps) {
+	// Share, opened from its button or from "Manage reviewers" in Publish (once Publish has closed and given focus back).
+	const [shareOpen, setShareOpen] = React.useState(false);
+	const openShare = () => window.setTimeout(() => setShareOpen(true), 0);
+	// How many prototypes "Publish your idea" shares (every path of every idea): its copy says "prototype" or "prototypes".
+	const publishedPaths = publish?.details?.items.reduce((n, item) => n + (item.paths?.length ?? 1), 0) ?? 0;
 	const reachedIndex = sparksSteps.findIndex((step) => step.id === reachedStep);
 	// A concept that opens with no messages is new: its introduction streams in. Reopened, it's history and shows whole.
 	// Sending while it streams shows the rest at once.
@@ -1170,11 +1220,7 @@ function SparksWorkspace({
 		if (openCommentsKey) setSidePanel("comments");
 	}, [openCommentsKey]);
 	const commentsOpen = sidePanel === "comments";
-	// "Add comment" lives in the Comments panel: closing the panel (or Library taking its place) stops adding one.
-	React.useEffect(() => {
-		if (!commentsOpen && comments?.adding?.on) comments.adding.onChange(false);
-	}, [commentsOpen]);
-	const libraryOpen = sidePanel === "library";
+const libraryOpen = sidePanel === "library";
 	// Its width: 380px to start, dragged from its left edge between 300px and half the window; kept while it's closed.
 	const [sidePanelWidth, setSidePanelWidth] = useSidePanelWidth();
 	const commentsButtonRef = React.useRef<HTMLButtonElement>(null);
@@ -1364,13 +1410,21 @@ function SparksWorkspace({
 		// "Sparks Project", 63:12460, "Plan summary"); everything else is in the column on its left.
 		<div className='flex h-screen bg-background bg-linear-to-b from-background from-50% to-[color-mix(in_srgb,var(--background-subtle)_50%,var(--background))] text-foreground'>
 		<div className='flex min-w-0 flex-1 flex-col'>
-			{/* sparks.ds "header-autopartshub" → "Sparks Project" (32:1145): the concept's name alone on the left (xl semibold,
-			    its menu on the chevron), the steps centered, the actions on the right. No logo, no back button, no avatar
-			    (DESIGN.md → "Sparks Project header"). */}
+			{/* sparks.ds "header-autopartshub" → "Sparks Project" (32:1145): the back button and the concept's name on the left
+			    (2xl bold, 24/30, dotted underline: selected, it's renamed), the steps centered, the actions on the right. No logo, no
+			    avatar (DESIGN.md → "Sparks Project header"). */}
 			<AppHeader
 				logo={
-					// Figma "Left": the concept's name with its menu; "All ideas" there goes back to the start page.
-					<ConceptName name={conceptName} defaultName={defaultConceptName} onRename={onRename} onUseDefaultName={onUseDefaultName} onClose={onClose} />
+					// Figma "Left": back ("All ideas", to the start page), then the concept's name, selected to rename it.
+					<ConceptName
+						name={conceptName}
+						defaultName={defaultConceptName}
+						onRename={onRename}
+						onUseDefaultName={onUseDefaultName}
+						onClose={onClose}
+						status={status}
+						statusDate={statusDate}
+					/>
 				}
 				nav={
 					<StepNav aria-label='Steps'>
@@ -1434,6 +1488,9 @@ function SparksWorkspace({
 						description='People and departments you add see the idea and its prototype once you publish it.'
 						rolesHint='With "Can comment", they can also leave feedback. With "Can edit", they work on it with you right away, in your conversation with Sparks too.'
 						{...share}
+						// Also opened from "Manage reviewers" in Publish.
+						open={shareOpen}
+						onOpenChange={setShareOpen}
 					>
 						<Button variant='outline'>Share</Button>
 					</SharePopover>
@@ -1456,9 +1513,45 @@ function SparksWorkspace({
 								{publish.hint}
 							</TooltipContent>
 						</Tooltip>
-					) : publish.panel && !publish.disabled ? (
-						<PublishPopover label={publish.label} onPublish={publish.onClick} blocked={publish.blocked}>
-							{publish.panel}
+					) : publish.details && !publish.disabled ? (
+						// The first time: what's shared, what happens next and who it goes to (Figma: Sparks 81:1031).
+						<PublishPopover
+							title='Publish your idea'
+							// sparks.ds "Publish your idea (popover)" (129:2258): the idea named in the description, then where it'll be.
+							description={`Share your ${conceptName} idea and interactive ${publishedPaths > 1 ? "prototypes" : "prototype"} with your selected reviewers.`}
+							link={share?.link}
+							linkHref={publish.details.linkHref}
+							itemsLabel="Idea solution paths you're sharing"
+							items={publish.details.items}
+							next={`Reviewers will receive an email invitation to explore your ${publish.details.items.length > 1 ? "ideas" : "idea"}, try the ${publishedPaths > 1 ? "prototypes" : "prototype"}, and share feedback. You can continue working independently and publish updates when you're ready.`}
+							audience={
+								publish.details.reviewers
+									? {
+											title: `Your idea will be shared with ${publish.details.reviewers} team ${publish.details.reviewers === 1 ? "member" : "members"}.`,
+											action: { label: "Manage reviewers", onClick: openShare },
+										}
+									: { title: "No reviewers added yet", tone: "warning", action: { label: "Add reviewers to publish and share your idea.", onClick: openShare } }
+							}
+							// The email as reviewers get it, with her note as its message once she's written one.
+							preview={{
+								title: "Invite email",
+								// What's shared in the email is what the popover lists.
+								children: (
+									<InvitationEmail {...publish.details.email} items={publish.details.items} note={publish.details.note?.trim() || undefined} variant='preview' />
+								),
+							}}
+							note={
+								publish.details.onNoteChange
+									? { fieldLabel: "Note to reviewers", value: publish.details.note ?? "", onChange: publish.details.onNoteChange }
+									: undefined
+							}
+							publishLabel='Publish & invite'
+							onPublish={publish.onClick}
+							blocked={publish.blocked}
+							open={publish.open}
+							onOpenChange={publish.onOpenChange}
+						>
+							<Button variant='neutral'>{publish.label}</Button>
 						</PublishPopover>
 					) : (
 						<Button
@@ -1801,8 +1894,7 @@ function SparksWorkspace({
 							onOpenPrototypeComment={comments?.onOpenPrototypeComment}
 							ideaComments={comments?.idea}
 							onOpenIdeaComment={comments?.onOpenIdeaComment}
-							adding={comments?.adding}
-							onClose={closeComments}
+onClose={closeComments}
 							autoFocus
 						/>
 						)}

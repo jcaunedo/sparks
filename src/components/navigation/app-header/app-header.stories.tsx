@@ -1,9 +1,10 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { Bell, X } from "lucide-react";
+import { ArrowLeft, Bell, X } from "lucide-react";
 
 import { AutoPartsHubLogo } from "@/components/brand/autoparts-hub-logo";
 import { Logo } from "@/components/brand/logo";
 import { Button } from "@/components/buttons/button";
+import { Badge } from "@/components/data-display/badge";
 import { StepNav, StepNavItem } from "@/components/navigation/step-nav";
 import { Typography } from "@/components/typography/typography";
 import {
@@ -91,11 +92,25 @@ export const Sparks: Story = {
 
 const steps = ["Plan", "Prototype", "Evaluate", "Review"] as const;
 
+/** Figma "Sparks Project" → "Left": the back button, the concept's name (2xl bold, 24/30, dotted underline), its status. */
 function ProjectStart({ name }: { name: string }) {
 	return (
-		<Typography as='h1' size='xl' weight='semibold' className='truncate text-foreground-prominent'>
-			{name}
-		</Typography>
+		<>
+			<Button variant='neutral' size='icon' aria-label='All ideas' className='size-8 shrink-0 rounded-button-md [&_svg]:size-4'>
+				<ArrowLeft aria-hidden />
+			</Button>
+			<Typography
+				as='h1'
+				size='2xl'
+				weight='bold'
+				className='min-w-0 truncate leading-[30px] text-foreground underline decoration-dotted decoration-from-font underline-offset-[5px]'
+			>
+				{name}
+			</Typography>
+			<Badge variant='flat' tone='purple' size='xs' className='-ms-1 shrink-0'>
+				In review
+			</Badge>
+		</>
 	);
 }
 
