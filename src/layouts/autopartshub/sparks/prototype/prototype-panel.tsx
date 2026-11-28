@@ -1,10 +1,10 @@
 import * as React from "react";
 import { ChevronLeft, ChevronRight, Maximize2, TriangleAlert, MessageCirclePlus, Monitor, MousePointerClick, Smartphone } from "lucide-react";
-import { AnimatePresence, motion } from "motion/react";
+import { AnimatePresence, motion, useAnimationControls } from "motion/react";
 
 import { Button } from "@/components/buttons/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/overlays/tooltip";
-import { carouselVariants, fadeVariants, revealVariants, useMotionPreference } from "@/lib/motion";
+import { carouselVariants, fadeVariants, motionDistance, motionDuration, revealVariants, standardTransition, useMotionPreference } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 
 import { BuildingScreen } from "./building-screen";
@@ -96,6 +96,12 @@ type PrototypePanelProps = {
 	/** Open a comment's pin (from the Comments panel): shows its audience and device and opens its popover. */
 	openComment?: string;
 	onOpenCommentChange?: (id: string | undefined) => void;
+	/**
+	 * A new value brings the device in, from invisible and 8px below, up into place after a beat, without starting it over: the panel shown again
+	 * after something took its place, e.g. back from Review status, so the phone doesn't pop in (MOTION.md → "Review
+	 * status's team assessment"). Not on the first render. Reduced motion: it just shows.
+	 */
+	revealKey?: number;
 	className?: string;
 };
 
@@ -125,7 +131,12 @@ function FitPhone({ children, after, className }: { children: React.ReactNode; /
 		const node = ref.current;
 		if (!node) return;
 		// Room for what's under it (about one line). Measured before it's first painted, so it's never at another size.
-		const measure = () => setScale(Math.max(0.4, Math.min(1, (node.clientHeight - (after ? 28 : 0)) / phoneSize.height, node.clientWidth / phoneSize.width)));
+		// Hidden (`display: none`, e.g. while Review status takes its place) it measures 0: keep the scale it had, or it
+		// comes back shrunk to the smallest for a frame, then jumps (DESIGN.md → "The phone keeps its scale while hidden").
+		const measure = () => {
+			if (!node.clientWidth || !node.clientHeight) return;
+			setScale(Math.max(0.4, Math.min(1, (node.clientHeight - (after ? 28 : 0)) / phoneSize.height, node.clientWidth / phoneSize.width)));
+		};
 		measure();
 		const observer = new ResizeObserver(measure);
 		observer.observe(node);
@@ -154,23 +165,24 @@ function PrototypeNote() {
 
 /**
  * An arrow beside the prototype that goes to the screen before or after it (Prototype, Evaluate's strip): a 40px round
- * outlined icon button, named in its tooltip with the screen it goes to.
+ * outlined icon button, named in its tooltip with the screen it goes to. Never shown disabled: when it can't be used (the
+ * first or last screen, Evaluate's strip while it runs) it's hidden, keeping its place so nothing beside it moves.
  */
 function ScreenArrow({ direction, to, disabled, onClick }: { direction: -1 | 1; to?: string; disabled?: boolean; onClick: () => void }) {
 	const label = direction < 0 ? "Screen before" : "Next screen";
+	// `invisible` (not unmounted): it keeps its 40px, and drops out of the tab order and the accessibility tree.
+	if (disabled) return <span aria-hidden className='invisible size-10 shrink-0' />;
 	const button = (
 		<Button
 			variant='outline'
 			size='icon'
 			aria-label={to ? `${label}: ${to}` : label}
-			disabled={disabled}
 			onClick={onClick}
 			className='size-10 shrink-0 rounded-full [&_svg]:size-5'
 		>
 			{direction < 0 ? <ChevronLeft aria-hidden /> : <ChevronRight aria-hidden />}
 		</Button>
 	);
-	if (disabled) return button;
 	return (
 		<Tooltip>
 			<TooltipTrigger asChild>{button}</TooltipTrigger>
@@ -301,6 +313,7 @@ function PrototypePanel({
 	paths = [],
 	path,
 	onPathChange,
+	revealKey,
 	className,
 }: PrototypePanelProps) {
 	const openAudience = audiences.find((a) => a.id === (openAt && screens[openAt.view]?.audience)) ?? audiences[0];
@@ -353,6 +366,31 @@ function PrototypePanel({
 	const backRef = React.useRef<HTMLButtonElement>(null);
 	const building = Boolean(build);
 	const { prefersReducedMotion } = useMotionPreference();
+	// `revealKey`: the device fades in when it changes (not on the first render).
+	const revealControls = useAnimationControls();
+	// The panel around it (the gray background, the toolbar) fades in too, at once, over `normal`.
+	const panelRevealControls = useAnimationControls();
+	const panelRef = React.useRef<HTMLElement>(null);
+	const firstReveal = React.useRef(revealKey);
+	// A layout effect, and the start state written on the element too: it's unhidden in the same render, so the first paint
+	// must already show it at 40% and 8px down (an effect after paint, or Motion's next-frame render, showed it in place for
+	// a frame, then jumped).
+	React.useLayoutEffect(() => {
+		if (revealKey === undefined || revealKey === firstReveal.current || prefersReducedMotion) return;
+		// Invisible and 8px below (Reveal's distance) as the panel comes back, then, after a beat (`fast`, so the panels have
+		// swapped first), up into place over `deliberate` (600ms): nothing of it shows at the moment of the swap.
+		const panel = panelRef.current;
+		if (panel) panel.style.opacity = "0";
+		panelRevealControls.set({ opacity: 0 });
+		void panelRevealControls.start({ opacity: 1, transition: standardTransition });
+		const device = scrollerRef.current;
+		if (device) {
+			device.style.opacity = "0";
+			device.style.transform = `translateY(${motionDistance.subtle}px)`;
+		}
+		revealControls.set({ opacity: 0, y: motionDistance.subtle });
+		void revealControls.start({ opacity: 1, y: 0, transition: { ...standardTransition, duration: motionDuration.deliberate, delay: motionDuration.fast } });
+	}, [revealKey, prefersReducedMotion, revealControls, panelRevealControls]);
 	// Comments on the prototype (prds/sparks-prototype.md, "Commenting on it"): "Add comment" and pointing ("Edit
 	// element") are one mode at a time.
 	const [commentingState, setCommentingState] = React.useState(false);
@@ -451,7 +489,8 @@ function PrototypePanel({
 		<div className={cn("flex min-h-0 flex-1 flex-col items-center overflow-hidden", device === "phone" && "pt-4")}>
 			{(() => {
 				const deviceView = (
-					<div ref={scrollerRef} className={cn(deviceClasses(device), "scrollbar-subtle overflow-y-auto")}>
+					// The device itself comes back in (`revealKey`), not the panel around it.
+					<motion.div ref={scrollerRef} animate={revealControls} className={cn(deviceClasses(device), "scrollbar-subtle overflow-y-auto")}>
 				{commentAuthor ? (
 					<PrototypeComments
 						active={commenting}
@@ -470,7 +509,7 @@ function PrototypePanel({
 				) : (
 					<React.Fragment key={`${audience}-${screen ?? "start"}-${opened?.key ?? ""}`}>{children(audience, screen, opened?.part)}</React.Fragment>
 				)}
-					</div>
+					</motion.div>
 				);
 				const shown = device === "phone" ? <FitPhone after={note}>{deviceView}</FitPhone> : (
 					<>
@@ -518,7 +557,7 @@ function PrototypePanel({
 	);
 
 	return (
-		<section aria-label='Prototype' className={cn("flex min-h-0 flex-1 flex-col gap-3 rounded-card bg-background-subtle p-4", className)}>
+		<motion.section ref={panelRef} animate={panelRevealControls} aria-label='Prototype' className={cn("flex min-h-0 flex-1 flex-col gap-3 rounded-card bg-background-subtle p-4", className)}>
 			{/* Three parts: the direction (or the path switcher) on the left, the audience and device together in the middle
 			    (centered on the panel: both sides take an equal share), the actions on the right. When the panel is narrow
 			    (beside the plan), the actions keep their width and the direction's name truncates. */}
@@ -632,7 +671,7 @@ function PrototypePanel({
 					{frame}
 				</div>
 			) : null}
-		</section>
+		</motion.section>
 	);
 }
 

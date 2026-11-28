@@ -140,7 +140,8 @@ function PromptComposer({
 					{attachments.map((name, index) => (
 						<li
 							key={`${name}-${index}`}
-							className='flex h-7 max-w-full min-w-0 items-center gap-1.5 rounded-full bg-background-subtle ps-2.5 pe-1 text-sm text-foreground [&>svg]:size-3.5 [&>svg]:shrink-0 [&>svg]:text-icon-muted'
+							// Solid neutral, as the Badge's (`bg-neutral`, its foreground for the text and icons).
+							className='flex h-7 max-w-full min-w-0 items-center gap-1.5 rounded-full bg-neutral ps-2.5 pe-1 text-sm text-neutral-foreground [&>svg]:size-3.5 [&>svg]:shrink-0 [&>svg]:text-neutral-foreground'
 						>
 							<Paperclip aria-hidden />
 							<span className='min-w-0 truncate'>{name}</span>
@@ -152,7 +153,8 @@ function PromptComposer({
 											variant='ghost'
 											size='icon'
 											aria-label={`Remove ${name}`}
-											className='size-5 rounded-full [&_svg]:size-3.5'
+											// On the dark chip: its foreground, and a faint wash of it on hover instead of the light hover fill.
+											className='size-5 rounded-full text-neutral-foreground hover:bg-[color-mix(in_srgb,var(--neutral-foreground)_16%,transparent)] hover:text-neutral-foreground [&_svg]:size-3.5'
 											disabled={disabled}
 											onClick={() => {
 												onAttachmentRemove(index);

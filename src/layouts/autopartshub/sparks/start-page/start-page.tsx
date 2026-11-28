@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Archive, ArchiveRestore, ArrowUpRight, Copy, Ellipsis, Plus, Search, Trash2 } from "lucide-react";
+import { Archive, ArchiveRestore, ArrowUpRight, Copy, Ellipsis, Lightbulb, Plus, Search, Trash2, Users } from "lucide-react";
 
 import { Logo } from "@/components/brand/logo";
 import { Button } from "@/components/buttons/button";
@@ -166,12 +166,22 @@ function SparksStartPage({
 						</div>
 					</div>
 
-					{/* Figma: line tabs (as on the AutoPartsHUB home), 16px under the title row, then the list 32px under them. */}
+					{/* Figma: line tabs (as on the AutoPartsHUB home, each with its 16px icon before the label), 16px under the title
+					    row, then the list 32px under them. */}
 					<Tabs defaultValue='yours' className='gap-8'>
 						<TabsList variant='line' size='lg'>
-							<TabsTrigger value='yours'>Your ideas</TabsTrigger>
-							<TabsTrigger value='shared'>Shared with you</TabsTrigger>
-							<TabsTrigger value='archive'>Archive</TabsTrigger>
+							<TabsTrigger value='yours'>
+								<Lightbulb aria-hidden />
+								Your ideas
+							</TabsTrigger>
+							<TabsTrigger value='shared'>
+								<Users aria-hidden />
+								Shared with you
+							</TabsTrigger>
+							<TabsTrigger value='archive'>
+								<Archive aria-hidden />
+								Archive
+							</TabsTrigger>
 						</TabsList>
 
 						<TabsContent value='yours'>

@@ -55,6 +55,11 @@ type EvaluationPrototypeProps = {
 	onAddToReview?: () => void;
 	/** Why "Add to Review" can't be used now (a run is going, or the prototype changed after the last one): disabled, with this in its tooltip. */
 	addToReviewBlocked?: string;
+	/**
+	 * This path is already in Review, with nothing new to add to it (prds/sparks-validate.md, "Finishing the step"): the
+	 * button reads "Go to Review" and only takes her there, never disabled, as selecting Review in the steps.
+	 */
+	inReview?: boolean;
 	agents: EvaluationAgent[];
 	/**
 	 * A run in progress: the agents work the prototype, screen by screen, all those on a screen at once. A new `key` starts
@@ -218,6 +223,7 @@ function EvaluationPrototype({
 	published,
 	onAddToReview,
 	addToReviewBlocked,
+	inReview = false,
 	agents,
 	run,
 	onAgentStart,
@@ -540,7 +546,11 @@ function EvaluationPrototype({
 					) : null}
 				</div>
 				{onAddToReview ? (
-					<PanelAction label='Add to Review' onClick={onAddToReview} disabled={running || Boolean(addToReviewBlocked)} hint={addToReviewBlocked} />
+					inReview ? (
+						<PanelAction label='Go to Review' onClick={onAddToReview} />
+					) : (
+						<PanelAction label='Add to Review' onClick={onAddToReview} disabled={running || Boolean(addToReviewBlocked)} hint={addToReviewBlocked} />
+					)
 				) : null}
 			</div>
 

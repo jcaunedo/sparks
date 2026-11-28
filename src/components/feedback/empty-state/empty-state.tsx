@@ -10,7 +10,7 @@ import { Typography } from "@/components/typography/typography";
  */
 
 type EmptyStateProps = Omit<React.ComponentProps<"div">, "title" | "children"> & {
-	/** Headline, e.g. "No connections yet". */
+	/** Headline, e.g. "No connections yet". A line break ("\n") starts a new line. */
 	title: string;
 	/** Supporting line, e.g. "When connections are added, they'll show up here." */
 	description?: string;
@@ -22,7 +22,7 @@ type EmptyStateProps = Omit<React.ComponentProps<"div">, "title" | "children"> &
 	buttonLabel?: string;
 	/** Forwarded to the button (`onClick`, or `asChild` with a link). */
 	buttonProps?: Omit<ButtonProps, "size" | "variant" | "children">;
-	/** A second, outlined button before the main one, e.g. "Back to Prototype" beside "Evaluate the prototype". */
+	/** A second, outlined button before the main one, e.g. "Back to Prototype" beside "Run evaluation". */
 	secondaryButtonLabel?: string;
 	/** Forwarded to the second button. */
 	secondaryButtonProps?: Omit<ButtonProps, "size" | "variant" | "children">;
@@ -62,7 +62,7 @@ function EmptyState({
 						{icon}
 					</div>
 				)}
-				<Typography as='h2' size='lg' weight='semibold' className='text-foreground'>
+				<Typography as='h2' size='lg' weight='semibold' className='whitespace-pre-line text-foreground'>
 					{title}
 				</Typography>
 				{description && (

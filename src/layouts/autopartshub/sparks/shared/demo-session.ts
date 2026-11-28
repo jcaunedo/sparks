@@ -25,7 +25,7 @@ const key = "sparks:demo-concept";
 const returningKey = "sparks:demo-returning";
 
 /**
- * Set by a demo shortcut that opens another workspace story on her concept ("Go to Review" in "+"): that story carries
+ * Set by a demo shortcut that opens another workspace story on her concept ("Add Review" in "+"): that story carries
  * on with it, so its row follows (name, step, status). Cleared when the start page opens.
  */
 const continuingKey = "sparks:demo-continuing";

@@ -330,7 +330,7 @@ function TeamAssessment({
 				</ul>
 				{/* "Send a reminder", on its own line under the legend, on the left, 16px below it, while anyone is pending: the
 				    counts read first, then what she can do about them. It stays once sent (she can send another); when the
-				    latest went out follows it, muted, 12px after it. */}
+				    latest went out follows it, xs (12px) muted, 12px after it. */}
 				{pending > 0 && (onRemind || reminded) ? (
 					<div data-slot='team-assessment-remind' className='flex flex-wrap items-baseline gap-x-3 pt-2 text-base'>
 						{onRemind ? (
@@ -338,7 +338,7 @@ function TeamAssessment({
 								{remindLabel}
 							</button>
 						) : null}
-						{reminded ? <span aria-live='polite' className='text-muted-foreground'>{reminded}</span> : null}
+						{reminded ? <span aria-live='polite' className='text-xs text-muted-foreground'>{reminded}</span> : null}
 					</div>
 				) : null}
 			</div>

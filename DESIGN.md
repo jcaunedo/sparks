@@ -735,6 +735,49 @@ const selectedMarker = focus?.fromScreen ? undefined : markers.find((m) => m.id 
 
 **How to apply:** don't put the arrows back as flex siblings of the slide, and don't key the slide by the audience or screen (that would slide on every switch). Evaluate's strip has its own motion (all screens side by side, MOTION.md → "Agents on the prototype").
 
+**An arrow that can't be used is hidden, never disabled.** `ScreenArrow` renders an invisible 40px placeholder when `disabled` (the first or last screen; Evaluate's strip while it runs), so the arrows, Evaluate's dots and the device don't shift. Callers keep passing `disabled`; the hiding lives in the component, so every place gets it.
+
+```tsx
+if (disabled) return <span aria-hidden className='invisible size-10 shrink-0' />;
+```
+
+Don't bring back `disabled` on its `Button`: a faded arrow read as something broken, at the end of a list where there's nothing to go to.
+
+---
+
+## The phone keeps its scale while hidden (`sparks/prototype/prototype-panel.tsx`: `FitPhone`'s `measure`)
+
+**Rule:** `FitPhone` skips a measurement when its box has no size, so a hidden prototype keeps the scale it had.
+
+```tsx
+const measure = () => {
+	if (!node.clientWidth || !node.clientHeight) return;
+	setScale(Math.max(0.4, Math.min(1, (node.clientHeight - (after ? 28 : 0)) / phoneSize.height, node.clientWidth / phoneSize.width)));
+};
+```
+
+**Why:** Review keeps the prototype mounted but `hidden` while Review status takes its place. Its resize observer then reported 0 × 0, the phone dropped to the smallest scale (0.4, 333px tall), and on the way back it showed at that size for a frame before jumping to full size: a visible flick under the device's reveal.
+
+**How to apply:** keep the guard. Check: in "Review Published", open "View full report", then go back: the phone is 832px tall from its first frame, at 40% opacity, and rises into place.
+
+---
+
+## Review status plays its entrances (`sparks/review/review-status.tsx`: `PresenceContext.Provider value={null}`)
+
+**Rule:** `ReviewStatusPanel` wraps what it renders in `<PresenceContext.Provider value={null}>`, so its entrances play (its Reveal, and its team assessment coming down: MOTION.md → "Review status's team assessment").
+
+```tsx
+return (
+	<PresenceContext.Provider value={null}>
+		<motion.section aria-labelledby='review-status-title' …>…</motion.section>
+	</PresenceContext.Provider>
+);
+```
+
+**Why:** the workspace's step layer is in an `AnimatePresence initial={false}` (`workspace.tsx`). Motion keeps that `initial: false` in the presence context of a layer that was there when the page loaded (`PresenceChild` memoizes it), and every `motion` element mounted inside it later skips its entrance. Opening Review status on a page that started on Review (a story, a reopened concept) showed it at once, with no motion at all.
+
+**How to apply:** don't remove the provider as "unused". Check: open the story "Review Published", select "View full report": the card on the right grows from the top and comes down while the one on the left folds up. Another panel mounted later in a step's layer that has its own entrance needs the same provider.
+
 ---
 
 ## Prototype title is the versions menu (`sparks/shared/versions-menu.tsx`)
@@ -1003,6 +1046,33 @@ So the lg frame at exactly 1024px gets the "lg and below" layout, and the next l
 ⚠️ **Constraint:** `theme.css` ships to consumers, so the apps' own `sm:`–`3xl:` classes follow these boundaries too.
 
 ---
+
+## Toasts: Figtree, no next-themes, top center in Sparks (`src/components/feedback/sonner/sonner.tsx`, `sparks/workspace/workspace.tsx`)
+
+**Rule:** `Toaster` passes `font-sans` (and the title, description and action classes, with `!`) through `toastOptions.classNames`, and picks its theme from `.dark` on `<html>`. In the Sparks workspace it sits top center, over the header, as on shadcn's page: `<Toaster position='top-center' />` (Sonner's default 24px from the top).
+
+**Why:** Sonner injects its own CSS, with a system font and its own sizes, that wins over plain utilities; without the `!` classes the toast drops out of Figtree and the type scale. shadcn's source reads the theme from next-themes, which this repo doesn't use. At the bottom right, the toast covered the message box's Send button at 1440px. Top center was chosen to match shadcn's; it covers the step pills for the few seconds it shows.
+
+## Dialogs animate with Motion, not `animate-in` classes (`src/components/overlays/dialog/dialog.tsx`)
+
+**Rule:** `DialogContent` grows in from 95% as it fades in, and shrinks back as it closes, with Motion (`dialogVariants`, the scrim `overlayVariants`), wrapped in `AnimatePresence` and kept mounted through its exit with Radix's `forceMount`. `Dialog` tracks whether it's open (controlled or not) and passes it down in `DialogOpenContext`, so the content knows when to play its way out.
+
+**Why:** shadcn's source animates with `data-[state=open]:animate-in zoom-in-95 fade-in-0`, which need `tw-animate-css`. This repo doesn't load it, so those classes did nothing and every dialog popped in and vanished. A shadcn resync brings them back and drops the motion: keep the Motion version.
+
+**Keep:** the window is centered with `-translate-x-1/2 -translate-y-1/2`, Tailwind 4's own `translate` property, so Motion's `scale` (on `transform`) adds to it instead of replacing it. Moving the centering into `transform` would throw the dialog off-center while it animates.
+
+```tsx
+<AnimatePresence>
+	{open ? (
+		<DialogPortal forceMount>
+			<DialogOverlay forceMount asChild><motion.div variants={overlayVariants} initial='initial' animate='animate' exit='exit' /></DialogOverlay>
+			<DialogPrimitive.Content forceMount asChild …>
+				<motion.div variants={prefersReducedMotion ? fadeVariants : dialogVariants} initial='initial' animate='animate' exit='exit'>…</motion.div>
+			</DialogPrimitive.Content>
+		</DialogPortal>
+	) : null}
+</AnimatePresence>
+```
 
 ## Row removal motion: fade out, then the rows below glide up (`src/lib/motion/variants.ts`)
 

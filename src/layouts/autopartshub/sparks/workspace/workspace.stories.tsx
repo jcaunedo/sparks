@@ -164,7 +164,7 @@ import {
 	sampleRunStepMs,
 	sampleValidateStartedReply,
 } from "../validate/sample-validate";
-import { ReviewPanel, reviewPartsOf, type IdeaComment, type Reviewer, type ReviewNext, type ReviewStatus } from "../review/review-panel";
+import { ReviewPanel, reviewerCommentNotes, reviewPartsOf, type IdeaComment, type Reviewer, type ReviewNext, type ReviewStatus } from "../review/review-panel";
 import { ReviewStatusPanel, ReviewTeamAssessment } from "../review/review-status";
 import { ReviewNextOnCard } from "../review/review-next";
 import { sampleAssessmentStepMs, sampleReviewFeedback } from "../review/sample-review-status";
@@ -822,6 +822,7 @@ function WorkspacePrototype(props: PrototypeProps) {
 	// Review (prds/sparks-review.md): where it stands, the reviewers, what changed after the reviews, and her recommendation.
 	// Review, by path (prds/sparks-review.md, "Review's screen"): each path sent to Review keeps its own review, so
 	// switching paths there and back finds it as it was.
+	const lastFinishedRun = (list: Run[]) => [...list].reverse().find((r) => !r.stopped && sampleRunFinished(r.evaluation, r.step));
 	const [reviews, setReviews] = React.useState<
 		Record<
 			string,
@@ -865,6 +866,11 @@ function WorkspacePrototype(props: PrototypeProps) {
 		buildFlag?: { commentId: string; text: string; criterion: string; suggestion: string; why: string; edited?: boolean; outcome?: "made" | "skipped" };
 		/** Clarifications she made after it advanced: a criterion as it was, and as it reads now. */
 		clarified?: { from: string; to: string }[];
+		/**
+		 * The run Review was put together with (its `startedAt`; none with Evaluate skipped). A run finished after it is new
+		 * to Review: Evaluate's button is "Add to Review" again; otherwise it's "Go to Review".
+		 */
+		evaluatedRun?: number;
 			}
 		>
 	>(() =>
@@ -875,18 +881,19 @@ function WorkspacePrototype(props: PrototypeProps) {
 						? {
 								// Published (version 1) just now, to the suggested teams; nobody has assessed it yet.
 								status: { kind: "in-review" },
-								reviewers: sampleReviewersFor(planChoiceId),
+								reviewers: sampleReviewersFor(planChoiceId).map((r) => ({ ...r, at: new Date().toISOString() })),
 								ticks: 0,
 								skipped: initialRuns.length === 0,
+								evaluatedRun: lastFinishedRun(initialRuns)?.startedAt,
 								openQuestions: [],
 								published: 1,
 								publishedAt: new Date().toISOString(),
 							}
-						: { status: { kind: "ready" }, reviewers: [], ticks: 0, skipped: initialRuns.length === 0, openQuestions: [] },
+						: { status: { kind: "ready" }, reviewers: [], ticks: 0, skipped: initialRuns.length === 0, evaluatedRun: lastFinishedRun(initialRuns)?.startedAt, openQuestions: [] },
 				}
 			: {},
 	);
-	const lastFinished = (list: Run[]) => [...list].reverse().find((r) => !r.stopped && sampleRunFinished(r.evaluation, r.step))?.evaluation;
+	const lastFinished = (list: Run[]) => lastFinishedRun(list)?.evaluation;
 	const lastEvaluation = lastFinished(runs);
 	// What Review is about: the path sent there (the one shown, before any is).
 	const reviewId = reviewPath ?? chosenId;
@@ -928,11 +935,12 @@ function WorkspacePrototype(props: PrototypeProps) {
 		setReached("review");
 		setReviewPath(chosenId);
 		const existing = reviews[chosenId];
+		const evaluatedRun = skipped ? undefined : lastFinishedRun(runs)?.startedAt;
 		if (existing?.published !== undefined && !existing.decision) {
-			setReviewFor(chosenId, { ...existing, skipped });
+			setReviewFor(chosenId, { ...existing, skipped, evaluatedRun });
 			return;
 		}
-		setReviewFor(chosenId, { status: { kind: "ready" }, reviewers: [], ticks: 0, skipped, openQuestions: [], buildStep: 0, startedAt: Date.now() });
+		setReviewFor(chosenId, { status: { kind: "ready" }, reviewers: [], ticks: 0, skipped, evaluatedRun, openQuestions: [], buildStep: 0, startedAt: Date.now() });
 	};
 	/**
 	 * The paths menu on the idea's name, in Review (with more than one path): Review on that path, and its prototype on the
@@ -944,7 +952,16 @@ function WorkspacePrototype(props: PrototypeProps) {
 		setActivePath(id);
 		setReviewPath(id);
 		if (!reviews[id])
-			setReviewFor(id, { status: { kind: "ready" }, reviewers: [], ticks: 0, skipped: !lastFinished(dataFor(id).runs), openQuestions: [], buildStep: 0, startedAt: Date.now() });
+			setReviewFor(id, {
+				status: { kind: "ready" },
+				reviewers: [],
+				ticks: 0,
+				skipped: !lastFinished(dataFor(id).runs),
+				evaluatedRun: lastFinishedRun(dataFor(id).runs)?.startedAt,
+				openQuestions: [],
+				buildStep: 0,
+				startedAt: Date.now(),
+			});
 	};
 	/**
 	 * "Add to Review", in Evaluate and on Review's empty state: it needs a run on the current version; with no run at all,
@@ -955,7 +972,19 @@ function WorkspacePrototype(props: PrototypeProps) {
 		: lastEvaluation && lastEvaluation.version !== versions.length
 			? "The prototype changed after the last run. Run it again first."
 			: undefined;
+	/**
+	 * This path is already in Review, put together with its latest finished run (or with none, Evaluate skipped): Evaluate's
+	 * button is "Go to Review" and opens it as it is. A run that finishes after that is new to Review: "Add to Review" again.
+	 */
+	const alreadyInReview = Boolean(reviews[chosenId]) && reviews[chosenId]?.evaluatedRun === lastFinishedRun(runs)?.startedAt;
+	const goToReview = () => {
+		setPointing(false);
+		setPointedAt(undefined);
+		setStep("review");
+		setReviewPath(chosenId);
+	};
 	const addToReview = () => {
+		if (alreadyInReview) return goToReview();
 		const skipped = !lastEvaluation;
 		const fromPrototype = reached === "prototype";
 		setPointing(false);
@@ -1013,7 +1042,8 @@ function WorkspacePrototype(props: PrototypeProps) {
 			setReviewFor(id, (current) => ({
 				...(current ?? { status: { kind: "ready" }, reviewers: [], ticks: 0, skipped: !lastFinished(dataFor(id).runs), openQuestions: [] }),
 				status: { kind: "in-review" },
-				reviewers: reviewersInShare,
+				// Invited as it's published: their status's time.
+				reviewers: reviewersInShare.map((r) => ({ ...r, at: publishedAt })),
 				published: dataFor(id).versions.length,
 				publishedAt,
 				remindedAt: undefined,
@@ -1039,9 +1069,10 @@ function WorkspacePrototype(props: PrototypeProps) {
 						reminded: undefined,
 						reviewers: reviewersInShare.map((invitee) => {
 							const r = current.reviewers.find((existing) => existing.name === invitee.name);
-							if (!r) return invitee;
+							const now = new Date().toISOString();
+							if (!r) return { ...invitee, at: now };
 							return r.status === "view" && r.view && r.version !== undefined
-								? { ...r, status: "opened", view: undefined, why: undefined, version: undefined, earlier: { version: r.version, view: r.view } }
+								? { ...r, status: "opened", at: now, view: undefined, why: undefined, version: undefined, earlier: { version: r.version, view: r.view } }
 								: r;
 						}),
 					}
@@ -1284,8 +1315,9 @@ function WorkspacePrototype(props: PrototypeProps) {
 				const reviewers = review.reviewers.map((r, i): Reviewer => {
 					if (i !== index) return r;
 					// Commenting, they write the point they'll make in their view; then the view, with why, of this version.
-					if (status === "commented") return { ...r, status, comment: views(r.id).why };
-					return status === "view" ? { ...r, status, ...views(r.id), version: review.published } : { ...r, status };
+					const at = new Date().toISOString();
+					if (status === "commented") return { ...r, status, at, comment: views(r.id).why };
+					return status === "view" ? { ...r, status, at, ...views(r.id), version: review.published } : { ...r, status, at };
 				});
 				setReview({ ...review, reviewers, ticks: index + 1 });
 				// Commenting, a team's lead also pins a comment on the prototype, on what it's about…
@@ -1306,16 +1338,25 @@ function WorkspacePrototype(props: PrototypeProps) {
 	// Review status (prds/sparks-review.md, "Review status"): in the prototype's place on the right, until she goes back.
 	// The prototype stays mounted underneath, hidden, so its version, device and screen are as she left them.
 	const [reviewStatusOpen, setReviewStatusOpen] = React.useState(false);
+	// Going back from Review status: its card folds up while the idea panel's card opens again, then the prototype is back.
+	const [reviewStatusLeaving, setReviewStatusLeaving] = React.useState(false);
+	// Back from Review status: the prototype's device fades in rather than popping in (`PrototypePanel` `revealKey`).
+	const [prototypeRevealKey, setPrototypeRevealKey] = React.useState<number>();
 	const assessmentTrigger = React.useRef<HTMLButtonElement>(null);
-	// Where Review status opens: at a person selected in the card's popovers ("Reviewers"), or at the next step, from the
+	// Where Review status opens: at a person selected in the card's popovers ("Assessments"), or at the next step, from the
 	// card's next step; at the top from "View full report".
 	const [statusFocus, setStatusFocus] = React.useState<{ target: { reviewer: string } | "next-step"; key: number }>();
+	// A reviewer's comments line in Review status: Comments opens at their comments.
+	const [commentsReviewer, setCommentsReviewer] = React.useState<{ id: string; key: number }>();
 	const openStatusAt = (target?: { reviewer: string } | "next-step") => {
 		setStatusFocus(target ? { target, key: Date.now() } : undefined);
 		setReviewStatusOpen(true);
+		setReviewStatusLeaving(false);
 	};
 	const closeReviewStatus = () => {
 		setReviewStatusOpen(false);
+		setReviewStatusLeaving(false);
+		setPrototypeRevealKey(Date.now());
 		// Back on the card's "View full report", once the card is back.
 		requestAnimationFrame(() => assessmentTrigger.current?.focus());
 	};
@@ -1473,14 +1514,19 @@ function WorkspacePrototype(props: PrototypeProps) {
 	};
 	// The folder bounces when the conversation adds something, not the panel ("Add files", a link, "Undo").
 	const [libraryAddedKey, setLibraryAddedKey] = React.useState(0);
+	// What the conversation just added, for the toast that confirms it.
+	const [libraryJustAdded, setLibraryJustAdded] = React.useState<LibraryItem[]>([]);
 	const fromPanel = React.useRef(false);
 	const libraryIds = library.map((item) => item.id).join("\n");
 	const knownIds = React.useRef(libraryIds);
 	React.useEffect(() => {
 		const known = knownIds.current.split("\n");
-		const isNew = library.some((item) => !known.includes(item.id));
+		const fresh = library.filter((item) => !known.includes(item.id));
 		knownIds.current = libraryIds;
-		if (isNew && !fromPanel.current) setLibraryAddedKey((key) => key + 1);
+		if (fresh.length && !fromPanel.current) {
+			setLibraryJustAdded(fresh);
+			setLibraryAddedKey((key) => key + 1);
+		}
 		fromPanel.current = false;
 	}, [libraryIds]);
 	// The Problem summary lists what she added, as it stands.
@@ -1987,7 +2033,7 @@ function WorkspacePrototype(props: PrototypeProps) {
 	const tracksDemo = React.useRef(
 		(() => {
 			if (props.messages.length === 0) return true;
-			// A shortcut ("Go to Review" in "+") opened this story on her concept: it carries on with it.
+			// A shortcut ("Add Review" in "+") opened this story on her concept: it carries on with it.
 			if (isContinuingDemoConcept()) return true;
 			const saved = loadDemoConcept()?.workspace.messages ?? [];
 			return saved.length === props.messages.length && saved[saved.length - 1]?.id === props.messages[props.messages.length - 1]?.id;
@@ -2082,6 +2128,7 @@ function WorkspacePrototype(props: PrototypeProps) {
 			library={{
 				items: library,
 				addedKey: libraryAddedKey,
+				added: libraryJustAdded,
 				onAdd: (items) => {
 					// Only if it changes the list (something already there doesn't).
 					fromPanel.current = items.some((item) => !library.some((other) => other.id === libraryItem(item.kind, item.label).id));
@@ -2132,26 +2179,16 @@ function WorkspacePrototype(props: PrototypeProps) {
 				isBuilt
 					? {
 							validate: {
-								label: "Evaluate the prototype",
+								label: "Run evaluation",
 								onClick: evaluateAction.onClick,
-								prototype: { name: pathLabel(chosenId), detail: `Version ${versions.length}` },
+								path: pathLabel(chosenId),
 							},
 							review: {
 								label: "Add to Review",
 								disabled: Boolean(addToReviewBlocked),
 								onClick: addToReview,
-								prototype: {
-									name: pathLabel(chosenId),
-									detail: `Version ${versions.length} · ${
-										running
-											? "Being evaluated"
-											: !lastEvaluation
-												? "Not evaluated yet"
-												: lastEvaluation.version === versions.length
-													? "Evaluated"
-													: "Changed since it was evaluated"
-									}`,
-								},
+								path: pathLabel(chosenId),
+								// Where it stands, only when it matters: not evaluated yet, or why it can't be added now.
 								note: addToReviewBlocked ?? (lastEvaluation ? undefined : sampleNotEvaluatedNote),
 							},
 						}
@@ -2172,8 +2209,18 @@ function WorkspacePrototype(props: PrototypeProps) {
 			onAnswerCancel={cancelAnswer}
 			onAnswerChange={changeAnswer}
 			onAddPlan={reached === "plan" ? addPlan : undefined}
+			// The demo's jump to Prototype, with the prototype built (story "Prototype Ready"), until it's built.
+			onAddPrototype={
+				isBuilt
+					? undefined
+					: () => {
+							// Her concept carries on in Prototype: its row in "Your ideas" follows it there.
+							if (tracksDemo) continueDemoConcept();
+							goToStory(storyIds.sparksPrototypeReady);
+						}
+			}
 			// The demo's jump to Review, with the idea put together (story "Review Ready").
-			onGoToReview={() => {
+			onAddReview={() => {
 				// Her concept carries on in Review: its row in "Your ideas" follows it there.
 				if (tracksDemo) continueDemoConcept();
 				goToStory(storyIds.sparksReviewReady);
@@ -2186,8 +2233,9 @@ function WorkspacePrototype(props: PrototypeProps) {
 					const status = review?.reviewers.find((r) => r.id === id)?.status;
 					if (status) setReadFeedback((current) => ({ ...current, [id]: status }));
 				},
+				openReviewer: commentsReviewer,
 				prototype: prototypeComments,
-// Opening one shows its path first.
+				// Opening one shows its path first.
 				idea: ideaComments,
 				// From any step: Review opens, with the part brought into view.
 				onOpenIdeaComment: (id) => {
@@ -2225,11 +2273,17 @@ function WorkspacePrototype(props: PrototypeProps) {
 							path={reviewId}
 							onPathChange={switchReviewPath}
 							concept={concept()}
+							// Evaluate skipped: "Run evaluation" in "Known issues" opens Evaluate on this path, with the run started.
+							onEvaluate={() => {
+								setActivePath(reviewId);
+								setStep("validate");
+								startRun();
+							}}
 							// In the idea once it's sent; before, it's hers to edit in the next step.
 							recommendation={review.submitted ? review.recommendation : undefined}
 							// Published: the team assessment above the idea, except while Review status shows it on the right.
 							assessment={
-								review.published !== undefined && !reviewStatusOpen ? (
+								review.published !== undefined && (!reviewStatusOpen || reviewStatusLeaving) ? (
 									<ReviewTeamAssessment
 										context='workspace'
 										reviewers={review.reviewers}
@@ -2273,9 +2327,12 @@ function WorkspacePrototype(props: PrototypeProps) {
 								feedback={sampleReviewFeedback}
 								remindedAt={review.remindedAt}
 								onRemind={remind}
+								onLeaving={() => setReviewStatusLeaving(true)}
 								onBack={closeReviewStatus}
 								next={reviewNext}
 								reviewers={review.reviewers}
+								commentNotes={reviewerCommentNotes(review.reviewers, ideaComments, prototypeComments)}
+								onOpenComments={(id) => setCommentsReviewer({ id, key: Date.now() })}
 								focus={statusFocus}
 							/>
 						) : null}
@@ -2284,6 +2341,7 @@ function WorkspacePrototype(props: PrototypeProps) {
 						<PrototypePanel
 							key={`review-${chosenId}`}
 							className={cn("min-w-0 basis-0", reviewStatusOpen && review.published !== undefined && "hidden")}
+							revealKey={prototypeRevealKey}
 							audiences={built.audiences}
 							screens={prototypeScreens}
 							versions={versions}
@@ -2360,8 +2418,9 @@ function WorkspacePrototype(props: PrototypeProps) {
 									className='flex-1'
 									title="This prototype hasn't been evaluated yet"
 									description={`Sparks tries "${direction.name}" in realistic scenarios on the prototype, and checks it against AutoParts Co.'s data. Each path has its own results.`}
-									// The same as "Run" in the panel's header, which is the dark one: here it's outlined (EmptyState's second button, on its own).
-									secondaryButtonLabel='Evaluate the prototype'
+									// The same as "Run" in the panel's header, which is the dark one: here it's outlined (EmptyState's second button, on its own),
+									// and named with the same word, so the two read as one action.
+									secondaryButtonLabel='Run evaluation'
 									secondaryButtonProps={{ onClick: startRun }}
 								/>
 							}
@@ -2379,6 +2438,7 @@ function WorkspacePrototype(props: PrototypeProps) {
 							onRestore={(id) => setMessages((current) => [...current, { ...withNewId(withTeamsNote(restore(id))), step: "prototype" }])}
 							// The go-ahead needs a run on the current version; with no run at all, Review opens with Evaluate skipped.
 							addToReviewBlocked={addToReviewBlocked}
+							inReview={alreadyInReview}
 							onAddToReview={addToReview}
 							screens={evaluationScreens}
 							agents={evaluationAgents}
@@ -2882,7 +2942,7 @@ export const ReviewPublished: Story = {
 	parameters: { startPublished: true },
 };
 
-/** "Go to Review instead" at the end of Prototype: Review opens with Evaluate skipped, "Not tested", and the gap listed. */
+/** "Go to Review instead" at the end of Prototype: Review opens with Evaluate skipped, "Not evaluated", the gap listed and the warning in "Known issues". */
 export const ReviewWithoutValidate: Story = {
 	args: PrototypeReady.args,
 	play: async ({ canvasElement }) => {

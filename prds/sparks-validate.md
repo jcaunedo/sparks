@@ -1,9 +1,9 @@
 <!--
 Created: Nov 21, 2026
 Created by: Julio Caunedo
-Last updated: Nov 26, 2026
-Latest update: the run button reads "Run" before and after a run (no "Run again"), and the buttons on a finding ("Fix in the prototype", Try "{direction}") are outlined, no longer dark. Why: one button, one name; a finding's actions sit under the panel's dark "Run" and "Add to Review" instead of competing with them.
-Recent updates: the run button is always dark (Button Solid · Neutral), instead of outlined once there are results. A path with no run yet has "Evaluate the prototype" (outlined) under its empty state, which starts the run. Evaluate has no conversation: the evaluation on the left, the prototype on the right; "Fix in the prototype" opens Prototype on the finding's page with Sparks's plan.
+Last updated: Nov 28, 2026
+Latest update: with Evaluate skipped, the evidence status is "Not evaluated" (was "Not tested"). The empty state's button is "Run evaluation" (was "Evaluate the prototype"). With the path already in Review and no run finished since, "Add to Review" reads "Go to Review"; a run after that brings back "Add to Review". An arrow under the strip that can't be used is hidden. Why: one word for the step; one name for starting a run; Review was already put together; a faded arrow read as broken.
+Recent updates: the run button reads "Run" before and after a run (no "Run again") and is always dark; a finding's buttons ("Fix in the prototype", Try "{direction}") are outlined, so they don't compete with it. A path with no run yet has "Evaluate the prototype" under its empty state, which starts the run.
 Scope: the Evaluate step of a Sparks concept, the third of four (Plan, Prototype, Evaluate, Review): the scenario-based AI evaluation (scenarios worked through the prototype, and checks against business data, previous experiments, engineering context and the design system), the findings, the evidence status of the hypothesis, Dana's go-ahead, and the Evaluation section of the concept.
 Purpose: defines how Dana learns, on her own and in minutes, what could go wrong with her concept and whether it can be built, before anyone else sees it, and how the evaluation stays honest about what an AI evaluation can and can't show.
 -->
@@ -86,9 +86,11 @@ Every result says which method it comes from.
 - Results appear as they come; Dana doesn't have to wait for the whole run to start reading.
 - ~~Dana can keep talking to Sparks while it runs, and can stop the run.~~ Dana can stop the run. A stopped run keeps the results it has, marked "Stopped before finishing", and only those: findings come from a finished run.
 - A run evaluates the prototype version that's current when it starts, and says which.
-- **A path with no run yet** shows "This prototype hasn't been evaluated yet" in Evaluate, with "Evaluate the prototype".
+- **A path with no run yet** shows "This prototype hasn't been evaluated yet" in Evaluate, with ~~"Evaluate the prototype"~~ "Run evaluation".
 
-  ✅ **Resolved:** "Evaluate the prototype" (outlined) sits under the empty state's text and starts the run, the same as "Run" in the panel's header. The text no longer starts with `Select "Run":`. ~~Until the first run, "Run" stands out too (dark, Button Solid · Neutral); once there are results, "Run again" is outlined, and stands out again only after a change to the prototype.~~ ✅ **Resolved:** "Run" and "Run again" are always dark (Button Solid · Neutral), before the first run and after it.
+  ✅ **Resolved:** the button is "Run evaluation", not "Evaluate the prototype". Why: it starts the run, the same as "Run" in the panel's header, and the same word ties the two together; "Evaluate the prototype" repeated the title above it.
+
+  ✅ **Resolved:** ~~"Evaluate the prototype"~~ "Run evaluation" (outlined) sits under the empty state's text and starts the run, the same as "Run" in the panel's header. The text no longer starts with `Select "Run":`. ~~Until the first run, "Run" stands out too (dark, Button Solid · Neutral); once there are results, "Run again" is outlined, and stands out again only after a change to the prototype.~~ ✅ **Resolved:** "Run" and "Run again" are always dark (Button Solid · Neutral), before the first run and after it.
 
 ✅ **Resolved:** Evaluate works as Prototype does: progress first, a blank panel that fills in as it goes, then what was done and the conclusions.
 
@@ -110,7 +112,8 @@ Every result says which method it comes from.
 
 - **Two kinds of agents.** Each scenario is one, named by its situation in a few words ("In a hurry", "Spark plugs · older truck", "Call at the counter"), never a person's name, in one of the Sparks logo's colors (sapphire, tangerine, amethyst, clover, cerulean, citrine, in that order). And four experts, AI agents in a role, dark, each with its role's icon: **UX expert** (usability and the design system), **Copywriter** (the words on each screen), **Engineer** (what it needs to be built), **Data analyst** (business data and the measures).
 - **An agent is a pointer with its name,** as in a multiplayer canvas: an arrow in its color, outlined white, with its name in a tag beside it.
-- **The prototype is a strip of its screens,** side by side: the one in focus in the middle, in a phone with a dark bezel, at a real phone's proportions (a 375 × 812 screen, scaled down as a whole when there's less room; a monitor for the store's screens), the ones before and after it smaller and faded on either side, each named above it. Under it, arrows and a dot per screen.
+- **The prototype is a strip of its screens,** side by side: the one in focus in the middle, in a phone with a dark bezel, at a real phone's proportions (a 375 × 812 screen, scaled down as a whole when there's less room; a monitor for the store's screens), the ones before and after it smaller and faded on either side, each named above it. Under it, arrows and a dot per screen. An arrow that can't be used (at the first or last screen, or while it runs) is hidden, keeping its place, as beside the prototype in Prototype (sparks-prototype.md).
+- ✅ **Resolved:** an arrow under the strip that can't be used is hidden, not disabled. Why: a faded arrow read as broken, with nothing to go to.
 - ~~**While it runs, the strip goes through the journey,** sliding from one screen to the next. On each, every agent with a place there goes to it, a moment apart, all working at once: a customer taps (a ring where it lands), an expert or a keyboard agent outlines what it looks at. Each stays about a second and a half per place. The others float around the phone, drifting slowly, until it's their turn; an agent that's done floats with a check.~~
 - ✅ **Resolved:** **While it runs, the strip goes through the journey,** sliding from one screen to the next. **Only the agents at work show:** on each screen, every agent with a place there comes in from the side, at its own moment, works, and fades out when it's done there; the others aren't shown. Under the strip, how many are at work: "4 of 13 AI agents at work, simulated: not real people."
 - ✅ **Resolved:** **Each agent works the way its situation suggests, so no two move alike.** A customer glances around the screen first (or not), goes to the element, hovers while its hand wanders a little, then taps (a ring where it taps). Someone in a hurry goes straight there and taps at once; a first-time buyer looks around a lot and hesitates; someone unsure of the fit (an older truck) hovers longest; a pro mechanic or a store associate is quick and sure. Experts read along what they look at, outlined with a dashed line: the Copywriter slowly, the Data analyst in quick hops, the Engineer straight to what it checks. Screen reader and keyboard agents have no pointer: a focus ring, with their name, jumps from element to element. An agent with no hint in its situation still gets its own speed, hesitation and route, the same every time.
@@ -251,7 +254,7 @@ What an AI evaluation can't answer well: whether customers trust the fit message
 
 **Going ahead with open findings is allowed.** Any finding marked "Blocks" or "Hurts" that's still open, and any assumption not supported, is listed as a known issue for review. ~~Sparks says so once, at the top of what it says in Review: "Two findings are still open. They'll go to review as known issues."~~ Review shows them under Known issues, right after the summary and the gaps, and says they don't stop her ([sparks-review.md](sparks-review.md), "Review's screen").
 
-**Skipping Evaluate is allowed** ([sparks.md](sparks.md), "Moving through the steps"). The evidence status stays "Not tested", and Review lists it as a gap.
+**Skipping Evaluate is allowed** ([sparks.md](sparks.md), "Moving through the steps"). The evidence status stays ~~"Not tested"~~ "Not evaluated", Review lists it as a gap, and its "Known issues" says issues haven't been checked ([sparks-review.md](sparks-review.md), "What's reviewed").
 
 ## The Evaluation section
 
@@ -294,6 +297,9 @@ Evaluate is Done when there's a complete run on the current prototype version an
 
 - **The prototype changed since the last run:** ~~"Go ahead to Review" isn't available, and the section says why: "The prototype changed after the last run. Run it again to evaluate the current version."~~ "Add to Review" is disabled, and its tooltip says why: "The prototype changed after the last run. Run it again first."
 - Selecting ~~"Go ahead to Review"~~ "Add to Review" marks Evaluate as Done and opens Review. With no run at all, it opens Review with Evaluate skipped ("Skipping Evaluate is allowed").
+- **The path is already in Review** (sent from Prototype with "Go to Review instead", or added from here before), and no run has finished since: the button reads "Go to Review" and opens Review as it is, without putting the idea together again. It's never disabled, as selecting Review in the steps. Once a run finishes, it's "Add to Review" again, with the rules above, so Review gets the new results.
+
+✅ **Resolved:** "Add to Review" becomes "Go to Review" while the path is already in Review with nothing new to add. Why: Review was already put together; "Add to Review" said it wasn't, and would have rebuilt it. A run after that is new to Review, so the button goes back to "Add to Review".
 
 ✅ **Resolved:** the go-ahead needs a run on the current prototype version, so the review never presents results for a prototype that no longer exists.
 
@@ -352,7 +358,7 @@ What Dana says → what Sparks must do:
 - ~~"Fix this in the prototype" opens Prototype with the fix as a suggestion~~ ~~"Fix this in the prototype" makes the change as a new version, in Evaluate~~ "Fix in the prototype" opens Prototype on the page where the finding happens, with Sparks's plan, and nothing changes before she agrees; "Run again" shows what changed since the last run.
 - ~~"Go ahead to Review"~~ "Add to Review" is available only after a complete run on the current prototype version, or with no run at all (Evaluate skipped).
 - Each finding that happens on a screen has a numbered marker on the prototype, and selecting either one shows the other.
-- Given Evaluate is skipped, the evidence status is "Not tested" and Review lists it as a gap.
+- Given Evaluate is skipped, the evidence status is ~~"Not tested"~~ "Not evaluated" and Review lists it as a gap.
 - Open findings marked "Blocks" or "Hurts", and unsupported assumptions, appear in review as known issues.
 
 ## Out of scope

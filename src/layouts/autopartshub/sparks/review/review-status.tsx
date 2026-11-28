@@ -1,11 +1,11 @@
 import * as React from "react";
 import { ArrowLeft, Download } from "lucide-react";
-import { motion } from "motion/react";
+import { motion, PresenceContext } from "motion/react";
 
 import { TeamAssessment, type TeamAssessmentAction } from "@/components/data-display/team-assessment";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/data-display/table";
 import { Typography } from "@/components/typography/typography";
-import { fadeVariants, revealVariants, scrollIntoViewSmoothly, useMotionPreference } from "@/lib/motion";
+import { expandVariants, fadeVariants, motionDistance, revealVariants, scrollIntoViewSmoothly, standardTransition, useExpandClip, useMotionPreference } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 
 import { HeaderIconButton } from "../../header-icon-button";
@@ -96,7 +96,7 @@ function RemindedOn({ at }: { at: string }) {
 
 /**
  * The team assessment card for one published version, the same component in both places (`TeamAssessment`): on the
- * idea's panel (`card`, with "View full report") and in Review status (`inset`, no action: its people are in the popovers and "Reviewers"). Counted from the
+ * idea's panel (`card`, with "View full report") and in Review status (`inset`, no action: its people are in the popovers and "Assessments"). Counted from the
  * reviewers, who are also its people: each legend item lists who's in it, by team, with their status (`ReviewerStatus`,
  * as in the reviewers' list). "Send a reminder" shows while anyone hasn't answered; once sent, when.
  */
@@ -118,7 +118,7 @@ function ReviewTeamAssessment({
 	/** When "Send a reminder" was selected (ISO), for the version published now. */
 	remindedAt?: string;
 	onRemind?: () => void;
-	/** Selecting a person in a popover: their assessment in Review status ("Reviewers"). */
+	/** Selecting a person in a popover: their assessment in Review status ("Assessments"). */
 	onReviewerSelect?: (id: string) => void;
 	/** Last on the card, after a line: the next step (`ReviewNextOnCard`), on the idea's panel only. */
 	footer?: React.ReactNode;
@@ -224,14 +224,25 @@ type ReviewStatusPanelProps = {
 	feedback?: ReviewFeedback;
 	remindedAt?: string;
 	onRemind?: () => void;
-	/** The back arrow: the prototype again, as it was. */
+	/** The back arrow: the prototype again, as it was. Called once its team assessment has folded up (`onLeaving` first). */
 	onBack: () => void;
+	/**
+	 * The back arrow, as its team assessment starts folding up: the idea panel's card can open again at the same time, so
+	 * the card reads as going back over (MOTION.md → "Review status's team assessment").
+	 */
+	onLeaving?: () => void;
 	/** Review's next step, after the results (prds/sparks-review.md, "The next step"): only Dana sees it. */
 	next?: ReviewNext;
 	/** Everyone asked to review it, with their team and where each one is: the team assessment counts their views. */
 	reviewers: Reviewer[];
 	/**
-	 * Where to open it (`key` tells a new request from the same one): a reviewer (`reviewer`, their id: "Reviewers"
+	 * What each reviewer has written (`reviewerCommentNotes`), the line under them in "Assessments"; with
+	 * `onOpenComments`, a link to their comments in Comments.
+	 */
+	commentNotes?: Record<string, string>;
+	onOpenComments?: (id: string) => void;
+	/**
+	 * Where to open it (`key` tells a new request from the same one): a reviewer (`reviewer`, their id: "Assessments"
 	 * scrolls to them, at the top, and marks their row for a moment, e.g. after selecting them in the idea panel's team
 	 * assessment) or the next step (`"next-step"`, e.g. from the card's "See what Sparks would change").
 	 */
@@ -253,13 +264,16 @@ function ReviewStatusPanel({
 	remindedAt,
 	onRemind,
 	onBack,
+	onLeaving,
 	next,
 	reviewers,
+	commentNotes,
+	onOpenComments,
 	focus,
 	className,
 }: ReviewStatusPanelProps) {
 	const { prefersReducedMotion } = useMotionPreference();
-	// A reviewer selected (here, or in the idea panel's card): their row in "Reviewers" comes into view and is marked for
+	// A reviewer selected (here, or in the idea panel's card): their row in "Assessments" comes into view and is marked for
 	// a moment, as a part of the idea is when a comment on it is opened. The next step, from the card: it comes into view.
 	const [shown, setShown] = React.useState(focus);
 	React.useEffect(() => {
@@ -300,7 +314,22 @@ function ReviewStatusPanel({
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, []);
 	const shownNext = next && next.kind !== "publish" ? next : undefined;
+	// The team assessment arrives from the idea's panel, where it folds up as this opens (Expand): here it opens the other
+	// way, its height growing from the top while it glides down from above, so it reads as the same card coming over
+	// (MOTION.md → "Review status's team assessment").
+	const assessmentClip = useExpandClip();
+	// Going back: the card folds up (the reverse of how it came), then the prototype comes back.
+	const [leaving, setLeaving] = React.useState(false);
+	const back = () => {
+		if (leaving) return;
+		onLeaving?.();
+		setLeaving(true);
+	};
 	return (
+		// Its entrances play wherever it opens: the step's layer sits in an `AnimatePresence initial={false}`, and a layer
+		// that was there on load would pass "no entrance" to everything mounted in it later (DESIGN.md → "Review status
+		// plays its entrances").
+		<PresenceContext.Provider value={null}>
 		<motion.section
 			aria-labelledby='review-status-title'
 			variants={prefersReducedMotion ? fadeVariants : revealVariants}
@@ -313,7 +342,7 @@ function ReviewStatusPanel({
 		>
 			<div className='flex shrink-0 items-center gap-4 px-1'>
 				{/* Back: a Flat icon button (sparks.ds Flat, 36px: the light neutral fill), so it reads as a button on the white panel. */}
-				<HeaderIconButton label='Back to the prototype' variant='flat' onClick={onBack} className='shrink-0'>
+				<HeaderIconButton label='Back to the prototype' variant='flat' onClick={back} className='shrink-0'>
 					<ArrowLeft aria-hidden />
 				</HeaderIconButton>
 				<div className='flex min-w-0 flex-1 flex-col'>
@@ -348,18 +377,35 @@ function ReviewStatusPanel({
 			</div>
 			<div ref={bodyRef} className='scrollbar-subtle -mx-[15px] flex min-h-0 flex-1 flex-col overflow-y-auto px-[19px]'>
 				<div className='flex flex-col gap-6 pb-2'>
-					<div className='flex flex-col gap-2'>
-						<ReviewTeamAssessment
-							context='status'
-							reviewers={reviewers}
-							version={version}
-							remindedAt={remindedAt}
-							onRemind={onRemind}
-							onReviewerSelect={(id) => setShown({ target: { reviewer: id }, key: Date.now() })}
-						/>
-						{/* The team recommends; it doesn't approve (prds/sparks-review.md, "Assessment lifecycle"). */}
-						<p className='px-1 text-sm text-muted-foreground'>The team's assessments inform the decision. The decision owner makes it, once you ask.</p>
-					</div>
+					<motion.div
+						{...(prefersReducedMotion ? {} : assessmentClip)}
+						variants={prefersReducedMotion ? fadeVariants : expandVariants}
+						initial='initial'
+						animate={leaving ? "exit" : "animate"}
+						onAnimationComplete={(definition) => {
+							// The clip comes off once it settles (`useExpandClip`), then, folded up, back to the prototype.
+							if (!prefersReducedMotion) assessmentClip.onAnimationComplete();
+							if (definition === "exit") onBack();
+						}}
+						className='shrink-0'
+					>
+						<motion.div
+							initial={prefersReducedMotion ? false : { y: -motionDistance.medium }}
+							animate={{ y: leaving && !prefersReducedMotion ? -motionDistance.medium : 0, transition: standardTransition }}
+							className='flex flex-col gap-2'
+						>
+							<ReviewTeamAssessment
+								context='status'
+								reviewers={reviewers}
+								version={version}
+								remindedAt={remindedAt}
+								onRemind={onRemind}
+								onReviewerSelect={(id) => setShown({ target: { reviewer: id }, key: Date.now() })}
+							/>
+							{/* The team recommends; it doesn't approve (prds/sparks-review.md, "Assessment lifecycle"). */}
+							<p className='px-1 text-sm text-muted-foreground'>The team's assessments inform the decision. The decision owner makes it, once you ask.</p>
+						</motion.div>
+					</motion.div>
 					<div className='flex flex-col divide-y divide-border [&>*]:py-6 [&>*:first-child]:pt-0 [&>*:last-child]:pb-0'>
 						{results ? (
 							<>
@@ -409,14 +455,16 @@ function ReviewStatusPanel({
 						{/* Review's next step and the teams reviewing, moved here from the idea's panel. */}
 						{shownNext ? <ReviewNextStep next={shownNext} /> : null}
 						{reviewers.length ? (
-							<StatusSection title='Reviewers'>
-								<ReviewerList reviewers={reviewers} size='base' marked={markedReviewer} />
+							// Each person's assessment: their view and why, or how far they've got, and what they've commented.
+							<StatusSection title='Assessments'>
+								<ReviewerList reviewers={reviewers} size='base' marked={markedReviewer} notes={commentNotes} onOpenComments={onOpenComments} />
 							</StatusSection>
 						) : null}
 					</div>
 				</div>
 			</div>
 		</motion.section>
+		</PresenceContext.Provider>
 	);
 }
 

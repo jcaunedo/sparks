@@ -25,6 +25,7 @@ export {
   expandVariants,
   dismissVariants,
   overlayVariants,
+  dialogVariants,
   panelVariants,
   slideVariants,
   carouselVariants,

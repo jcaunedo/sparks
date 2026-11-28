@@ -82,6 +82,16 @@ const overlayVariants: Variants = {
 };
 
 /**
+ * A dialog's window (`DialogContent`): it grows in from `motionScale.dialogIn` (95%) as it fades in, on the enter curve,
+ * and shrinks back as it fades out, shorter. With `overlayVariants` on its scrim. Reduced motion: `fadeVariants`.
+ */
+const dialogVariants: Variants = {
+  initial: { opacity: 0, scale: motionScale.dialogIn },
+  animate: { opacity: 1, scale: 1, transition: enterTransition },
+  exit: { opacity: 0, scale: motionScale.dialogIn, transition: exitTransition },
+};
+
+/**
  * Drawer/panel surface sliding in from an edge. Callers should set the
  * appropriate axis before spreading — this default assumes a right-edge
  * panel (matching most drawer usage); pass a custom `initial`/`exit` `x`/`y`
@@ -279,6 +289,7 @@ export {
   expandVariants,
   dismissVariants,
   overlayVariants,
+  dialogVariants,
   panelVariants,
   slideVariants,
   carouselVariants,

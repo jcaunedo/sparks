@@ -66,6 +66,8 @@ const motionScale = {
 	mediaHover: 1.03,
 	/** Menu/dropdown content entering (Menus and Dropdowns). */
 	popIn: 0.98,
+	/** A dialog growing in from the middle of the screen (`dialogVariants`), and shrinking back as it closes. */
+	dialogIn: 0.95,
 	/**
 	 * Side-by-side choice cards: the hovered card grows while its sibling
 	 * recedes by the same amount, so the gap between them stays put.

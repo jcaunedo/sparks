@@ -1,9 +1,9 @@
 <!--
 Created: Nov 21, 2026
 Created by: Julio Caunedo
-Last updated: Nov 27, 2026
-Latest update: Sparks's plan for a finding and what Dana can pick are one numbered list in the message (no box, each title numbered and subtly underlined): "Make this change" holds the plan's steps and why, then each follow-up, then "Fix all" last (the plan and every follow-up, as one version). Why: the plan shows once, every way forward is in one place with what it does, and one selection decides. What Dana adds to "What comes later" from a change beyond the direction now shows in Review's "What comes later", in a few words.
-Recent updates: a comment's pin can be dragged to another spot, while it's being written and after it's added (her own comments). The prototype's title is the direction's name alone ("Fit check before you buy"), and once published, the line under it says when ("Version 2 · Published Nov 26, 2026, 2:40 PM"). One "Add comment", on the prototype's toolbar, turns commenting on for the idea and the prototype together.
+Last updated: Nov 28, 2026
+Latest update: the arrow past the first or last screen is hidden instead of disabled, in Prototype, Evaluate's strip and the reviewers' page. Why: a faded arrow read as broken, with nothing to go to.
+Recent updates: Sparks's plan for a finding and what Dana can pick are one numbered list in the message, "Make this change" first and "Fix all" last, so one selection decides. What Dana adds to "What comes later" from a change beyond the direction shows in Review's "What comes later". A comment's pin can be dragged to another spot, and one "Add comment" turns commenting on for the idea and the prototype together.
 Scope: the Prototype step of a Sparks concept, the second of four (Plan, Prototype, Evaluate, Review): what Sparks builds from the chosen direction, how Dana tries it and changes it without design or engineering skills, versions, and the Prototype section of the concept.
 Purpose: defines how the chosen direction becomes a working concept Dana can try (a clickable prototype, or another testable artifact), built from AutoParts Co.'s own design system, ready to be evaluated in Evaluate.
 -->
@@ -113,7 +113,9 @@ In the Prototype step, the prototype shows beside the conversation, large enough
 - **The device switcher** ("Phone", "Desktop"), as icons (a phone, a monitor) named in tooltips. It and the audience switcher sit together in the middle of the toolbar, with the direction's name on the left and the actions on the right.
 - **"Try it full screen",** which hides everything but the prototype. Esc or "Back to Sparks" returns to the workspace.
 - ~~**"Start over",** which resets the sample data to where it began.~~ ✅ **Resolved:** no "Start over": the toolbar doesn't have it.
-- **Arrows on either side of the device,** to go through every screen Sparks built, in the order it built them, each arrow naming in its tooltip the screen it goes to. A screen for another audience switches the audience and its device ("Complete fit data": the catalog team's weekly list on a desktop). The first and last screens disable the arrow past them; switching the audience ~~or "Start over"~~ goes back to where that audience's journey starts. The screens move like a carousel: the next one slides in from the right as the one shown slides out to the left (the other way going back), across the panel's width, behind the arrows. Switching the audience or the device changes the screen in place, without sliding.
+- **Arrows on either side of the device,** to go through every screen Sparks built, in the order it built them, each arrow naming in its tooltip the screen it goes to. A screen for another audience switches the audience and its device ("Complete fit data": the catalog team's weekly list on a desktop). ~~The first and last screens disable the arrow past them;~~ On the first and last screens, the arrow past them is hidden (an arrow that can't be used never shows, here, in Evaluate's strip or on the reviewers' page); switching the audience ~~or "Start over"~~ goes back to where that audience's journey starts. The screens move like a carousel: the next one slides in from the right as the one shown slides out to the left (the other way going back), across the panel's width, behind the arrows. Switching the audience or the device changes the screen in place, without sliding.
+
+  ✅ **Resolved:** an arrow that can't be used is hidden, not shown disabled, keeping its place so the device doesn't move. Why: a faded arrow at the end of the screens read as something broken, with nothing to go to.
 
   ✅ **Resolved:** the arrows slide the screens horizontally, like a carousel, so Dana sees which way she moved through the screens. Under reduced motion, the screens crossfade.
 
@@ -339,7 +341,7 @@ The prototype isn't shared with anyone before Review ([sparks.md](sparks.md), "B
 | A step not covered | Which step, and Sparks's offer | Build it, leave it for later |
 | Ready to continue | Sparks's question, with "Yes, evaluate it" and "Go to Review instead" | Continue, go to Review without Evaluate, or keep changing it |
 
-✅ **Resolved:** the answer that starts Evaluate is "Yes, evaluate it", not "Yes, test it", like the step and its "Evaluate the prototype". Why: one word for the step everywhere; "test" also suggested testing with real people, which Evaluate isn't.
+✅ **Resolved:** the answer that starts Evaluate is "Yes, evaluate it", not "Yes, test it", like the step and Prototype's "Evaluate". Why: one word for the step everywhere; "test" also suggested testing with real people, which Evaluate isn't.
 
 ## Checks
 

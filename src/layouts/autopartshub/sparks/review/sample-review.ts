@@ -69,10 +69,10 @@ export function sampleConceptForReview({
 	return {
 		evidenceStatus: evaluation
 			? `${evaluation.hypothesis.outcome}. ${evaluation.hypothesis.note}`
-			: "Not tested. Evaluate was skipped, so the hypothesis hasn't been checked.",
+			: "Not evaluated. Evaluate was skipped, so the hypothesis hasn't been checked.",
 		summary: `Customers buying parts online can't tell whether a part fits their exact vehicle, so they order the wrong one and send it back: 18,400 orders in 90 days, 1 in 9 online returns. It hits do-it-yourself customers with older vehicles hardest. The goal is fewer orders returned as "doesn't fit", 25% fewer within 3 months, without hurting online sales. The chosen direction is "${chosen.name}": ${lowerFirst(chosen.idea)}${range ? ` Business data and simulated scenarios suggest "doesn't fit" returns would drop ${range}, ${main?.reachesTarget ? "reaching" : "below"} the target.` : ""} Known issues and gaps are listed below.`,
 		gaps: [
-			...(evaluation ? [] : ["Evaluate was skipped: the hypothesis is not tested."]),
+			...(evaluation ? [] : ["Evaluate was skipped: the hypothesis hasn't been checked."]),
 			...(main && main.reachesTarget === false ? [`The estimate (${range}) is below the 25% target.`] : []),
 			"Repeat purchases have no starting point yet.",
 			...(unknown.length ? [`Still unknown: ${unknown.join("; ")}.`] : []),
@@ -128,6 +128,7 @@ export function sampleConceptForReview({
 			changes.lightText ? "Light gray secondary text departs from the design system (kept by Dana)." : "Text contrast meets the standard.",
 		],
 		knownIssues: open.map((f) => `${f.title} (${f.severity}, ${f.method}).`),
+		evaluationSkipped: !evaluation,
 		engineering: profile.engineering,
 		realPeople: (evaluation?.realPeople ?? []).map((r) => `${r.question} How: ${r.how}`),
 		teams: (evaluation?.teams ?? []).map((t) => `${t.team}: ${t.change}`),
@@ -402,7 +403,7 @@ export const sampleReviewStartedReply: SparksReply = {
 };
 
 /** On Review's empty state, before it's evaluated. */
-export const sampleNotEvaluatedNote = "Evaluating it first is optional, but it makes your recommendation stronger.";
+export const sampleNotEvaluatedNote = "Not evaluated yet: evaluating it first is optional, but it makes your recommendation stronger.";
 
 
 /**

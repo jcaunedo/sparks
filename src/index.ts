@@ -146,6 +146,7 @@ export { TeamAssessment, teamAssessmentVariants, type TeamAssessmentAction, type
 
 export { EmptyState, type EmptyStateProps } from "@/components/feedback/empty-state";
 export { InlineAlert, inlineAlertVariants, type InlineAlertProps, type InlineAlertTone } from "@/components/feedback/inline-alert";
+export { Toaster, toast, type ToasterProps } from "@/components/feedback/sonner";
 
 /* -------------------------------------------------------------------------- */
 /* Overlays                                                                   */

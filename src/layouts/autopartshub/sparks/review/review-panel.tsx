@@ -1,12 +1,15 @@
 import * as React from "react";
-import { Check, CircleCheck, CircleDashed, Eye, LoaderCircle, Menu, MessageSquare } from "lucide-react";
+import { Check, LoaderCircle, Menu } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 
 import { ActivityFeed } from "@/components/chat/activity-feed";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/data-display/avatar";
 import { Badge } from "@/components/data-display/badge";
+import { InlineAlert } from "@/components/feedback/inline-alert";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/overlays/dropdown-menu";
 import { Typography } from "@/components/typography/typography";
 import { expandVariants, fadeVariants, revealVariants, scrollIntoViewSmoothly, useExpandClip, useMotionPreference } from "@/lib/motion";
+import { formatRelativeDate } from "@/lib/relative-date";
 import { cn } from "@/lib/utils";
 
 import { HeaderIconButton } from "../../header-icon-button";
@@ -34,6 +37,8 @@ type Reviewer = {
 	department: string;
 	evaluates: string;
 	status: "invited" | "opened" | "commented" | "view";
+	/** When they reached `status` (ISO): invited when it was published, then each step. Shown after it ("Invited · 14 min ago"). */
+	at?: string;
 	view?: "Advance" | "Advance with changes" | "Don't advance yet";
 	/** Their sentence on why, once they've given their view. */
 	why?: string;
@@ -47,7 +52,7 @@ type Reviewer = {
 
 /** The concept for review (prds/sparks-review.md, "What's reviewed"), one part per heading. */
 type ConceptForReview = {
-	/** The evidence status with its method, first: "Simulation supports hypothesis…", or "Not tested". */
+	/** The evidence status with its method, first: "Simulation supports hypothesis…", or "Not evaluated" (Evaluate skipped). */
 	evidenceStatus: string;
 	summary: string;
 	gaps: string[];
@@ -70,6 +75,11 @@ type ConceptForReview = {
 	tracking: string[];
 	design: string[];
 	knownIssues: string[];
+	/**
+	 * Evaluate was skipped: nothing has looked for issues, so "Known issues" shows a warning instead of "None."
+	 * (prds/sparks-review.md, "What's reviewed").
+	 */
+	evaluationSkipped?: boolean;
 	realPeople: string[];
 	teams: string[];
 	decisions: string[];
@@ -179,6 +189,8 @@ type ReviewPanelProps = {
 	focusPart?: { part: string; key: number };
 	/** Comments on the idea (prds/sparks-review.md, "Comments on the idea"): pinned on it, as on the prototype. */
 	comments?: IdeaCommentsProps;
+	/** Evaluate skipped: "Run evaluation" in "Known issues"'s warning, which opens Evaluate with the run started. */
+	onEvaluate?: () => void;
 	className?: string;
 };
 
@@ -258,13 +270,29 @@ const statusLabel = { invited: "Invited", opened: "Opened it", commented: "Comme
  * view as a flat badge in its tone, or how far they've got in muted text ("Invited", "Opened it", "Commented").
  */
 function ReviewerStatus({ reviewer, size = "sm" }: { reviewer: Reviewer; size?: "xs" | "sm" }) {
+	const text = size === "sm" ? "text-sm" : "text-xs";
+	// When they got there, after it, muted: "Invited · 14 min ago", "Advance · Yesterday" (the comments' time format).
+	const when = reviewer.at ? formatRelativeDate(reviewer.at) : undefined;
+	const time = when ? (
+		<span className={cn("text-muted-foreground", text)}>
+			· <time dateTime={reviewer.at} title={when.title}>{when.label}</time>
+		</span>
+	) : null;
 	if (reviewer.status === "view" && reviewer.view)
 		return (
-			<Badge variant='flat' tone={viewTone[reviewer.view]} size='xxs'>
-				{reviewer.view}
-			</Badge>
+			<span className='inline-flex flex-wrap items-center gap-1.5'>
+				<Badge variant='flat' tone={viewTone[reviewer.view]} size='xxs'>
+					{reviewer.view}
+				</Badge>
+				{time}
+			</span>
 		);
-	return <span className={cn("text-muted-foreground", size === "sm" ? "text-sm" : "text-xs")}>{statusLabel[reviewer.status as keyof typeof statusLabel]}</span>;
+	return (
+		<span className='inline-flex flex-wrap items-baseline gap-1'>
+			<span className={cn("text-foreground", text)}>{statusLabel[reviewer.status as keyof typeof statusLabel]}</span>
+			{time}
+		</span>
+	);
 }
 
 /** One part of the idea, under its heading. `reveal`: it's just been written, so it comes in (Reveal). */
@@ -348,15 +376,35 @@ function PartInProgress({ title, ref }: { title: string; ref?: React.Ref<HTMLDiv
 }
 
 /**
- * The reviewers: each person's name, their team and what it evaluates, then their status (invited, opened, commented) or
- * view under it, and why. With
- * `onOpen` (Comments), a reviewer who has commented or given their view is a button that opens their comment, with the
- * unread dot while it's in `unread`; the others stay plain rows.
+ * What each reviewer has written, by id, for the line under them ("1 comment on the idea · 1 open on the prototype"):
+ * by the person, not their team (a team has several reviewers). Nothing for someone who hasn't commented. The same line
+ * in Comments and in Review status's "Assessments".
+ */
+function reviewerCommentNotes(reviewers: Reviewer[], ideaComments: IdeaComment[] = [], prototypeComments: PrototypeComment[] = []) {
+	return Object.fromEntries(
+		reviewers.map((reviewer) => {
+			const onIdea = ideaComments.filter((comment) => comment.author.name === reviewer.name).length;
+			const onPrototype = prototypeComments.filter((comment) => comment.author.name === reviewer.name && !comment.resolved).length;
+			const lines = [
+				onIdea ? `${onIdea} ${onIdea === 1 ? "comment" : "comments"} on the idea` : "",
+				onPrototype ? `${onPrototype} open on the prototype` : "",
+			].filter(Boolean);
+			return [reviewer.id, lines.join(" · ")];
+		}),
+	) as Record<string, string>;
+}
+
+/**
+ * The reviewers: each person's photo, name, and title and team, then their status (invited, opened, commented) or view
+ * under it, and why. With `onOpen` (Comments), a reviewer who has commented or given their view is a button that opens
+ * their comment, with the unread dot while it's in `unread`; the others stay plain rows. With `onOpenComments` (Review
+ * status), their comments line is a link to their comments in Comments.
  */
 function ReviewerList({
 	reviewers,
 	unread = [],
 	onOpen,
+	onOpenComments,
 	notes = {},
 	size = "sm",
 	marked,
@@ -368,8 +416,10 @@ function ReviewerList({
 	reviewers: Reviewer[];
 	unread?: string[];
 	onOpen?: (id: string) => void;
-	/** A line under a reviewer, by id, e.g. "2 open comments on the prototype". */
+	/** A line under a reviewer, by id, e.g. "1 comment on the idea · 1 open on the prototype" (`reviewerCommentNotes`). */
 	notes?: Record<string, string>;
+	/** Their `notes` line becomes a link (for rows that don't open anything themselves): their comments, in Comments. */
+	onOpenComments?: (id: string) => void;
 }) {
 	return (
 		<ul className='flex flex-col divide-y divide-border'>
@@ -395,33 +445,49 @@ function ReviewerList({
 							<span className='sr-only'>New: </span>
 						</span>
 					) : null}
-					{/* The name, and their team right under it, no gap, as in Share's lists. */}
-					<span className='flex flex-col'>
-					<span className='flex flex-wrap items-center gap-2'>
-						{reviewer.status === "view" ? (
-							<CircleCheck aria-hidden className='size-4 text-success' />
-						) : reviewer.status === "commented" ? (
-							<MessageSquare aria-hidden className='size-4 text-icon' />
-						) : reviewer.status === "opened" ? (
-							<Eye aria-hidden className='size-4 text-icon' />
-						) : (
-							<CircleDashed aria-hidden className='size-4 text-muted-foreground' />
-						)}
-						<span className={cn("font-medium text-foreground", size === "base" ? "text-base" : "text-sm")}>{reviewer.name}</span>
+					{/* Their photo (32px), centered on their name and title, as in Share's lists; where they stand is the badge
+					    under them, not an icon. */}
+					<span className='flex min-w-0 items-center gap-2'>
+						<Avatar className='shrink-0'>
+							{reviewer.avatarSrc ? <AvatarImage src={reviewer.avatarSrc} alt='' /> : null}
+							<AvatarFallback>{reviewer.name.split(" ").map((part) => part[0]).join("").slice(0, 2)}</AvatarFallback>
+						</Avatar>
+						{/* The name, and their title and team right under it ("Catalog manager · Catalog"), exactly as in Share's lists
+						    (sm semibold, xs muted, no gap); their view of an earlier version after it, once they're looking again. */}
+						<span className='flex min-w-0 flex-col'>
+							<span className='truncate text-sm font-semibold text-foreground'>{reviewer.name}</span>
+							<span className='truncate text-xs text-muted-foreground'>
+								{reviewer.subtitle ?? reviewer.department}
+								{reviewer.earlier && reviewer.status !== "view" ? ` · ${reviewer.earlier.view} on version ${reviewer.earlier.version}` : ""}
+							</span>
+						</span>
 					</span>
-					{/* Their team, and what it evaluates; their view of an earlier version, once they're looking again. */}
-					<span className={cn("ps-6 text-muted-foreground", size === "base" ? "text-sm" : "text-xs")}>
-						{reviewer.department} · Evaluates {reviewer.evaluates}
-						{reviewer.earlier && reviewer.status !== "view" ? ` · ${reviewer.earlier.view} on version ${reviewer.earlier.version}` : ""}
+					{/* Under them, aligned with the name (40px in: the photo and its 8px gap): where they stand (their view's badge, or
+					    "Invited"…), 6px below the title and 4px above why, as in the team assessment's popovers (prds/sparks-review.md,
+					    "Assessments"). */}
+					<span className='flex min-w-0 flex-col gap-1 ps-10'>
+						<span className='flex pt-0.5'>
+							<ReviewerStatus reviewer={reviewer} size={size === "base" ? "sm" : "xs"} />
+						</span>
+						{reviewer.why ? <span className={cn("text-foreground", size === "base" ? "text-base" : "text-sm")}>"{reviewer.why}"</span> : null}
+						{notes[reviewer.id] ? (
+							// A row that opens their comment says so itself; otherwise the line is the link to them, in Comments.
+							onOpenComments && !openable ? (
+								<button
+									type='button'
+									className={cn(
+										"w-fit rounded-sm text-start font-medium text-link underline-offset-2 outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring",
+										size === "base" ? "text-sm" : "text-xs",
+									)}
+									onClick={() => onOpenComments(reviewer.id)}
+								>
+									{notes[reviewer.id]}
+								</button>
+							) : (
+								<span className='text-xs font-medium text-link'>{notes[reviewer.id]}</span>
+							)
+						) : null}
 					</span>
-					</span>
-					{/* Where they stand (their view's badge, or "Invited"…), under their team, 6px below it and 4px above why, as in
-					    the team assessment's popovers (prds/sparks-review.md, "Reviewers"). */}
-					<span className='flex ps-6 pt-0.5'>
-						<ReviewerStatus reviewer={reviewer} size={size === "base" ? "sm" : "xs"} />
-					</span>
-					{reviewer.why ? <span className={cn("ps-6 text-foreground", size === "base" ? "text-base" : "text-sm")}>"{reviewer.why}"</span> : null}
-					{notes[reviewer.id] ? <span className='ps-6 text-xs font-medium text-link'>{notes[reviewer.id]}</span> : null}
 					</Row>
 				</li>
 				);
@@ -433,7 +499,7 @@ function ReviewerList({
 /**
  * The evidence's outcomes, one per method and one per line, at the end of the Summary ("Business data supports hypothesis",
  * "Simulation supports hypothesis"; prds/sparks.md, "Evidence status"): sm, foreground, each after a 14px check in the
- * success color when it supports the hypothesis; the others (not tested, doesn't support, inconclusive) without one.
+ * success color when it supports the hypothesis; the others (not evaluated, doesn't support, inconclusive) without one.
  */
 function EvidenceOutcomes({ status }: { status: string }) {
 	// The status's first sentence holds the outcomes, " · " between them; what follows explains the method.
@@ -456,7 +522,7 @@ function EvidenceOutcomes({ status }: { status: string }) {
 }
 
 /** What each part says, by its title in `reviewPartTitles`. */
-function reviewPartBody(concept: ConceptForReview): Record<ReviewPartTitle, { items?: string[]; sources?: string[]; children?: React.ReactNode }> {
+function reviewPartBody(concept: ConceptForReview, onEvaluate?: () => void): Record<ReviewPartTitle, { items?: string[]; sources?: string[]; children?: React.ReactNode }> {
 	return {
 		Summary: {
 			children: (
@@ -468,7 +534,17 @@ function reviewPartBody(concept: ConceptForReview): Record<ReviewPartTitle, { it
 			),
 		},
 		Gaps: { items: concept.gaps },
-		"Known issues": { items: concept.knownIssues },
+		// Evaluate skipped: "None." would say it was checked and is fine; it says it wasn't checked, with a way to (Dana's side).
+		"Known issues":
+			concept.evaluationSkipped && !concept.knownIssues.length
+				? {
+						children: (
+							<InlineAlert tone='warning' action={onEvaluate ? { label: "Run evaluation", onClick: onEvaluate } : undefined}>
+								Evaluate was skipped, so issues haven't been checked.
+							</InlineAlert>
+						),
+					}
+				: { items: concept.knownIssues },
 		"What we believe (hypothesis)": { children: <p className='text-base text-foreground'>{concept.hypothesis}</p> },
 		"What people need to do (user stories), and how to know it’s done (acceptance criteria)": {
 			children: (
@@ -518,8 +594,11 @@ function ReviewDocument({
 	partAction,
 	partBelow,
 	marked,
+	onEvaluate,
 }: {
 	concept: ConceptForReview;
+	/** "Run evaluation" in "Known issues" when Evaluate was skipped (Dana's Review; none on the teams' page). */
+	onEvaluate?: () => void;
 titles?: readonly ReviewPartTitle[];
 	/** A part marked for a moment (a comment on it was just opened). */
 	marked?: string;
@@ -530,7 +609,7 @@ titles?: readonly ReviewPartTitle[];
 	partAction?: (title: string) => React.ReactNode;
 	partBelow?: (title: string) => React.ReactNode;
 }) {
-	const body = reviewPartBody(concept);
+	const body = reviewPartBody(concept, onEvaluate);
 	const parts = reviewPartsOf(concept, titles);
 	return (
 		<>
@@ -690,7 +769,7 @@ function SectionsMenu({
  * heading each, in order. No tabs: Review's next step and the reviewers are in Review status. The same frame as
  * Evaluate's panel.
  */
-function ReviewPanel({ concept, title = "Idea for review", paths = [], path, onPathChange, recommendation, assessment, progress, building: build, focusPart, comments, className }: ReviewPanelProps) {
+function ReviewPanel({ concept, title = "Idea for review", paths = [], path, onPathChange, recommendation, assessment, progress, building: build, focusPart, comments, onEvaluate, className }: ReviewPanelProps) {
 	const building = Boolean(build);
 	// A comment on a part was opened: that part comes into view, at the top, and is marked for a moment.
 	const documentRef = React.useRef<HTMLDivElement>(null);
@@ -804,7 +883,7 @@ function ReviewPanel({ concept, title = "Idea for review", paths = [], path, onP
 							    "Ready to publish"). */}
 							{progress && !progress.done ? <ActivityFeed {...progress} /> : null}
 							{/* The parts written so far, each coming in as it's written; then the one being written. */}
-							{blank ? null : <ReviewDocument concept={concept} recommendation={recommendation} shown={shown} reveal={building} marked={marked} />}
+							{blank ? null : <ReviewDocument concept={concept} onEvaluate={onEvaluate} recommendation={recommendation} shown={shown} reveal={building} marked={marked} />}
 							{building && !blank && shown < parts.length ? <PartInProgress ref={writingRef} title={parts[shown]} /> : null}
 						</div>
 					</IdeaCommentLayer>
@@ -821,6 +900,7 @@ export {
 	ideaCommentAt,
 	IdeaCommentLayer,
 	ReviewDocument,
+	reviewerCommentNotes,
 	ReviewerList,
 	ReviewerStatus,
 	ReviewPanel,

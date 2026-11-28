@@ -195,6 +195,7 @@ const storyIds = {
 	autoPartsHubHome: "layouts-autopartshub-home--default",
 	sparksStartPage: "layouts-autopartshub-sparks-start-page--default",
 	sparksWorkspace: "layouts-autopartshub-sparks-workspace--default",
+	sparksPrototypeReady: "layouts-autopartshub-sparks-workspace--prototype-ready",
 	sparksReviewReady: "layouts-autopartshub-sparks-workspace--review-ready",
 	sparksPublishedIdea: "layouts-autopartshub-sparks-published-idea--default",
 	sparksAdvancedIdea: "layouts-autopartshub-sparks-published-idea--advanced",

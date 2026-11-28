@@ -1,5 +1,5 @@
 import * as React from "react";
-import { ArrowLeft, Bell, ClipboardCheck, Undo2, Folder, ListChecks, MessageCircle, MousePointerClick, Paperclip, Pencil, RotateCcw, X, Zap } from "lucide-react";
+import { ArrowLeft, Bell, ClipboardCheck, Undo2, Folder, ListChecks, MessageCircle, Paperclip, Pencil, RotateCcw, Smartphone, X, Zap } from "lucide-react";
 import { animate, AnimatePresence, motion, useAnimationControls, useIsPresent, usePresenceData, type Variants } from "motion/react";
 
 import { ActivityFeed } from "@/components/chat/activity-feed";
@@ -17,6 +17,7 @@ import { AppHeader } from "@/components/navigation/app-header";
 import { StepNav, StepNavItem } from "@/components/navigation/step-nav";
 import { Button } from "@/components/buttons/button";
 import { EmptyState } from "@/components/feedback/empty-state";
+import { Toaster, toast } from "@/components/feedback/sonner";
 import { Typography } from "@/components/typography/typography";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/overlays/tooltip";
 import { cn } from "@/lib/utils";
@@ -54,7 +55,8 @@ import { sparksSteps, type SparksStep } from "../shared/steps";
 import type { IdeaComment } from "../review/review-panel";
 import type { PrototypeComment } from "../prototype/prototype-comments";
 import { CommentsPanel } from "./comments-panel";
-import { attachTypes, LibraryPanel, type LibraryPanelProps } from "./library-panel";
+import { attachTypes, LibraryPanel, type LibraryItem, type LibraryPanelProps } from "./library-panel";
+import { listInWords } from "../plan/plan-summary";
 import { assetName, libraryIcon } from "../../library/library-assets";
 import { LibraryDialog, type LibraryDialogProps, type LibraryPick } from "./library-dialog";
 import { SidePanelResizer, useSidePanelWidth } from "./side-panel";
@@ -523,10 +525,15 @@ type SparksWorkspaceProps = {
 	 */
 	onResetPrototype?: () => void;
 	/**
-	 * The "+" menu's "Go to Review", for the demo: jumps to Review with the idea put together, ready to publish. Without
-	 * it, the menu has no "Go to Review".
+	 * The "+" menu's "Add Prototype", for the demo: jumps to Prototype with the prototype built, Sparks asking whether
+	 * to evaluate it. Without it, the menu has no "Add Prototype".
 	 */
-	onGoToReview?: () => void;
+	onAddPrototype?: () => void;
+	/**
+	 * The "+" menu's "Add Review", for the demo: jumps to Review with the idea put together, ready to publish. Without
+	 * it, the menu has no "Add Review".
+	 */
+	onAddReview?: () => void;
 	/**
 	 * Opens at the introduction and scrolls smoothly down to where the conversation's history ends (its latest section),
 	 * instead of starting there: right after "Add Plan", so the filled-in Plan goes by. Reduced motion: it starts there.
@@ -551,6 +558,11 @@ type SparksWorkspaceProps = {
 		idea?: IdeaComment[];
 		/** Selecting one opens its part in Review. */
 		onOpenIdeaComment?: (id: string) => void;
+		/**
+		 * Opens Comments at a reviewer's comments, e.g. from their comments line in Review status's "Assessments"; `key`
+		 * tells a new request from the same one.
+		 */
+		openReviewer?: { id: string; key: number };
 	};
 	/**
 	 * Opens Comments: set as the idea opens, from the notification about its new comments (prds/sparks.md, "New comments"),
@@ -595,7 +607,7 @@ type SparksWorkspaceProps = {
 	paths?: DirectionPaths;
 	/**
 	 * Starts a step not reached yet, from its empty state, once it can start (prds/sparks.md, "Moving through the steps"):
-	 * "Evaluate the prototype" and "Add to Review" once the prototype is built, with the prototype they're about. A step
+	 * "Run evaluation" and "Add to Review" once the prototype is built, with the prototype they're about. A step
 	 * without one has only "Back to …".
 	 */
 	upcomingActions?: Partial<Record<SparksStep, UpcomingAction>>;
@@ -604,8 +616,12 @@ type SparksWorkspaceProps = {
 	 * more or remove some (prds/sparks.md, "The idea's library"). Always there, in every step.
 	 */
 	library?: Pick<LibraryPanelProps, "items" | "onAdd" | "onRemove"> & {
-		/** Changes each time something is added from the conversation: the folder bounces, to show where it went. */
+		/**
+		 * Changes each time something is added from the conversation: the folder bounces, to show where it went, and a toast
+		 * confirms it (`added`: what was just added, named in it), with "View" to open Library.
+		 */
 		addedKey?: number;
+		added?: LibraryItem[];
 	};
 	/**
 	 * "Publish" in the header, after Share, on Review only (prds/sparks-review.md, "Publishing"): gives the teams who review
@@ -661,40 +677,19 @@ type SparksWorkspaceProps = {
 	statusDate?: string;
 };
 
-/** Starting a step from its empty state: the button, and the prototype it's about. */
+/** Starting a step from its empty state: the button, and the path it would work on (named in the title). */
 type UpcomingAction = {
 	label: string;
 	onClick: () => void;
 	disabled?: boolean;
-	/** The prototype she's on, e.g. "Fit check before you buy", "Version 2 · Not evaluated yet". */
-	prototype: { name: string; detail: string };
-	/** What to know before starting it, or why it can't start now. */
+	/** The path she's on, named in the step's title: "See what holds up in your “Fit check before you buy” prototype". */
+	path: string;
+	/**
+	 * Under the description: what to know before starting it, or why it can't start now (Review: "Not evaluated yet:
+	 * evaluating it first is optional…", or why "Add to Review" is disabled).
+	 */
 	note?: string;
 };
-
-/** The prototype a step not reached yet would work on: its name, its version and where it stands, on a card. */
-function UpcomingPrototype({ name, detail, note }: UpcomingAction["prototype"] & { note?: string }) {
-	return (
-		<div className='flex max-w-[480px] flex-col items-center gap-2'>
-			<div className='flex max-w-full items-center gap-3 rounded-[12px] border border-border bg-background py-3 ps-4 pe-5 text-start'>
-				<MousePointerClick aria-hidden className='size-5 shrink-0 text-icon' />
-				<div className='flex min-w-0 flex-col'>
-					<Typography size='base' weight='semibold' className='text-foreground-prominent'>
-						{name}
-					</Typography>
-					<Typography size='sm' className='text-muted-foreground'>
-						{detail}
-					</Typography>
-				</div>
-			</div>
-			{note ? (
-				<Typography size='sm' className='text-muted-foreground'>
-					{note}
-				</Typography>
-			) : null}
-		</div>
-	);
-}
 
 /**
  * The illustration on a step's empty state, before Dana gets there (product artwork, not sample data): Prototype the
@@ -1000,7 +995,8 @@ function SparksWorkspace({
 	initialPrompt,
 	onAddPlan,
 	onResetPrototype,
-	onGoToReview,
+	onAddReview,
+	onAddPrototype,
 	glideToLatest = false,
 	myLibrary,
 	comments,
@@ -1285,6 +1281,22 @@ function SparksWorkspace({
 		openedFor.current = openCommentsKey;
 		if (openCommentsKey) setSidePanel("comments");
 	}, [openCommentsKey]);
+	// At a reviewer (their comments line in Review status): Comments opens, or stays open, at them. Kept only until it
+	// closes, so "Comments" in the header opens it at the list again.
+	const openReviewer = comments?.openReviewer;
+	const openedReviewerFor = React.useRef(openReviewer?.key);
+	const [commentsAt, setCommentsAt] = React.useState<{ id: string; key: number }>();
+	React.useEffect(() => {
+		if (openReviewer?.key === openedReviewerFor.current) return;
+		openedReviewerFor.current = openReviewer?.key;
+		if (!openReviewer) return;
+		setCommentsAt(openReviewer);
+		setSidePanel("comments");
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [openReviewer?.key]);
+	React.useEffect(() => {
+		if (sidePanel !== "comments") setCommentsAt(undefined);
+	}, [sidePanel]);
 	const commentsOpen = sidePanel === "comments";
 const libraryOpen = sidePanel === "library";
 	// Its width: 380px to start, dragged from its left edge between 300px and half the window; kept while it's closed.
@@ -1308,6 +1320,15 @@ const libraryOpen = sidePanel === "library";
 		if (libraryAddedKey === bouncedFor.current) return;
 		bouncedFor.current = libraryAddedKey;
 		void libraryBounce.start("bounce");
+		// And a toast confirms it, naming what was added (the first three, then how many more), with "View" to open Library.
+		const names = (library?.added ?? []).map((item) => `"${item.title ?? item.label}"`);
+		if (!names.length) return;
+		const shown = names.length > 3 ? [...names.slice(0, 2), `${names.length - 2} more`] : names;
+		toast.success("Added to this idea's library", {
+			description: listInWords(shown),
+			action: { label: "View", onClick: () => setSidePanel("library") },
+		});
+		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [libraryAddedKey, libraryBounce]);
 	// A step not reached yet, selected to see what it is: its empty state takes the preview's place until she goes back
 	// (prds/sparks.md, "Steps"). The step she's on doesn't change.
@@ -1326,7 +1347,8 @@ const libraryOpen = sidePanel === "library";
 					const illustration = upcomingIllustrations[peeked.id as keyof typeof upcomingIllustrations];
 					return <img src={illustration.src} alt='' className={cn("mb-4 opacity-80", illustration.className)} />;
 				})()}
-				title={peeked.upcoming.title}
+				// Once it can start, the title names the path it would work on; no card for it (prds/sparks.md).
+				title={peekedAction && "titleFor" in peeked.upcoming ? peeked.upcoming.titleFor(peekedAction.path) : peeked.upcoming.title}
 				description={peeked.upcoming.description}
 				// Once it can start (Evaluate and Review, with the prototype built): its action, and "Back to …" beside it.
 				{...(peekedAction
@@ -1344,7 +1366,11 @@ const libraryOpen = sidePanel === "library";
 						}
 					: { buttonLabel: `Back to ${currentLabel}`, buttonProps: { onClick: () => setPeekStep(undefined) } })}
 			>
-				{peekedAction ? <UpcomingPrototype {...peekedAction.prototype} note={peekedAction.note} /> : null}
+				{peekedAction?.note ? (
+					<Typography size='sm' className='-mt-2 max-w-[720px] text-muted-foreground'>
+						{peekedAction.note}
+					</Typography>
+				) : null}
 			</EmptyState>
 		</section>
 	) : (
@@ -1475,6 +1501,9 @@ const libraryOpen = sidePanel === "library";
 		// The Comments panel is a column of its own on the right, the screen's full height, beside the header too (Sparks
 		// "Sparks Project", 63:12460, "Plan summary"); everything else is in the column on its left.
 		<div className='flex h-screen bg-background bg-linear-to-b from-background from-50% to-[color-mix(in_srgb,var(--background-subtle)_50%,var(--background))] text-foreground'>
+		{/* Toasts (confirmations, e.g. what was added to Library): top center, over the header, as shadcn's; at the bottom
+		    they covered the message box's buttons. */}
+		<Toaster position='top-center' />
 		<div className='flex min-w-0 flex-1 flex-col'>
 			{/* sparks.ds "header-autopartshub" → "Sparks Project" (32:1145): the back button and the concept's name on the left
 			    (2xl bold, 24/30, dotted underline: selected, it's renamed), the steps centered, the actions on the right. No logo, no
@@ -1893,8 +1922,8 @@ const libraryOpen = sidePanel === "library";
 									Add a connection
 								</DropdownMenuItem>
 								{/* The demo's shortcuts, after a line: the first message, ready to send, the whole of Plan up to
-								    the choice, Review, and starting over. */}
-								{initialPrompt || onAddPlan || onGoToReview || onResetPrototype ? <DropdownMenuSeparator /> : null}
+								    the choice, the prototype built, Review, and starting over. */}
+								{initialPrompt || onAddPlan || onAddPrototype || onAddReview || onResetPrototype ? <DropdownMenuSeparator /> : null}
 								{initialPrompt ? (
 									<DropdownMenuItem onSelect={() => fillDraft(initialPrompt)}>
 										<MessageCircle aria-hidden />
@@ -1907,14 +1936,20 @@ const libraryOpen = sidePanel === "library";
 										Add Plan
 									</DropdownMenuItem>
 								) : null}
-								{onGoToReview ? (
-									<DropdownMenuItem onSelect={onGoToReview}>
+								{onAddPrototype ? (
+									<DropdownMenuItem onSelect={onAddPrototype}>
+										<Smartphone aria-hidden />
+										Add Prototype
+									</DropdownMenuItem>
+								) : null}
+								{onAddReview ? (
+									<DropdownMenuItem onSelect={onAddReview}>
 										<ClipboardCheck aria-hidden />
-										Go to Review
+										Add Review
 									</DropdownMenuItem>
 								) : null}
 								{/* Starting over, set apart by a line from the shortcuts that move the demo along. */}
-								{onResetPrototype && (initialPrompt || onAddPlan || onGoToReview) ? <DropdownMenuSeparator /> : null}
+								{onResetPrototype && (initialPrompt || onAddPlan || onAddPrototype || onAddReview) ? <DropdownMenuSeparator /> : null}
 								{onResetPrototype ? (
 									<DropdownMenuItem onSelect={onResetPrototype}>
 										<RotateCcw aria-hidden />
@@ -1997,7 +2032,8 @@ const libraryOpen = sidePanel === "library";
 							onOpenPrototypeComment={comments?.onOpenPrototypeComment}
 							ideaComments={comments?.idea}
 							onOpenIdeaComment={comments?.onOpenIdeaComment}
-onClose={closeComments}
+							openReviewer={commentsAt}
+							onClose={closeComments}
 							autoFocus
 						/>
 						)}

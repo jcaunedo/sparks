@@ -16,7 +16,7 @@ import { formatRelativeDate } from "@/lib/relative-date";
 import { cn } from "@/lib/utils";
 
 import { MentionText, type PrototypeComment } from "../prototype/prototype-comments";
-import { ReviewerList, ReviewerStatus, type IdeaComment, type Reviewer } from "../review/review-panel";
+import { reviewerCommentNotes, ReviewerList, ReviewerStatus, type IdeaComment, type Reviewer } from "../review/review-panel";
 import { HeaderIconButton } from "../../header-icon-button";
 import { SidePanel } from "./side-panel";
 
@@ -39,7 +39,12 @@ type CommentsPanelProps = {
 	/** Selecting one opens its part in Review, brought into view. */
 	onOpenIdeaComment?: (id: string) => void;
 	onClose: () => void;
-	/** Take focus when it opens (it only opens from "Comments"). */
+	/**
+	 * Opens at a reviewer's comments (their comment, view and what they wrote on the idea and the prototype), e.g. from
+	 * their comments line in Review status; `key` tells a new request from the same one.
+	 */
+	openReviewer?: { id: string; key: number };
+	/** Take focus when it opens (from "Comments", or at a reviewer). */
 	autoFocus?: boolean;
 	className?: string;
 };
@@ -102,9 +107,20 @@ const initialsOf = (name: string) =>
 
 /**
  * A comment on the prototype: her avatar, name and when, where it is (the path, the audience, the device, what she clicked), then
- * the comment. A button that opens its pin while the prototype is on screen.
+ * the comment. A button that opens its pin while the prototype is on screen. `byPerson`: under one person's comments,
+ * whose photo is at the top: no avatar here, and the text in line with theirs.
  */
-function PrototypeCommentRow({ comment, unread = false, onOpen }: { comment: PrototypeComment; unread?: boolean; onOpen?: (id: string) => void }) {
+function PrototypeCommentRow({
+	comment,
+	unread = false,
+	onOpen,
+	byPerson = false,
+}: {
+	comment: PrototypeComment;
+	unread?: boolean;
+	onOpen?: (id: string) => void;
+	byPerson?: boolean;
+}) {
 	const replies = comment.replies?.length ?? 0;
 	const time = formatRelativeDate(comment.createdAt);
 	const where = [comment.path?.label, comment.scope.audienceLabel, comment.scope.device === "phone" ? "Phone" : "Desktop", comment.where ? `"${comment.where}"` : null]
@@ -112,16 +128,18 @@ function PrototypeCommentRow({ comment, unread = false, onOpen }: { comment: Pro
 		.join(" · ");
 	const content = (
 		<>
-			{/* New, not opened yet: the reviewers' unread dot, before it. */}
+			{/* New, not opened yet: the reviewers' unread dot, before it, centered on the name's line. */}
 			{unread ? (
-				<span className='absolute top-5.5 -left-1.5 size-2 rounded-full bg-(--sky-500)'>
+				<span className={cn("absolute top-4 size-2 rounded-full bg-(--sky-500)", byPerson ? "-left-2.5" : "-left-1.5")}>
 					<span className='sr-only'>New: </span>
 				</span>
 			) : null}
-			<Avatar className='size-8 shrink-0'>
-				{comment.author.avatarSrc ? <AvatarImage src={comment.author.avatarSrc} alt='' /> : null}
-				<AvatarFallback className='text-xs'>{initialsOf(comment.author.name)}</AvatarFallback>
-			</Avatar>
+			{byPerson ? null : (
+				<Avatar className='size-8 shrink-0'>
+					{comment.author.avatarSrc ? <AvatarImage src={comment.author.avatarSrc} alt='' /> : null}
+					<AvatarFallback className='text-xs'>{initialsOf(comment.author.name)}</AvatarFallback>
+				</Avatar>
+			)}
 			<span className='flex min-w-0 flex-1 flex-col gap-0.5'>
 				<span className='flex items-baseline gap-2'>
 					<span className='text-sm font-semibold text-foreground'>{comment.author.name}</span>
@@ -154,7 +172,8 @@ function PrototypeCommentRow({ comment, unread = false, onOpen }: { comment: Pro
 			</span>
 		</>
 	);
-	const classes = "relative flex w-full items-start gap-3 rounded-lg px-2 py-2.5 text-start";
+	// Under one person (`byPerson`): 8px of fill around the row (`-mx-2 px-2`), so its text lines up with theirs.
+	const classes = cn("relative flex items-start gap-3 rounded-lg px-2 py-2.5 text-start", byPerson ? "-mx-2 w-[calc(100%+1rem)]" : "w-full");
 	return onOpen ? (
 		<button type='button' className={cn(classes, "outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring")} onClick={() => onOpen(comment.id)}>
 			{content}
@@ -164,15 +183,20 @@ function PrototypeCommentRow({ comment, unread = false, onOpen }: { comment: Pro
 	);
 }
 
-/** A reviewer's comment on a part of the idea: who, their team, when, which part, the text, and "Unclear". Opens the part in Review. */
-function IdeaCommentRow({ comment, onOpen }: { comment: IdeaComment; onOpen?: (id: string) => void }) {
+/**
+ * A reviewer's comment on a part of the idea: who, their team, when, which part, the text, and "Unclear". Opens the part
+ * in Review. `byPerson`: as `PrototypeCommentRow`'s, no avatar, the text in line with the person's above.
+ */
+function IdeaCommentRow({ comment, onOpen, byPerson = false }: { comment: IdeaComment; onOpen?: (id: string) => void; byPerson?: boolean }) {
 	const time = formatRelativeDate(comment.createdAt);
 	const content = (
 		<>
-			<Avatar className='size-8 shrink-0'>
-				{comment.author.avatarSrc ? <AvatarImage src={comment.author.avatarSrc} alt='' /> : null}
-				<AvatarFallback className='text-xs'>{initialsOf(comment.author.name)}</AvatarFallback>
-			</Avatar>
+			{byPerson ? null : (
+				<Avatar className='size-8 shrink-0'>
+					{comment.author.avatarSrc ? <AvatarImage src={comment.author.avatarSrc} alt='' /> : null}
+					<AvatarFallback className='text-xs'>{initialsOf(comment.author.name)}</AvatarFallback>
+				</Avatar>
+			)}
 			<span className='flex min-w-0 flex-1 flex-col gap-0.5'>
 				<span className='flex items-baseline gap-2'>
 					<span className='text-sm font-semibold text-foreground'>{comment.author.name}</span>
@@ -203,7 +227,7 @@ function IdeaCommentRow({ comment, onOpen }: { comment: IdeaComment; onOpen?: (i
 			</span>
 		</>
 	);
-	const classes = "flex w-full items-start gap-3 rounded-lg px-2 py-2.5 text-start";
+	const classes = cn("flex items-start gap-3 rounded-lg px-2 py-2.5 text-start", byPerson ? "-mx-2 w-[calc(100%+1rem)]" : "w-full");
 	return onOpen ? (
 		<button type='button' className={cn(classes, "outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring")} onClick={() => onOpen(comment.id)}>
 			{content}
@@ -228,10 +252,21 @@ function CommentsPanel({
 	ideaComments = [],
 	onOpenIdeaComment,
 	onClose,
+	openReviewer,
 	autoFocus,
 	className,
 }: CommentsPanelProps) {
-	const [openId, setOpenId] = React.useState<string | undefined>(undefined);
+	const [openId, setOpenId] = React.useState<string | undefined>(openReviewer?.id);
+	// At a reviewer, from elsewhere (Review status): their comments, as if she'd selected them here; read now. Each new
+	// request (`key`) once, the first one as the panel opens.
+	const openedFor = React.useRef<number>(undefined);
+	React.useEffect(() => {
+		if (!openReviewer || openReviewer.key === openedFor.current) return;
+		openedFor.current = openReviewer.key;
+		setOpenId(openReviewer.id);
+		onRead?.(openReviewer.id);
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [openReviewer?.key]);
 	const open = reviewers.find((reviewer) => reviewer.id === openId);
 	const backRef = React.useRef<HTMLButtonElement>(null);
 	const listFocus = React.useRef<string | undefined>(undefined);
@@ -275,12 +310,17 @@ function CommentsPanel({
 						All comments
 					</Button>
 					<div className='flex flex-col gap-1'>
-						{/* The name, and their team right under it, no gap, as in Share's lists. */}
-						<div>
-							<h3 className='text-base font-semibold text-foreground'>{open.name}</h3>
-							<p className='text-xs text-muted-foreground'>
-								{open.department} · Evaluates {open.evaluates}
-							</p>
+						{/* Their photo (32px), centered on their name and their title and team (no gap), as in Share's lists and the
+						    "Assessments" list; everything under it starts at the photo's left edge. */}
+						<div className='flex min-w-0 items-center gap-2'>
+							<Avatar className='shrink-0'>
+								{open.avatarSrc ? <AvatarImage src={open.avatarSrc} alt='' /> : null}
+								<AvatarFallback>{initialsOf(open.name)}</AvatarFallback>
+							</Avatar>
+							<div className='min-w-0'>
+								<h3 className='truncate text-base font-semibold text-foreground'>{open.name}</h3>
+								<p className='truncate text-xs text-muted-foreground'>{open.subtitle ?? open.department}</p>
+							</div>
 						</div>
 						{/* Where they stand, under their team, 6px below it, as in the list. */}
 						<span className='flex pt-0.5'>
@@ -304,7 +344,7 @@ function CommentsPanel({
 								<ul className='flex flex-col gap-0.5'>
 									{ideaBy(open.name).map((comment) => (
 										<li key={comment.id}>
-											<IdeaCommentRow comment={comment} onOpen={onOpenIdeaComment} />
+											<IdeaCommentRow comment={comment} onOpen={onOpenIdeaComment} byPerson />
 										</li>
 									))}
 								</ul>
@@ -319,7 +359,7 @@ function CommentsPanel({
 								<ul className='flex flex-col gap-0.5'>
 									{pinsBy(open.name).map((comment) => (
 										<li key={comment.id}>
-											<PrototypeCommentRow comment={comment} unread={unread.includes(comment.id)} onOpen={onOpenPrototypeComment} />
+											<PrototypeCommentRow comment={comment} unread={unread.includes(comment.id)} onOpen={onOpenPrototypeComment} byPerson />
 										</li>
 									))}
 								</ul>
@@ -331,7 +371,7 @@ function CommentsPanel({
 					{reviewers.length ? (
 						<section aria-labelledby='comments-reviewers' className='flex flex-col gap-2'>
 							<h3 id='comments-reviewers' className='text-lg font-semibold text-foreground'>
-								Reviewers
+								Assessments
 							</h3>
 							<p className='text-sm text-muted-foreground'>
 								{given === reviewers.length
@@ -351,17 +391,7 @@ function CommentsPanel({
 									reviewers={reviewers}
 									unread={unread}
 									onOpen={openComment}
-									notes={Object.fromEntries(
-										reviewers.map((reviewer) => {
-											const onIdea = ideaBy(reviewer.name).length;
-											const onPrototype = pinsBy(reviewer.name).filter((comment) => !comment.resolved).length;
-											const lines = [
-												onIdea ? `${onIdea} ${onIdea === 1 ? "comment" : "comments"} on the idea` : "",
-												onPrototype ? `${onPrototype} open on the prototype` : "",
-											].filter(Boolean);
-											return [reviewer.id, lines.join(" · ")];
-										}),
-									)}
+									notes={reviewerCommentNotes(reviewers, ideaComments, prototypeComments)}
 								/>
 							</div>
 						</section>
