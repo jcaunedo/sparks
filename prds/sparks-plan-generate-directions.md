@@ -1,9 +1,9 @@
 <!--
 Created: Nov 21, 2026
 Created by: Julio Caunedo
-Last updated: Nov 25, 2026
-Latest update: a direction card's "where" line (the place it changes things) starts with a globe when it's online and a map pin when it's a physical place ("Complete fit data", behind the scenes in the stores). Why: Dana sees at a glance whether a direction touches the site or app or the stores themselves.
-Recent updates: "Fit check before you buy" adds the vehicle with its VIN, a past repair invoice or its details. A divider starts this part, with the confirmation above it. The whole header of a direction card opens and closes it, with chevrons after its labels. Sparks's recommendation comes before the cards, and the reply ends with how to pick (a card's "Generate prototype"), with no quick replies. The card follows sparks.ds "direction-card". The step "Validate" is now "Evaluate".
+Last updated: Nov 27, 2026
+Latest update: a direction card that isn't generated yet has a dashed border; it turns solid once its prototype is built. Why: Dana tells the directions she hasn't tried from the ones with a prototype at a glance, without reading each status.
+Recent updates: a direction card shows its status on a second line under its name ("Not generated yet", "Generated" or "In Review"), and the name is larger (20px). Its "where" line starts with a globe when it's online and a map pin when it's a physical place. The whole header of a direction card opens and closes it, with chevrons after its labels.
 Scope: the Generate directions part of Plan, the fourth of Plan's five parts: how Sparks proposes different ways to solve the problem, what each direction shows, Sparks's pick, and the Directions it adds to the concept.
 Purpose: defines how Dana sees a real range of solutions, grounded in what AutoParts Co. already has, before she commits to one.
 -->
@@ -103,12 +103,13 @@ Why: the first idea is rarely the best one, and comparing only versions of one i
 
 ## What each direction shows
 
-Each direction is a card in the conversation. ~~The cards sit side by side, and each opens to show its details:~~ ~~The card shows the preview, "Direction {n} of {count}", the name, the idea, what's good, what's hard and anything tried before; "More about it" opens the rest (how it works, expected impact, builds on, rough effort, what we don't know yet, departments it touches). A badge says "Your idea" on Dana's, and "Kept" or "Set aside" once she answers.~~ The card shows "Recommended" on Sparks's pick and "Your idea" on Dana's, the name, the idea, where it changes things ("On the product page"), three ratings in words (Effect, Effort, Risk) and the catch, its main downside in one line. "Show more" opens the rest: what's good, how it works, expected effect, tried before, the reasons for the effort and risk, builds on, what we don't know yet and the teams it touches. The parts:
+Each direction is a card in the conversation. ~~The cards sit side by side, and each opens to show its details:~~ ~~The card shows the preview, "Direction {n} of {count}", the name, the idea, what's good, what's hard and anything tried before; "More about it" opens the rest (how it works, expected impact, builds on, rough effort, what we don't know yet, departments it touches). A badge says "Your idea" on Dana's, and "Kept" or "Set aside" once she answers.~~ The card shows "Recommended" on Sparks's pick and "Your idea" on Dana's, the name, its status under the name, the idea, where it changes things ("On the product page"), three ratings in words (Effect, Effort, Risk) and the catch, its main downside in one line. "Show more" opens the rest: what's good, how it works, expected effect, tried before, the reasons for the effort and risk, builds on, what we don't know yet and the teams it touches. The parts:
 
 | Part | Holds |
 | --- | --- |
 | Name | A short, plain name, numbered in the order shown, Sparks's pick first ("1. Fit check before you buy"), with its labels ("Recommended", "Your idea") right-aligned on the same line |
 | ~~Visual preview~~ | ~~A lightweight picture of its key moment ("Visual previews")~~ |
+| Status | A second line under the name, smaller and muted: "Not generated yet" (no prototype yet), "Generated" (its prototype is built, a path) or "In Review" (that path is in Review) |
 | Where | Where it changes things, in plain words: "On the product page", "At checkout", "Behind the scenes: stores, the returns team and the catalog team" |
 | Effect, Effort, Risk | Three words: Big, Some, Little or Unclear effect on the main measure; Small, Medium or Large effort; Low, Medium or High risk. Their reasons are under "Show more" |
 | The catch | Its main downside, in one line: a broken limit, something at risk, or its biggest weakness |
@@ -126,6 +127,10 @@ Each direction is a card in the conversation. ~~The cards sit side by side, and 
 - **Rough effort is Sparks's estimate,** labeled as such. It says what makes it small or large ("Needs fit data for every part in the catalog"), never a number of weeks. Engineering confirms effort in Review.
 - **What's been tried is called out.** If a direction looks like a previous experiment, the card says so and what was learned: "A vehicle selector was tested on product pages last year. Customers who used it returned far fewer parts as 'doesn't fit', but most skipped it, so returns barely dropped overall."
 - **A broken limit is flagged, not hidden.** If a direction conflicts with the brief's "Limits" ("Product pages can't change before the holiday season"), the card says so in its catch. Sparks doesn't propose such a direction on its own, but keeps Dana's idea even when it breaks a limit.
+
+✅ **Resolved:** each direction card shows its status under its name: "Not generated yet", "Generated" once its prototype is built, "In Review" once that path is added to Review. It follows the paths as they change, on every card in the conversation, the ones in earlier replies too. Why: with several paths, Dana sees on the cards which directions she's tried and which one the teams will see.
+
+✅ **Resolved:** a card that's "Not generated yet" has a dashed border (the pick keeps its darker color); "Generated" and "In Review" cards have a solid one. Why: the directions she hasn't tried read as not built yet at a glance.
 
 ✅ **Resolved:** each direction's title starts with its number (1, 2…, in the order shown), and its labels sit on the right of the title's line, not above it; the plan's "Directions" lists them the same way. Why: Dana can refer to "the second one", and the names line up from card to card.
 

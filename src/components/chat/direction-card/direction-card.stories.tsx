@@ -58,6 +58,8 @@ const meta = {
 	args: {
 		number: 1,
 		title: "Fit check before you buy",
+		status: "Not generated yet",
+		pending: true,
 		emphasized: true,
 		badges: (
 			<Badge variant='flat' tone='green' size='xs'>
@@ -80,7 +82,7 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-/** Figma "State=Collapsed": the details behind "Show more". The assistant's pick, with the darker border. */
+/** Figma "State=Collapsed": the details behind "Show more". The assistant's pick, with the darker border, dashed: not generated yet. */
 export const Collapsed: Story = {};
 
 /** Figma "State=Expanded": the details shown, "Show less" under them. */
@@ -91,6 +93,8 @@ export const NotEmphasized: Story = {
 	args: {
 		number: 2,
 		title: "Flag often-returned parts",
+		status: "Generated",
+		pending: false,
 		emphasized: false,
 		badges: (
 			<Badge variant='flat' tone='purple' size='xs'>
@@ -115,13 +119,26 @@ export const PhysicalPlace: Story = {
 
 export const WithoutAction: Story = { args: { action: undefined } };
 
-/** Both states and both borders together. */
+/** Its path sent to Review: the status says so. */
+export const InReview: Story = { args: { status: "In Review", pending: false, action: { label: "Open prototype", onClick: () => {} } } };
+
+/** Generated: its prototype is built, so the border is solid again. */
+export const Generated: Story = {
+	args: { status: "Generated", pending: false, action: { label: "Open prototype", onClick: () => {} } },
+};
+
+/** No status line: the title alone. */
+export const WithoutStatus: Story = { args: { status: undefined } };
+
+/** Both states, both border colors, dashed (not generated yet) and solid, together. */
 export const AllVariants: Story = {
 	render: (args) => (
 		<div className='flex flex-col gap-4'>
 			<DirectionCard {...args} />
 			<DirectionCard {...args} defaultOpen />
 			<DirectionCard {...args} emphasized={false} badges={undefined} number={2} />
+			<DirectionCard {...args} pending={false} status='Generated' number={3} />
+			<DirectionCard {...args} pending={false} status='Generated' emphasized={false} badges={undefined} number={4} />
 		</div>
 	),
 };

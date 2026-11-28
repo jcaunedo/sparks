@@ -38,8 +38,22 @@ type DirectionDraft = {
 	recommended?: boolean;
 };
 
+/**
+ * Where a direction stands, under its name (prds/sparks-plan-generate-directions.md, "What each direction shows"): no
+ * prototype yet, its prototype generated (a path), or that path sent to Review.
+ */
+type DirectionStatus = "not-generated" | "generated" | "in-review";
+
+const directionStatusLabel: Record<DirectionStatus, string> = {
+	"not-generated": "Not generated yet",
+	generated: "Generated",
+	"in-review": "In Review",
+};
+
 type DirectionCardProps = {
 	direction: DirectionDraft;
+	/** Where it stands, the second line under its name ("Not generated yet" by default). */
+	status?: DirectionStatus;
 	/** Its place among the directions in the reply (1, 2…), Sparks's pick first: "1. Fit check before you buy". */
 	number?: number;
 	/**
@@ -53,16 +67,19 @@ type DirectionCardProps = {
 /**
  * A direction as a card in the conversation, shown with the others in one reply: UCL's `DirectionCard` (sparks.ds
  * "direction-card", 89:151) with the direction's content: its name and idea, where it changes things, its effect,
- * effort and risk, and its catch; the rest behind "Show more". "Recommended" on Sparks's pick (with the darker border),
+ * effort and risk, and its catch; the rest behind "Show more". Its status under its name. "Recommended" on Sparks's pick (with the darker border),
  * "Your idea" on Dana's. No screen preview: Plan stays strategic (prds/sparks-plan-generate-directions.md, "What each
  * direction shows").
  */
-function DirectionCard({ direction, number, action, className }: DirectionCardProps) {
+function DirectionCard({ direction, number, status = "not-generated", action, className }: DirectionCardProps) {
 	return (
 		<UclDirectionCard
 			className={className}
 			number={number}
 			title={direction.name}
+			status={directionStatusLabel[status]}
+			// Not generated yet: a dashed border, solid once its prototype is built.
+			pending={status === "not-generated"}
 			emphasized={Boolean(direction.recommended)}
 			badges={
 				direction.recommended || direction.fromDana ? (
@@ -132,4 +149,4 @@ function DirectionCard({ direction, number, action, className }: DirectionCardPr
 	);
 }
 
-export { DirectionCard, type DirectionCardProps, type DirectionDraft };
+export { DirectionCard, directionStatusLabel, type DirectionCardProps, type DirectionDraft, type DirectionStatus };

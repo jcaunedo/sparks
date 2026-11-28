@@ -9,7 +9,9 @@ import type { NotificationsPopoverProps } from "./notifications-popover";
 /** The signed-in user, as the AutoPartsHUB shell and its pages show them. */
 type AutoPartsHubUser = {
 	firstName: string;
-	/** Profile photo URL. Without one, the avatar shows the first initial. */
+	/** With `firstName`, the avatar's two initials when there's no photo ("ML"), as in Share's lists. */
+	lastName?: string;
+	/** Profile photo URL. Without one, the avatar shows the initials. */
 	avatarSrc?: string;
 };
 

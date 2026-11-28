@@ -1,5 +1,5 @@
 import * as React from "react";
-import { ArrowLeft, Bell, ClipboardCheck, Undo2, Eye, FlaskConical, Folder, ListChecks, MessageCircle, MousePointerClick, Paperclip, Pencil, RotateCcw, Users, X, Zap } from "lucide-react";
+import { ArrowLeft, Bell, ClipboardCheck, Undo2, FlaskConical, Folder, ListChecks, MessageCircle, MousePointerClick, Paperclip, Pencil, RotateCcw, Users, X, Zap } from "lucide-react";
 import { animate, AnimatePresence, motion, useAnimationControls, useIsPresent, usePresenceData, type Variants } from "motion/react";
 
 import { ActivityFeed } from "@/components/chat/activity-feed";
@@ -57,7 +57,7 @@ import { attachTypes, LibraryPanel, type LibraryPanelProps } from "./library-pan
 import { assetName, libraryIcon } from "../../library/library-assets";
 import { LibraryDialog, type LibraryDialogProps, type LibraryPick } from "./library-dialog";
 import { SidePanelResizer, useSidePanelWidth } from "./side-panel";
-import { directionActionFor, type DirectionPaths } from "./plan-parts";
+import { directionActionFor, directionStatusFor, type DirectionPaths } from "./plan-parts";
 import { PublishPopover, type PublishItem } from "@/components/overlays/publish-popover";
 import { SharePopover, type SharePopoverProps } from "@/components/overlays/share-popover";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/overlays/popover";
@@ -308,6 +308,7 @@ function SparksReplyView({
 	onQuickReply,
 	onSuggestionEdit,
 	directionAction,
+	directionStatus,
 	changing,
 	narrow = false,
 }: {
@@ -318,6 +319,8 @@ function SparksReplyView({
 	onSuggestionEdit?: (part: string, text: string) => void;
 	/** A direction card's call to action ("Generate prototype", "Open prototype"). */
 	directionAction?: ReturnType<typeof directionActionFor>;
+	/** A direction card's status under its name ("Not generated yet", "Generated", "In Review"). */
+	directionStatus?: ReturnType<typeof directionStatusFor>;
 	/** She's changing her answer to this reply's question: its card opens again (prds/sparks.md, "Changing an answer"). */
 	changing?: AnswerChange;
 	/** In the column beside a preview: its quick replies sit one per row. */
@@ -390,6 +393,7 @@ function SparksReplyView({
 							<DirectionCard
 								direction={part.direction}
 								number={reply.parts.slice(0, index + 1).filter((p) => p.kind === "direction").length}
+								status={directionStatus?.(part.direction)}
 								action={directionAction?.(part.direction)}
 							/>
 						) : part.kind === "chosen" ? (
@@ -497,11 +501,6 @@ type SparksWorkspaceProps = {
 	 */
 	onResetPrototype?: () => void;
 	/**
-	 * The "+" menu's "See what the teams see", for the demo: opens the page reviewers get from the invitation (the
-	 * published idea), in its own tab. Without it, the menu has no "See what the teams see".
-	 */
-	onSeeTeamsView?: () => void;
-	/**
 	 * The "+" menu's "Go to Review", for the demo: jumps to Review with the idea put together, ready to publish. Without
 	 * it, the menu has no "Go to Review".
 	 */
@@ -568,7 +567,8 @@ type SparksWorkspaceProps = {
 	share?: Omit<SharePopoverProps, "children">;
 	/**
 	 * The directions as paths in the prototype (prds/sparks-plan-compare.md, "Directions in the plan"): the ones
-	 * built, the one shown, and what a direction card's "Generate prototype" and "Open prototype" do.
+	 * built, the one shown, the ones in Review (each card's status), and what a direction card's "Generate prototype" and
+	 * "Open prototype" do.
 	 */
 	paths?: DirectionPaths;
 	/**
@@ -599,6 +599,8 @@ type SparksWorkspaceProps = {
 		details?: {
 			items: PublishItem[];
 			reviewers: number;
+			/** The teams it goes to, each once: "Departments: UX team, Engineering, and Catalog" under the count. */
+			departments?: string[];
 			email: Omit<InvitationEmailProps, "variant" | "items">;
 			note?: string;
 			onNoteChange?: (note: string) => void;
@@ -606,6 +608,12 @@ type SparksWorkspaceProps = {
 			linkHref?: string;
 		};
 		blocked?: boolean;
+		/**
+		 * Once the teams have the latest ("Published"): what went out, in `PublishPopover` `published` (sparks.ds 138:2887),
+		 * from the header's "Published", a Flat button: when (`at`, an ISO timestamp: "Fri, Nov 27, 2026, 4:43 PM"), the paths at the versions published, how many people it
+		 * went to and their teams, with "Manage reviewers" (opens Share).
+		 */
+		published?: { at: string; items: PublishItem[]; reviewers: number; departments?: string[]; linkHref?: string };
 		/** "Publish your idea" open, kept outside so something else can open it (Review's "Publish now"). */
 		open?: boolean;
 		onOpenChange?: (open: boolean) => void;
@@ -670,12 +678,15 @@ function UpcomingPrototype({ name, detail, note }: UpcomingAction["prototype"] &
 const upcomingIcons = { prototype: MousePointerClick, validate: FlaskConical, review: Users } as const;
 
 
+/** When an idea went out, in the Published popover: "Fri, Nov 27, 2026, 4:43 PM" (sparks.ds 138:2894). */
+const publishedAtFormat = new Intl.DateTimeFormat("en-US", { weekday: "short", month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" });
+
 /**
  * The left of the concept's header (sparks.ds "Sparks Project", 39:1598): the back button, then the concept's name, 16px
  * apart. Back (Button neutral, 32px, 12px corners, a 16px arrow; "All ideas" in its tooltip) closes the concept, to the
  * start page. The name (79:7175: 2xl bold, 24/30, `foreground`, a dotted underline) is selected to rename it: it turns
- * into a field (Enter or leaving it saves, Esc cancels). Once she's renamed it, hovering the name shows "Use default
- * name" on its right (an undo arrow, sparks.ds 114:1444), back to the name Sparks gave it.
+ * into a field (Enter or leaving it saves, Esc cancels). Once she's renamed it, "Use default name" stays on its right
+ * (an undo arrow, sparks.ds 114:1444), back to the name Sparks gave it.
  */
 function ConceptName({
 	name,
@@ -697,17 +708,28 @@ function ConceptName({
 	const [shown, setShown] = React.useState(name);
 	const [editing, setEditing] = React.useState(false);
 	const nameRef = React.useRef<HTMLButtonElement>(null);
+	const inputRef = React.useRef<HTMLInputElement>(null);
+	const undoRef = React.useRef<HTMLButtonElement>(null);
 	const { prefersReducedMotion } = useMotionPreference();
-	const renamed = Boolean(defaultName && onUseDefaultName && shown !== defaultName);
+	// What's in the field as she types, so the undo arrow comes as soon as the name differs from Sparks's.
+	const [draft, setDraft] = React.useState(name);
+	// "Use default name" shows only while the name is being edited, and only while it isn't Sparks's name: one she saved
+	// before, or what she's typing now.
+	const renamed = Boolean(defaultName && onUseDefaultName && draft.trim() !== defaultName);
 	React.useEffect(() => setShown(name), [name]);
-	// "Use default name" is there only while the name (or it) is hovered or has keyboard focus: otherwise the badge sits 12px after
-	// the name, as it does before she renames it.
-	const [hovered, setHovered] = React.useState(false);
-	const [focused, setFocused] = React.useState(false);
-	const showUndo = renamed && (hovered || focused);
-
-	// Focus put back on the name after renaming (Enter, Esc, or leaving the field) isn't her asking for "Use default name".
-	const restoring = React.useRef(false);
+	React.useEffect(() => {
+		if (editing) setDraft(shown);
+	}, [editing]);
+	/** Focus left the field and the undo button for somewhere else: the name she typed is saved. */
+	const leftEditing = (next: EventTarget | null) => {
+		if (next === inputRef.current || next === undoRef.current) return;
+		finish(inputRef.current?.value);
+	};
+	const useDefaultName = () => {
+		setEditing(false);
+		onUseDefaultName?.();
+		requestAnimationFrame(() => nameRef.current?.focus());
+	};
 	const finish = (value?: string) => {
 		const next = value?.trim();
 		setEditing(false);
@@ -717,9 +739,7 @@ function ConceptName({
 				setShown(next);
 				onRename?.(next);
 			}
-			restoring.current = true;
 			nameRef.current?.focus();
-			restoring.current = false;
 		});
 	};
 
@@ -737,17 +757,19 @@ function ConceptName({
 					</TooltipContent>
 				</Tooltip>
 			) : null}
+			{/* `relative`: "Use default name" leaving is popped out of the flow (`popLayout`), placed against this. */}
+			<div className='relative flex min-w-0 items-center gap-1'>
 			{editing ? (
 				<input
+					ref={inputRef}
 					aria-label='Idea name'
 					defaultValue={shown}
+					onChange={(event) => setDraft(event.currentTarget.value)}
 					autoFocus
-					// The caret blinks at the end of the name, nothing selected.
-					onFocus={(event) => {
-						const end = event.currentTarget.value.length;
-						event.currentTarget.setSelectionRange(end, end);
-					}}
-					onBlur={(event) => finish(event.currentTarget.value)}
+					// The whole name selected, so typing replaces it (an arrow key keeps it and moves the caret).
+					onFocus={(event) => event.currentTarget.select()}
+					// Tabbing to "Use default name" keeps the field open; anywhere else saves what she typed.
+					onBlur={(event) => leftEditing(event.relatedTarget)}
 					onKeyDown={(event) => {
 						if (event.key === "Enter") finish(event.currentTarget.value);
 						if (event.key === "Escape") finish();
@@ -757,80 +779,64 @@ function ConceptName({
 					className='field-sizing-content h-[30px] max-w-full min-w-[1ch] bg-transparent p-0 font-display text-2xl leading-[30px] font-bold text-foreground underline decoration-dotted decoration-from-font underline-offset-[5px] outline-none'
 				/>
 			) : (
-				// The name and, once she's renamed it, "Use default name" after it: shown while the name is hovered, or focused.
-				<div
-					// `relative`: "Use default name" leaving is popped out of the flow (`popLayout`), placed against this.
-					className='relative flex min-w-0 items-center gap-1'
-					onMouseEnter={() => setHovered(true)}
-					onMouseLeave={() => setHovered(false)}
-					// Keyboard focus only: clicked (or focused again after a rename), the name keeps the badge where it is.
-					onFocus={(event) => setFocused(!restoring.current && event.target.matches(":focus-visible"))}
-					onBlur={(event) => !event.currentTarget.contains(event.relatedTarget) && setFocused(false)}
-				>
 					<Typography as='h1' size='2xl' weight='bold' className='min-w-0 leading-[30px] text-foreground'>
-						<Tooltip>
-							<TooltipTrigger asChild>
-								<button
-									ref={nameRef}
-									type='button'
-									onClick={() => {
-										// The name becomes a field: the hover and focus on it end here (it unmounts, so no "leave" comes).
-										setHovered(false);
-										setFocused(false);
-										setEditing(true);
-									}}
-									className='flex max-w-full cursor-text rounded-md underline decoration-dotted decoration-from-font underline-offset-[5px] outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50'
-								>
-									{/* Roll (MOTION.md): when the name changes ("New idea" named by Sparks, or renamed), the old one moves up
-									    and out and the new one comes up from below, clipped to the line. Not on the first render. */}
-									{/* `text-start`: a button centers its text, which would center the shorter name while both share the cell. */}
-									<span className='-mt-1 -mb-2 inline-grid min-w-0 overflow-hidden pt-1 pb-2 text-start'>
-										<AnimatePresence initial={false}>
-											<motion.span
-												key={shown}
-												variants={prefersReducedMotion ? fadeVariants : rollVariants}
-												initial='initial'
-												animate='animate'
-												exit='exit'
-												className='col-start-1 row-start-1 truncate'
-											>
-												{shown}
-											</motion.span>
-										</AnimatePresence>
-									</span>
-								</button>
-							</TooltipTrigger>
-							<TooltipContent side='bottom' sideOffset={6}>
-								Rename
-							</TooltipContent>
-						</Tooltip>
+						{/* No tooltip: the text cursor and the dotted underline say it's editable; screen readers hear "Rename". */}
+						<button
+							ref={nameRef}
+							type='button'
+							aria-description='Rename'
+							onClick={() => setEditing(true)}
+							className='flex max-w-full cursor-text rounded-md underline decoration-dotted decoration-from-font underline-offset-[5px] outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50'
+						>
+							{/* Roll (MOTION.md): when the name changes ("New idea" named by Sparks, or renamed), the old one moves up
+							    and out and the new one comes up from below, clipped to the line. Not on the first render. */}
+							{/* `text-start`: a button centers its text, which would center the shorter name while both share the cell. */}
+							<span className='-mt-1 -mb-2 inline-grid min-w-0 overflow-hidden pt-1 pb-2 text-start'>
+								<AnimatePresence initial={false}>
+									<motion.span
+										key={shown}
+										variants={prefersReducedMotion ? fadeVariants : rollVariants}
+										initial='initial'
+										animate='animate'
+										exit='exit'
+										className='col-start-1 row-start-1 truncate'
+									>
+										{shown}
+									</motion.span>
+								</AnimatePresence>
+							</span>
+						</button>
 					</Typography>
-					{/* It fades in (and out) while the badge slides over to make room (`layout`, below); `popLayout`: leaving, it
-					    gives its room back at once, so the badge slides back as it fades. */}
-					<AnimatePresence initial={false} mode='popLayout'>
-						{showUndo ? (
-							<motion.span key='undo' variants={fadeVariants} initial='initial' animate='animate' exit='exit' className='flex shrink-0'>
-								<Tooltip>
-									<TooltipTrigger asChild>
-										<Button
-											variant='ghost'
-											size='icon'
-											aria-label='Use default name'
-											onClick={onUseDefaultName}
-											className='size-8 shrink-0 rounded-button-md text-icon [&_svg]:size-[18px]'
-										>
-											<Undo2 aria-hidden />
-										</Button>
-									</TooltipTrigger>
-									<TooltipContent side='bottom' sideOffset={6}>
-										Use default name: {defaultName}
-									</TooltipContent>
-								</Tooltip>
-							</motion.span>
-						) : null}
-					</AnimatePresence>
-				</div>
 			)}
+				{/* "Use default name", after the field, only while she edits a name she has changed. It fades in (and out) while
+				    the badge slides over to make room (`layout`, below); `popLayout`: leaving, it gives its room back at once. */}
+				<AnimatePresence initial={false} mode='popLayout'>
+					{editing && renamed ? (
+						<motion.span key='undo' variants={fadeVariants} initial='initial' animate='animate' exit='exit' className='flex shrink-0'>
+							<Tooltip>
+								<TooltipTrigger asChild>
+									<Button
+										ref={undoRef}
+										variant='ghost'
+										size='icon'
+										aria-label='Use default name'
+										// Pressing it doesn't blur the field first (which would save what she typed).
+										onMouseDown={(event) => event.preventDefault()}
+										onClick={useDefaultName}
+										onBlur={(event) => leftEditing(event.relatedTarget)}
+										className='size-8 shrink-0 rounded-button-md text-icon [&_svg]:size-[18px]'
+									>
+										<Undo2 aria-hidden />
+									</Button>
+								</TooltipTrigger>
+								<TooltipContent side='bottom' sideOffset={6}>
+									Use default name: {defaultName}
+								</TooltipContent>
+							</Tooltip>
+						</motion.span>
+					) : null}
+				</AnimatePresence>
+			</div>
 			{/* Where the idea stands, 12px after the name (or "Use default name", while it shows); it never shrinks: the name
 			    truncates first. It slides when what's before it changes width (`layout`, `layoutSpring`): "Use default name"
 			    showing or going, a new name rolling in. Reduced motion: it moves at once. */}
@@ -841,6 +847,12 @@ function ConceptName({
 			) : null}
 		</div>
 	);
+}
+
+/** "UX team", "UX team and Catalog", "UX team, Engineering, and Catalog" (sparks.ds 129:2258's list, with the last comma). */
+function inWordsWithAnd(names: string[]) {
+	if (names.length <= 2) return names.join(" and ");
+	return `${names.slice(0, -1).join(", ")}, and ${names[names.length - 1]}`;
 }
 
 /**
@@ -956,7 +968,6 @@ function SparksWorkspace({
 	initialPrompt,
 	onAddPlan,
 	onResetPrototype,
-	onSeeTeamsView,
 	onGoToReview,
 	glideToLatest = false,
 	myLibrary,
@@ -1207,8 +1218,9 @@ function SparksWorkspace({
 		if (changing?.answering) composerRef.current?.focus();
 	}, [changing?.answering]);
 
-	// A direction's call to action on its card.
+	// A direction's call to action on its card, and its status under its name.
 	const directionAction = directionActionFor(messages, paths);
+	const directionStatus = directionStatusFor(paths);
 	// Comments: the reviewers' feedback and her comments on the prototype, 480px on the right in every step (DESIGN.md →
 	// "Side panels share one frame"); with no preview, the conversation stays centered in the rest. Library: what she gave
 	// the idea. One panel at a time, in the same column; each opens only from its button, and takes focus.
@@ -1500,7 +1512,28 @@ const libraryOpen = sidePanel === "library";
 				    who review and decide (a fixed version). Unavailable, it says why in a tooltip (a disabled button gets no
 				    hover, so the tooltip sits on a wrapper that takes focus). */}
 				{publish ? (
-					publish.disabled && publish.hint ? (
+					publish.published && !publish.disabled ? (
+						// "Published": the teams have the latest. A Flat button (sparks.ds 38:324) that shows what went out, when and to
+						// whom (sparks.ds "Publish your idea (popover)" → Published, 138:2887).
+						<PublishPopover
+							variant='published'
+							title='Your idea is published'
+							publishedAt={<time dateTime={publish.published.at}>{publishedAtFormat.format(new Date(publish.published.at))}</time>}
+							link={share?.link}
+							linkHref={publish.published.linkHref}
+							itemsLabel='Idea solution paths shared'
+							items={publish.published.items}
+							audience={{
+								title: `Your idea was shared with ${publish.published.reviewers} team ${publish.published.reviewers === 1 ? "member" : "members"}.`,
+								detail: publish.published.departments?.length ? `Departments: ${inWordsWithAnd(publish.published.departments)}` : undefined,
+								action: { label: "Manage reviewers", onClick: openShare },
+							}}
+							open={publish.open}
+							onOpenChange={publish.onOpenChange}
+						>
+							<Button variant='flat'>{publish.label}</Button>
+						</PublishPopover>
+					) : publish.disabled && publish.hint ? (
 						<Tooltip>
 							<TooltipTrigger asChild>
 								<span tabIndex={0} className='rounded-button-lg outline-none focus-visible:ring-2 focus-visible:ring-ring'>
@@ -1528,6 +1561,7 @@ const libraryOpen = sidePanel === "library";
 								publish.details.reviewers
 									? {
 											title: `Your idea will be shared with ${publish.details.reviewers} team ${publish.details.reviewers === 1 ? "member" : "members"}.`,
+											detail: publish.details.departments?.length ? `Departments: ${inWordsWithAnd(publish.details.departments)}` : undefined,
 											action: { label: "Manage reviewers", onClick: openShare },
 										}
 									: { title: "No reviewers added yet", tone: "warning", action: { label: "Add reviewers to publish and share your idea.", onClick: openShare } }
@@ -1681,6 +1715,7 @@ const libraryOpen = sidePanel === "library";
 												onSuggestionEdit ? (part, text) => onSuggestionEdit(message.id, part, text) : undefined
 											}
 											directionAction={directionAction}
+											directionStatus={directionStatus}
 											changing={message.id === changing?.replyId ? answerChange : undefined}
 										/>
 									</li>
@@ -1794,8 +1829,8 @@ const libraryOpen = sidePanel === "library";
 									Add a connection
 								</DropdownMenuItem>
 								{/* The demo's shortcuts, after a line: the first message, ready to send, the whole of Plan up to
-								    the choice, the reviewers' page, and starting over. */}
-								{initialPrompt || onAddPlan || onGoToReview || onSeeTeamsView || onResetPrototype ? <DropdownMenuSeparator /> : null}
+								    the choice, Review, and starting over. */}
+								{initialPrompt || onAddPlan || onGoToReview || onResetPrototype ? <DropdownMenuSeparator /> : null}
 								{initialPrompt ? (
 									<DropdownMenuItem onSelect={() => fillDraft(initialPrompt)}>
 										<MessageCircle aria-hidden />
@@ -1814,14 +1849,8 @@ const libraryOpen = sidePanel === "library";
 										Go to Review
 									</DropdownMenuItem>
 								) : null}
-{onSeeTeamsView ? (
-									<DropdownMenuItem onSelect={onSeeTeamsView}>
-										<Eye aria-hidden />
-										See what the teams see
-									</DropdownMenuItem>
-								) : null}
 								{/* Starting over, set apart by a line from the shortcuts that move the demo along. */}
-								{onResetPrototype && (initialPrompt || onAddPlan || onGoToReview || onSeeTeamsView) ? <DropdownMenuSeparator /> : null}
+								{onResetPrototype && (initialPrompt || onAddPlan || onGoToReview) ? <DropdownMenuSeparator /> : null}
 								{onResetPrototype ? (
 									<DropdownMenuItem onSelect={onResetPrototype}>
 										<RotateCcw aria-hidden />

@@ -21,14 +21,16 @@ const ideaStatusBadge: Record<IdeaStatus, { label: string; tone: BadgeProps["ton
 
 /**
  * Where the idea stands for a team member who opened it from Dana's invitation (prds/sparks-review.md, "What reviewers
- * see and do"): their assessment to give, then given, then the decision. Their own part, not Dana's progress.
+ * see and do"): their assessment to give ("Waiting for your assessment"); once given, where the idea stands ("In review",
+ * as Dana's); then the decision.
  */
 type TeamMemberStatus = "assess" | "assessed" | "advanced" | "stopped";
 
 const teamMemberStatusBadge: Record<TeamMemberStatus, { label: string; tone: BadgeProps["tone"] }> = {
 	// Theirs to do: yellow, as Dana's "Ready to publish".
 	assess: { label: "Waiting for your assessment", tone: "yellow" },
-	assessed: { label: "Assessment shared", tone: "blue" },
+	// Given: where the idea stands, as in Dana's header ("In review", purple); "Assessment shared" is the header's button.
+	assessed: ideaStatusBadge["in-review"],
 	advanced: ideaStatusBadge.advanced,
 	stopped: ideaStatusBadge.stopped,
 };

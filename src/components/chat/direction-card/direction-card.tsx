@@ -17,16 +17,26 @@ type DirectionCardRating = { label: string; value: string };
 
 const directionCardVariants = cva(
 	// sparks.ds "direction-card": white, 1px border, 16px corners, 20px padding, 16px between its parts, shadow-sm.
-	"flex flex-col gap-4 rounded-card border bg-background p-5 shadow-sm",
+	"relative flex flex-col gap-4 rounded-card border bg-background p-5 shadow-sm",
 	{
 		variants: {
-			// The assistant's pick stands out (Figma's only variant, colors/border/defined); the others take the default border.
+			// The assistant's pick stands out (Figma's only variant; sparks.ds draws it colors/border/defined, the others the default
+			// border).
+			// Stronger than the dashed border (`pending`, a step lighter), so a card with a prototype reads stronger than one
+			// without: gray-400, and gray-500 for the assistant's pick (DESIGN.md).
 			emphasized: {
-				true: "border-border-defined",
-				false: "border-border",
+				true: "border-muted-foreground",
+				false: "border-foreground-subtle",
+			},
+			// Nothing built from it yet (Sparks: "Not generated yet"): the border is drawn dashed by an SVG over it (6px dashes,
+			// 5px gaps, subtle: a step lighter than the solid one), so the border itself goes transparent (DESIGN.md).
+			pending: {
+				// No shadow either: it reads as not built yet, flat on the page.
+				true: "border-transparent shadow-none",
+				false: "",
 			},
 		},
-		defaultVariants: { emphasized: false },
+		defaultVariants: { emphasized: false, pending: false },
 	},
 );
 
@@ -36,6 +46,13 @@ type DirectionCardProps = Omit<React.ComponentProps<"section">, "title" | "child
 		title: string;
 		/** Its place among the directions shown together (1, 2…): "1. Fit check before you buy". */
 		number?: number;
+		/** A second line under the title, sm muted: where it stands, e.g. "Not generated yet", "Generated", "In Review". */
+		status?: React.ReactNode;
+		/**
+		 * Nothing built from it yet (e.g. "Not generated yet"): the border is dashed, 6px dashes and 5px gaps, darker than the
+		 * solid one: subtle (`border-defined`, gray-300; `foreground-subtle`, gray-400, when `emphasized`), and no shadow.
+		 */
+		pending?: boolean;
 		/** Labels on the right of the title, e.g. a flat green `Badge` "Recommended" (size `xs`). */
 		badges?: React.ReactNode;
 		/** One sentence: what it is. */
@@ -77,6 +94,7 @@ function Line({ label, content }: DirectionCardLine) {
 function DirectionCard({
 	title,
 	number,
+	status,
 	badges,
 	description,
 	location,
@@ -87,6 +105,7 @@ function DirectionCard({
 	action,
 	defaultOpen = false,
 	emphasized = false,
+	pending = false,
 	className,
 	...props
 }: DirectionCardProps) {
@@ -110,20 +129,46 @@ function DirectionCard({
 			data-slot='direction-card'
 			data-state={open ? "open" : "closed"}
 			aria-label={title}
-			className={cn(directionCardVariants({ emphasized, className }))}
+			data-pending={pending || undefined}
+			className={cn(directionCardVariants({ emphasized, pending, className }))}
 			{...props}
 		>
+			{/* The dashed border: CSS can't set a dash's length or gap, so it's an SVG outline over the card's border (1px out,
+			    on the border's line, the same 16px corners). */}
+			{pending ? (
+				<svg
+					aria-hidden
+					className={cn(
+						"pointer-events-none absolute -inset-px size-[calc(100%+2px)] overflow-visible",
+						emphasized ? "text-foreground-subtle" : "text-border-defined",
+					)}
+				>
+					<rect
+						x='0.5'
+						y='0.5'
+						rx='15.5'
+						fill='none'
+						stroke='currentColor'
+						strokeDasharray='6 5'
+						style={{ width: "calc(100% - 1px)", height: "calc(100% - 1px)" }}
+					/>
+				</svg>
+			) : null}
 			<header className={cn("group/header flex flex-col gap-1", expandable && "cursor-pointer")} onClick={onHeaderClick}>
-				{/* Figma "Title": the number and name on the left, the badges and the chevrons on the right of the same line; 4px more below it. */}
+				{/* Figma "Title": the number and name on the left (20px, not Figma's 18: DESIGN.md), the status on a second line
+				under it (sm muted), the badges and the chevrons on the right of the first line; 4px more below it. */}
 				<div className='flex items-start gap-3 pb-1'>
-					<Typography as='h3' size='lg' weight='semibold' className='min-w-0 flex-1 text-foreground-prominent'>
-						{number ? `${number}. ` : null}
-						{title}
-					</Typography>
+					<div className='flex min-w-0 flex-1 flex-col'>
+						<Typography as='h3' size='xl' weight='semibold' className='text-foreground-prominent'>
+							{number ? `${number}. ` : null}
+							{title}
+						</Typography>
+						{status ? <p className='text-sm text-muted-foreground'>{status}</p> : null}
+					</div>
 					{/* Figma "Labels": the badges, then the 20px chevrons (up-down closed, down-up open), 8px apart: foreground-subtle,
-					the icon color while the header is hovered. */}
+					the icon color while the header is hovered. 3px down, centered on the title's 30px line. */}
 					{badges || expandable ? (
-						<div className='flex shrink-0 flex-wrap items-center justify-end gap-2 pt-0.5'>
+						<div className='flex shrink-0 flex-wrap items-center justify-end gap-2 pt-[3px]'>
 							{badges}
 							{expandable ? (
 								<Tooltip>

@@ -1,29 +1,36 @@
 import * as React from "react";
 import { Check, CircleCheck, CircleDashed, Eye, LoaderCircle, Menu, MessageSquare } from "lucide-react";
-import { motion } from "motion/react";
+import { AnimatePresence, motion } from "motion/react";
 
 import { ActivityFeed } from "@/components/chat/activity-feed";
 import { Badge } from "@/components/data-display/badge";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/overlays/dropdown-menu";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/navigation/tabs";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/overlays/dropdown-menu";
 import { Typography } from "@/components/typography/typography";
-import { fadeVariants, revealVariants, scrollIntoViewSmoothly, useMotionPreference } from "@/lib/motion";
+import { expandVariants, fadeVariants, revealVariants, scrollIntoViewSmoothly, useExpandClip, useMotionPreference } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 
 import { HeaderIconButton } from "../../header-icon-button";
 import { PrototypeComments, type CommentMention, type CommentScope, type PrototypeComment, type PrototypeCommentAuthor } from "../prototype/prototype-comments";
 import { listInWords } from "../plan/plan-summary";
 import { VersionsMenu } from "../shared/versions-menu";
-import { ReviewNextStep, type ReviewNext } from "./review-next";
+import type { ReviewNext } from "./review-next";
 
 /*
  * Review (prds/sparks-review.md): the concept prepared for review from the spec (nothing new, every statement keeping
  * its label), the reviewers and their views, the recommendation and the decision.
  */
 
-/** A department invited to review: what it evaluates, how far it's got, and its view. Departments, never named people. */
+/**
+ * A person asked to review it, and their team: what they evaluate, how far they've got, and their view (their
+ * assessment) of a published version. Their view is what the team assessment counts (`review-status.tsx`).
+ */
 type Reviewer = {
 	id: string;
+	name: string;
+	avatarSrc?: string;
+	/** Their job title and team, as Share shows them ("UX lead · UX team"). */
+	subtitle?: string;
+	/** Their team ("UX team", "Engineering"). */
 	department: string;
 	evaluates: string;
 	status: "invited" | "opened" | "commented" | "view";
@@ -32,6 +39,10 @@ type Reviewer = {
 	why?: string;
 	/** What they wrote when they commented (before their view), shown in Comments. */
 	comment?: string;
+	/** The published version their view is about. */
+	version?: number;
+	/** Their view of an earlier version, kept once an update is published and they look again. */
+	earlier?: { version: number; view: NonNullable<Reviewer["view"]> };
 };
 
 /** The concept for review (prds/sparks-review.md, "What's reviewed"), one part per heading. */
@@ -139,11 +150,14 @@ type ReviewStatus =
 
 type ReviewPanelProps = {
 	concept: ConceptForReview;
-	reviewers: Reviewer[];
 	/** Dana's recommendation, once she sends it. */
 	recommendation?: string;
-	/** What Review is waiting for, at the top: what she does there, one thing at a time. Not for the teams. */
-	next?: ReviewNext;
+	/**
+	 * Above the idea, on its own card, once it's published: the team assessment (`ReviewTeamAssessment`,
+	 * prds/sparks-review.md, "Team assessment"). Hidden while Review status shows it on the right. Review's next step and
+	 * the reviewers are in Review status.
+	 */
+	assessment?: React.ReactNode;
 	/** The panel's heading: the idea's name ("Fit check before you buy"). Defaults to "Idea for review". */
 	title?: string;
 	/**
@@ -222,6 +236,20 @@ const buildContextTitles = [
 
 const viewTone = { Advance: "green", "Advance with changes": "amber", "Don't advance yet": "red" } as const;
 const statusLabel = { invited: "Invited", opened: "Opened it", commented: "Commented" } as const;
+
+/**
+ * Where a reviewer stands, the same wherever it shows (the reviewers' list, Comments, the team assessment's people): their
+ * view as a flat badge in its tone, or how far they've got in muted text ("Invited", "Opened it", "Commented").
+ */
+function ReviewerStatus({ reviewer, size = "sm" }: { reviewer: Reviewer; size?: "xs" | "sm" }) {
+	if (reviewer.status === "view" && reviewer.view)
+		return (
+			<Badge variant='flat' tone={viewTone[reviewer.view]} size='xxs'>
+				{reviewer.view}
+			</Badge>
+		);
+	return <span className={cn("text-muted-foreground", size === "sm" ? "text-sm" : "text-xs")}>{statusLabel[reviewer.status as keyof typeof statusLabel]}</span>;
+}
 
 /** One part of the idea, under its heading. `reveal`: it's just been written, so it comes in (Reveal). */
 function Part({
@@ -304,7 +332,8 @@ function PartInProgress({ title, ref }: { title: string; ref?: React.Ref<HTMLDiv
 }
 
 /**
- * The reviewers: each department's status (invited, opened, commented) or view, what it evaluates, and why. With
+ * The reviewers: each person's name, their team and what it evaluates, then their status (invited, opened, commented) or
+ * view under it, and why. With
  * `onOpen` (Comments), a reviewer who has commented or given their view is a button that opens their comment, with the
  * unread dot while it's in `unread`; the others stay plain rows.
  */
@@ -344,7 +373,9 @@ function ReviewerList({
 							<span className='sr-only'>New: </span>
 						</span>
 					) : null}
-					<div className='flex flex-wrap items-center gap-2'>
+					{/* The name, and their team right under it, no gap, as in Share's lists. */}
+					<span className='flex flex-col'>
+					<span className='flex flex-wrap items-center gap-2'>
 						{reviewer.status === "view" ? (
 							<CircleCheck aria-hidden className='size-4 text-success' />
 						) : reviewer.status === "commented" ? (
@@ -354,16 +385,19 @@ function ReviewerList({
 						) : (
 							<CircleDashed aria-hidden className='size-4 text-muted-foreground' />
 						)}
-						<span className={cn("font-medium text-foreground", size === "base" ? "text-base" : "text-sm")}>{reviewer.department}</span>
-						{reviewer.status === "view" && reviewer.view ? (
-							<Badge variant='flat' tone={viewTone[reviewer.view]} size='xxs'>
-								{reviewer.view}
-							</Badge>
-						) : (
-							<span className={cn("text-muted-foreground", size === "base" ? "text-sm" : "text-xs")}>{statusLabel[reviewer.status as keyof typeof statusLabel]}</span>
-						)}
-					</div>
-					<span className={cn("ps-6 text-muted-foreground", size === "base" ? "text-sm" : "text-xs")}>Evaluates {reviewer.evaluates}</span>
+						<span className={cn("font-medium text-foreground", size === "base" ? "text-base" : "text-sm")}>{reviewer.name}</span>
+					</span>
+					{/* Their team, and what it evaluates; their view of an earlier version, once they're looking again. */}
+					<span className={cn("ps-6 text-muted-foreground", size === "base" ? "text-sm" : "text-xs")}>
+						{reviewer.department} · Evaluates {reviewer.evaluates}
+						{reviewer.earlier && reviewer.status !== "view" ? ` · ${reviewer.earlier.view} on version ${reviewer.earlier.version}` : ""}
+					</span>
+					</span>
+					{/* Where they stand (their view's badge, or "Invited"…), under their team, 6px below it and 4px above why, as in
+					    the team assessment's popovers (prds/sparks-review.md, "Reviewers"). */}
+					<span className='flex ps-6 pt-0.5'>
+						<ReviewerStatus reviewer={reviewer} size={size === "base" ? "sm" : "xs"} />
+					</span>
 					{reviewer.why ? <span className={cn("ps-6 text-foreground", size === "base" ? "text-base" : "text-sm")}>"{reviewer.why}"</span> : null}
 					{notes[reviewer.id] ? <span className='ps-6 text-xs font-medium text-link'>{notes[reviewer.id]}</span> : null}
 					</Row>
@@ -503,23 +537,83 @@ titles?: readonly ReviewPartTitle[];
  * "Jump to a section" (a ghost icon button, lucide `Menu`, on the right of the idea panel's header): a menu with the
  * idea's parts as they are on the page (`[data-part]` in `container`, read when it opens: only those written, Dana's
  * recommendation once sent); choosing one scrolls the card to it, at the top (`scrollIntoViewSmoothly`). `onJump` runs
- * first (Dana's Review: back to the "Idea" tab). The same on Dana's Review and the reviewers' page.
+ * first. The same on Dana's Review and the reviewers' page.
+ *
+ * `comments`: a part with an open comment she hasn't seen yet has a sky dot on the left of its name. It's seen once
+ * she jumps to the part, or once its heading has been fully on screen in `container` (scrolled to, or there when the
+ * comment came); a new comment on it brings the dot back. While any part has one, the button has the dot too.
  */
-function SectionsMenu({ container, onJump }: { container: React.RefObject<HTMLElement | null>; onJump?: () => void }) {
+function SectionsMenu({
+	container,
+	root,
+	lead,
+	onJump,
+	comments = [],
+}: {
+	/** Where the parts are (`[data-part]`). */
+	container: React.RefObject<HTMLElement | null>;
+	/** What scrolls, when it isn't `container` (e.g. Review's panel, where the team assessment scrolls with the idea). */
+	root?: React.RefObject<HTMLElement | null>;
+	/** First in the list, with a line under it, before the parts: e.g. "Team assessment", once it's published. */
+	lead?: { label: string; target: React.RefObject<HTMLElement | null> };
+	onJump?: () => void;
+	comments?: Pick<IdeaComment, "id" | "part" | "resolved">[];
+}) {
 	const { prefersReducedMotion } = useMotionPreference();
 	const [parts, setParts] = React.useState<string[]>([]);
+	// The comments she has seen, by id: their part was on screen, or she jumped to it.
+	const [seen, setSeen] = React.useState<ReadonlySet<string>>(() => new Set());
+	const open = comments.filter((c) => !c.resolved);
+	// The comments as they are now, for the observer below (set up earlier, it would see only the ones there then).
+	const openRef = React.useRef(open);
+	openRef.current = open;
+	const see = (part: string) =>
+		setSeen((current) => {
+			const ids = openRef.current.filter((c) => c.part === part && !current.has(c.id)).map((c) => c.id);
+			return ids.length ? new Set([...current, ...ids]) : current;
+		});
+	const unseenComments = open.filter((c) => !seen.has(c.id));
+	const unseen = new Set(unseenComments.map((c) => c.part));
+	// By comment, not by part: a second comment on a part already marked brings the dot back and is watched for too.
+	const unseenKey = unseenComments.map((c) => `${c.id}@${c.part}`).join("|");
+	// A part's heading fully on screen in the card marks its comments seen. Watched again whenever an unseen comment
+	// comes, so one on a part already on screen is seen at once.
+	React.useEffect(() => {
+		const parts = container.current;
+		if (!parts || !unseenKey || typeof IntersectionObserver === "undefined") return;
+		const observer = new IntersectionObserver(
+			(entries) => {
+				for (const entry of entries) {
+					const part = (entry.target.closest("[data-part]") as HTMLElement | null)?.dataset.part;
+					if (entry.isIntersecting && part) see(part);
+				}
+			},
+			// On screen means in what scrolls.
+			{ root: root?.current ?? parts, threshold: 1 },
+		);
+		for (const part of unseen) {
+			const heading = parts.querySelector(`[data-part="${CSS.escape(part)}"] h3`);
+			if (heading) observer.observe(heading);
+		}
+		return () => observer.disconnect();
+	}, [container, root, unseenKey]);
 	// A part was chosen: closing, focus goes to it, not back to the button (no ring, no tooltip left on it).
 	const jumped = React.useRef(false);
+	const goTo = (element: HTMLElement | null | undefined) => {
+		if (!element) return;
+		element.focus({ preventScroll: true });
+		scrollIntoViewSmoothly(element, { reducedMotion: Boolean(prefersReducedMotion), align: "start" });
+	};
 	const jump = (part: string) => {
 		jumped.current = true;
+		see(part);
 		onJump?.();
-		// After the tab shows (if it changed), so the part has its place.
-		requestAnimationFrame(() => {
-			const element = container.current?.querySelector<HTMLElement>(`[data-part="${CSS.escape(part)}"]`);
-			if (!element) return;
-			element.focus({ preventScroll: true });
-			scrollIntoViewSmoothly(element, { reducedMotion: Boolean(prefersReducedMotion), align: "start" });
-		});
+		requestAnimationFrame(() => goTo(container.current?.querySelector<HTMLElement>(`[data-part="${CSS.escape(part)}"]`)));
+	};
+	const jumpToLead = () => {
+		jumped.current = true;
+		onJump?.();
+		requestAnimationFrame(() => goTo(lead?.target.current));
 	};
 	return (
 		<DropdownMenu
@@ -528,7 +622,8 @@ function SectionsMenu({ container, onJump }: { container: React.RefObject<HTMLEl
 			}}
 		>
 			<DropdownMenuTrigger asChild>
-				<HeaderIconButton label='Jump to a section' className='shrink-0'>
+				{/* The header's sky dot (as on the bell) while any part has a comment she hasn't seen. */}
+				<HeaderIconButton label='Jump to a section' dot={unseen.size > 0} className='shrink-0'>
 					<Menu aria-hidden />
 				</HeaderIconButton>
 			</DropdownMenuTrigger>
@@ -542,9 +637,22 @@ function SectionsMenu({ container, onJump }: { container: React.RefObject<HTMLEl
 					event.preventDefault();
 				}}
 			>
+				{/* What sits above the idea (the team assessment), first, with a line under it before the idea's parts. */}
+				{lead ? (
+					<>
+						<DropdownMenuItem onSelect={jumpToLead}>
+							{unseen.size ? <span aria-hidden className='size-2 shrink-0 rounded-full' /> : null}
+							<span className='min-w-0 truncate'>{lead.label}</span>
+						</DropdownMenuItem>
+						<DropdownMenuSeparator />
+					</>
+				) : null}
 				{parts.map((part) => (
 					<DropdownMenuItem key={part} onSelect={() => jump(part)}>
+						{/* The dot's place is kept on every part while any has one, so the names stay aligned (the notifications' sky). */}
+						{unseen.size ? <span aria-hidden className={cn("size-2 shrink-0 rounded-full", unseen.has(part) && "bg-(--sky-500)")} /> : null}
 						<span className='min-w-0 truncate'>{part}</span>
+						{unseen.has(part) ? <span className='sr-only'>(new comments)</span> : null}
 					</DropdownMenuItem>
 				))}
 			</DropdownMenuContent>
@@ -553,37 +661,26 @@ function SectionsMenu({ container, onJump }: { container: React.RefObject<HTMLEl
 }
 
 /**
- * The idea for review, on Review's left, with the prototype on its right (prds/sparks-review.md, "Review's screen"): on
- * top, where it stands; on a card, what Sparks put together in (its progress), the next step
- * (`ReviewNextStep`), the reviewers once it's published, then every part of "What's reviewed", one heading each, in
- * order. The same frame as Evaluate's panel. Not in Figma yet.
+ * The idea for review, on Review's left, with the prototype (or Review status) on its right (prds/sparks-review.md,
+ * "Review's screen"; sparks.ds 135:2185): the idea's name; once it's published, the team assessment on its own card
+ * (`assessment`); then, on a card, Sparks's progress while it puts it together and every part of "What's reviewed", one
+ * heading each, in order. No tabs: Review's next step and the reviewers are in Review status. The same frame as
+ * Evaluate's panel.
  */
-function ReviewPanel({ concept, title = "Idea for review", paths = [], path, onPathChange, reviewers, recommendation, next, progress, building: build, focusPart, comments, className }: ReviewPanelProps) {
+function ReviewPanel({ concept, title = "Idea for review", paths = [], path, onPathChange, recommendation, assessment, progress, building: build, focusPart, comments, className }: ReviewPanelProps) {
 	const building = Boolean(build);
-	// The next step, once it's written. Before publishing there's none to show: the header's Share and Publish are it.
-	const shownNext = next && !building && next.kind !== "publish" ? next : undefined;
-	// "Idea" and "Reviews" (prds/sparks-review.md, "Review's screen"): once it's published, the next step and the
-	// reviewers have their own tab, so the idea starts with its summary. Before that, there are no tabs: just the idea.
-	const hasReviews = !building && (Boolean(shownNext) || reviewers.length > 0);
-	const [tab, setTab] = React.useState<"idea" | "reviews">("idea");
-	const activeTab = hasReviews ? tab : "idea";
-	// A dot on "Reviews" while something there changed since she last looked: a new step, or a team's view.
-	const reviewsKey = `${shownNext?.kind ?? ""}|${reviewers.map((r) => r.view ?? r.status).join(",")}`;
-	const [seenReviews, setSeenReviews] = React.useState(reviewsKey);
-	React.useEffect(() => {
-		if (activeTab === "reviews") setSeenReviews(reviewsKey);
-	}, [activeTab, reviewsKey]);
-	const reviewsNew = hasReviews && activeTab !== "reviews" && reviewsKey !== seenReviews;
-	// A comment on a part was opened: the idea's tab, then that part comes into view, at the top, and is marked for a moment.
+	// A comment on a part was opened: that part comes into view, at the top, and is marked for a moment.
 	const documentRef = React.useRef<HTMLDivElement>(null);
+	// What scrolls: the team assessment and the idea's card together.
+	const scrollRef = React.useRef<HTMLDivElement>(null);
+	const assessmentRef = React.useRef<HTMLDivElement>(null);
 	const [marked, setMarked] = React.useState<string>();
 	const { prefersReducedMotion: reducedFocus } = useMotionPreference();
+	const assessmentClip = useExpandClip();
 	React.useEffect(() => {
 		if (!focusPart) return;
-		setTab("idea");
 		let stop = () => {};
 		let timer = 0;
-		// After the tab shows, so the part has its place.
 		const frame = requestAnimationFrame(() => {
 			const element = documentRef.current?.querySelector<HTMLElement>(`[data-part="${CSS.escape(focusPart.part)}"]`);
 			if (!element) return;
@@ -633,84 +730,63 @@ function ReviewPanel({ concept, title = "Idea for review", paths = [], path, onP
 						{title}
 					</Typography>
 				)}
-				{/* On the right: "Jump to a section" (not while it's being put together). "See what the teams see" is in the "+"
-				    menu's shortcuts (demo). */}
+				{/* On the right: "Jump to a section" (not while it's being put together). */}
 				{building ? null : (
 					<div className='ms-auto flex shrink-0 items-center'>
-						<SectionsMenu container={documentRef} onJump={() => setTab("idea")} />
+						<SectionsMenu
+							container={documentRef}
+							root={scrollRef}
+							lead={assessment ? { label: "Team assessment", target: assessmentRef } : undefined}
+							comments={comments?.items}
+						/>
 					</div>
 				)}
 			</div>
-			<Tabs
-				value={activeTab}
-				onValueChange={(value) => {
-					setTab(value as "idea" | "reviews");
-					// Each tab starts at its top.
-					documentRef.current?.scrollTo({ top: 0 });
+			{/* One scroll for both cards: the team assessment, on its own card above the idea once it's published (sparks.ds
+			    135:2185, 16px above the idea's card), and the idea's card; they scroll together, the scrollbar at the panel's
+			    edge. The assessment folds away while Review status shows it on the right (Expand), and back. */}
+			<div
+				ref={scrollRef}
+				onScroll={(event) => {
+					const el = event.currentTarget;
+					following.current = el.scrollHeight - el.scrollTop - el.clientHeight < 96;
 				}}
-				className='flex min-h-0 flex-1 flex-col gap-0'
+				className='scrollbar-subtle flex min-h-0 flex-1 flex-col scroll-pt-4 overflow-y-auto px-5 pb-6'
 			>
-				{hasReviews ? (
-					<TabsList variant='line' aria-label='Idea and reviews' className='mx-5 mb-3 self-start'>
-						<TabsTrigger value='idea'>Idea</TabsTrigger>
-						<TabsTrigger value='reviews'>
-							Reviews
-							{reviewsNew ? (
-								<span className='size-2 rounded-full bg-(--sky-500)'>
-									<span className='sr-only'>(new)</span>
-								</span>
-							) : null}
-						</TabsTrigger>
-					</TabsList>
-				) : null}
+				<AnimatePresence initial={false}>
+					{assessment && !building ? (
+						<motion.div key='assessment' {...assessmentClip} variants={expandVariants} initial='initial' animate='animate' exit='exit' className='shrink-0'>
+							{/* "Team assessment" in "Jump to a section" brings it here (focus, without a ring). */}
+							<div ref={assessmentRef} tabIndex={-1} className='pb-4 outline-none'>
+								{assessment}
+							</div>
+						</motion.div>
+					) : null}
+				</AnimatePresence>
 				<motion.div
 					variants={prefersReducedMotion ? fadeVariants : revealVariants}
 					initial={openedBuilding ? "initial" : false}
 					animate='animate'
-					onScroll={(event) => {
-						const el = event.currentTarget;
-						following.current = el.scrollHeight - el.scrollTop - el.clientHeight < 96;
-					}}
 					ref={documentRef}
 					aria-busy={building || undefined}
-									className='scrollbar-subtle mx-5 mb-6 flex min-h-0 flex-1 flex-col scroll-pt-4 overflow-y-auto rounded-[12px] bg-background p-8'
+					// It fills the rest of the panel when it's short (while it's written), and grows with its parts.
+					className='flex shrink-0 grow flex-col rounded-[12px] bg-background p-8'
 				>
-					{/* The idea: Sparks's progress while it's written, then the idea, part by part. Kept mounted on "Reviews", so
-					    its pins and the place she was reading stay. */}
-					<TabsContent value='idea' forceMount className='data-[state=inactive]:hidden'>
-						{/* Comments on the idea, the same as on the prototype: with "Add comment" on, a click drops a pin. */}
-						<IdeaCommentLayer comments={building ? undefined : comments}>
-							{/* As Evaluate's panel: sections one under the other, a line between each, 24px on either side of it. */}
-							<div className='flex flex-col divide-y divide-border [&>*]:py-6 [&>*:first-child]:pt-0 [&>*:last-child]:pb-0'>
-								{/* Sparks's progress while it puts the idea together; once done, it's gone (the header's badge says
-								    "Ready to publish"). */}
-								{progress && !progress.done ? <ActivityFeed {...progress} /> : null}
-								{/* The parts written so far, each coming in as it's written; then the one being written. */}
-								{blank ? null : <ReviewDocument concept={concept} recommendation={recommendation} shown={shown} reveal={building} marked={marked} />}
-								{building && !blank && shown < reviewPartTitles.length ? <PartInProgress ref={writingRef} title={reviewPartTitles[shown]} /> : null}
-							</div>
-						</IdeaCommentLayer>
-						{building && shown >= reviewPartTitles.length ? <div ref={writingRef} aria-hidden className='h-px shrink-0' /> : null}
-					</TabsContent>
-					{/* Reviews: the next step ("The teams have it", "The reviews are in" with what Sparks would change…), then
-					    the reviewers and their views. */}
-					{hasReviews ? (
-						<TabsContent value='reviews' forceMount className='data-[state=inactive]:hidden'>
-							<div className='flex flex-col divide-y divide-border [&>*]:py-6 [&>*:first-child]:pt-0 [&>*:last-child]:pb-0'>
-								{shownNext ? <ReviewNextStep next={shownNext} /> : null}
-								{reviewers.length ? (
-									<section aria-label='Reviewers' className='flex flex-col gap-2'>
-										<Typography as='h3' size='lg' weight='semibold' className='text-foreground-prominent'>
-											Reviewers
-										</Typography>
-										<ReviewerList reviewers={reviewers} size='base' />
-									</section>
-								) : null}
-							</div>
-						</TabsContent>
-					) : null}
+					{/* Comments on the idea, the same as on the prototype: with "Add comment" on, a click drops a pin. */}
+					<IdeaCommentLayer comments={building ? undefined : comments}>
+						{/* As Evaluate's panel: sections one under the other, a line between each, 24px on either side of it. */}
+						<div className='flex flex-col divide-y divide-border [&>*]:py-6 [&>*:first-child]:pt-0 [&>*:last-child]:pb-0'>
+							{/* Sparks's progress while it puts the idea together; once done, it's gone (the header's badge says
+							    "Ready to publish"). */}
+							{progress && !progress.done ? <ActivityFeed {...progress} /> : null}
+							{/* The parts written so far, each coming in as it's written; then the one being written. */}
+							{blank ? null : <ReviewDocument concept={concept} recommendation={recommendation} shown={shown} reveal={building} marked={marked} />}
+							{building && !blank && shown < reviewPartTitles.length ? <PartInProgress ref={writingRef} title={reviewPartTitles[shown]} /> : null}
+						</div>
+					</IdeaCommentLayer>
+					{building && shown >= reviewPartTitles.length ? <div ref={writingRef} aria-hidden className='h-px shrink-0' /> : null}
 				</motion.div>
-			</Tabs>
+			</div>
 		</section>
 	);
 }
@@ -722,6 +798,7 @@ export {
 	IdeaCommentLayer,
 	ReviewDocument,
 	ReviewerList,
+	ReviewerStatus,
 	ReviewPanel,
 	reviewPartTitles,
 	SectionsMenu,

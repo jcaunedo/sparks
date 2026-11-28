@@ -136,6 +136,8 @@ export {
 	type AvatarColor,
 } from "@/components/data-display/avatar";
 export { Badge, badgeVariants, type BadgeProps } from "@/components/data-display/badge";
+export { Table, TableBody, TableCaption, TableCell, TableFooter, TableHead, TableHeader, TableRow } from "@/components/data-display/table";
+export { TeamAssessment, teamAssessmentVariants, type TeamAssessmentAction, type TeamAssessmentOutcome, type TeamAssessmentPerson, type TeamAssessmentProps } from "@/components/data-display/team-assessment";
 
 /* -------------------------------------------------------------------------- */
 /* Feedback                                                                   */

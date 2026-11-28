@@ -16,7 +16,7 @@ import { formatRelativeDate } from "@/lib/relative-date";
 import { cn } from "@/lib/utils";
 
 import { MentionText, type PrototypeComment } from "../prototype/prototype-comments";
-import { ReviewerList, viewTone, type IdeaComment, type Reviewer } from "../review/review-panel";
+import { ReviewerList, ReviewerStatus, type IdeaComment, type Reviewer } from "../review/review-panel";
 import { HeaderIconButton } from "../../header-icon-button";
 import { SidePanel } from "./side-panel";
 
@@ -236,8 +236,9 @@ function CommentsPanel({
 	const backRef = React.useRef<HTMLButtonElement>(null);
 	const listFocus = React.useRef<string | undefined>(undefined);
 	const given = reviewers.filter((reviewer) => reviewer.status === "view").length;
-	const pinsBy = (department: string) => prototypeComments.filter((comment) => comment.author.role === department);
-	const ideaBy = (department: string) => ideaComments.filter((comment) => comment.author.role === department);
+	// What a reviewer wrote: by the person, not their team (a team has several reviewers).
+	const pinsBy = (name: string) => prototypeComments.filter((comment) => comment.author.name === name);
+	const ideaBy = (name: string) => ideaComments.filter((comment) => comment.author.name === name);
 	const [filters, setFilters] = React.useState(defaultCommentFilters);
 	const newestIdea = [...ideaComments].reverse().filter((comment) => showsComment(filters, comment, "idea"));
 	const openPins = [...prototypeComments].reverse().filter((comment) => !comment.resolved && showsComment(filters, comment, "prototype"));
@@ -268,21 +269,23 @@ function CommentsPanel({
 			bodyClassName='gap-6'
 		>
 			{open ? (
-				<article aria-label={`${open.department}'s comment`} className='flex flex-col gap-4'>
+				<article aria-label={`${open.name}'s comment`} className='flex flex-col gap-4'>
 					<Button ref={backRef} variant='link' className='h-auto w-fit gap-1 p-0 font-semibold text-link' onClick={backToList}>
 						<ChevronLeft aria-hidden />
 						All comments
 					</Button>
 					<div className='flex flex-col gap-1'>
-						<div className='flex flex-wrap items-center gap-2'>
-							<h3 className='text-base font-semibold text-foreground'>{open.department}</h3>
-							{open.status === "view" && open.view ? (
-								<Badge variant='flat' tone={viewTone[open.view]} size='xxs'>
-									{open.view}
-								</Badge>
-							) : null}
+						{/* The name, and their team right under it, no gap, as in Share's lists. */}
+						<div>
+							<h3 className='text-base font-semibold text-foreground'>{open.name}</h3>
+							<p className='text-xs text-muted-foreground'>
+								{open.department} · Evaluates {open.evaluates}
+							</p>
 						</div>
-						<p className='text-xs text-muted-foreground'>Evaluates {open.evaluates}</p>
+						{/* Where they stand, under their team, 6px below it, as in the list. */}
+						<span className='flex pt-0.5'>
+							<ReviewerStatus reviewer={open} size='xs' />
+						</span>
 					</div>
 					{open.comment ? <p className='text-sm text-foreground'>{open.comment}</p> : null}
 					{open.status === "view" && open.why && open.why !== open.comment ? (
@@ -293,13 +296,13 @@ function CommentsPanel({
 					) : null}
 						{open.status === "commented" ? <p className='text-xs text-muted-foreground'>Their view on whether it should advance is still to come.</p> : null}
 						{/* What they said on parts of the idea: each opens its part in Review. */}
-						{ideaBy(open.department).length ? (
+						{ideaBy(open.name).length ? (
 							<section aria-labelledby='comments-their-parts' className='flex flex-col gap-1 border-t border-border pt-4'>
 								<h4 id='comments-their-parts' className='pb-1 text-sm font-semibold text-foreground'>
 									On the idea
 								</h4>
 								<ul className='flex flex-col gap-0.5'>
-									{ideaBy(open.department).map((comment) => (
+									{ideaBy(open.name).map((comment) => (
 										<li key={comment.id}>
 											<IdeaCommentRow comment={comment} onOpen={onOpenIdeaComment} />
 										</li>
@@ -308,13 +311,13 @@ function CommentsPanel({
 							</section>
 						) : null}
 						{/* What they pinned on the prototype: each opens its thread there. */}
-						{pinsBy(open.department).length ? (
+						{pinsBy(open.name).length ? (
 							<section aria-labelledby='comments-their-pins' className='flex flex-col gap-1 border-t border-border pt-4'>
 								<h4 id='comments-their-pins' className='pb-1 text-sm font-semibold text-foreground'>
 									On the prototype
 								</h4>
 								<ul className='flex flex-col gap-0.5'>
-									{pinsBy(open.department).map((comment) => (
+									{pinsBy(open.name).map((comment) => (
 										<li key={comment.id}>
 											<PrototypeCommentRow comment={comment} unread={unread.includes(comment.id)} onOpen={onOpenPrototypeComment} />
 										</li>
@@ -350,8 +353,8 @@ function CommentsPanel({
 									onOpen={openComment}
 									notes={Object.fromEntries(
 										reviewers.map((reviewer) => {
-											const onIdea = ideaBy(reviewer.department).length;
-											const onPrototype = pinsBy(reviewer.department).filter((comment) => !comment.resolved).length;
+											const onIdea = ideaBy(reviewer.name).length;
+											const onPrototype = pinsBy(reviewer.name).filter((comment) => !comment.resolved).length;
 											const lines = [
 												onIdea ? `${onIdea} ${onIdea === 1 ? "comment" : "comments"} on the idea` : "",
 												onPrototype ? `${onPrototype} open on the prototype` : "",

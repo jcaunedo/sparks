@@ -23,6 +23,10 @@ const buttonVariants = cva(
 				// Disabled: the muted fill and subtle text (Figma: Sparks "Publish your idea", "Publish & invite"), not faded to 50%.
 				neutral:
 					"bg-neutral text-neutral-foreground hover:bg-[color-mix(in_srgb,var(--neutral)_80%,white)] disabled:bg-neutral-muted disabled:text-foreground-subtle disabled:opacity-100",
+				// sparks.ds Style=Flat (38:324): the light neutral fill (colors/tone/neutral/subtle) and the dark neutral text
+				// (colors/tone/neutral/neutral). Hover: colors/tone/neutral/muted. Disabled: colors/states/disabled with
+				// foreground-subtle text (38:367), not faded. E.g. Sparks's "Published" in the header.
+				flat: "bg-neutral-subtle text-neutral hover:bg-neutral-muted disabled:bg-disabled disabled:text-foreground-subtle disabled:opacity-100",
 				secondary:
 					"bg-secondary text-secondary-foreground hover:bg-secondary/80",
 				// sparks.ds Style=Ghost, Tone=Neutral. Hover: the hover fill (colors/states/hover, `accent`).

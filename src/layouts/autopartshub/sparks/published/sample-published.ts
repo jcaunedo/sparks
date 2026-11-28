@@ -24,13 +24,23 @@ import type { IdeaComment } from "../review/review-panel";
 
 /*
  * The published idea, as a reviewer from Engineering opens it (prds/sparks-review.md, "What reviewers see and do"):
- * "Wrong-part returns", version 3 of "Fit check before you buy", with the other teams' first comments. Everything here
+ * "Wrong-part returns", version 3 of "Fit check before you buy", with his first comments (and the other teams', which he doesn't see). Everything here
  * is made up.
  */
 
 /** The reviewer signed in: Marcus, from Engineering. */
-export const samplePublishedUser: AutoPartsHubUser = { firstName: "Marcus" };
-export const samplePublishedReviewer: PrototypeCommentAuthor = sampleReviewerPeople.eng;
+export const samplePublishedUser: AutoPartsHubUser = { firstName: "Marcus", lastName: "Lee", avatarSrc: samplePersonPhoto("Marcus Lee") };
+export const samplePublishedReviewer: PrototypeCommentAuthor = sampleReviewerPeople.marcus;
+
+/**
+ * Everyone asked to review "Fit check before you buy" (its five reviewers), each as the header shows them (`user`) and as
+ * their comments do (`reviewer`): the Default story opens as the next one each time it loads, so the demo shows that each
+ * reviewer sees only their own comments.
+ */
+export const samplePublishedReviewers: { user: AutoPartsHubUser; reviewer: PrototypeCommentAuthor }[] = reviewProfileFor("fit-check").reviewers.map((r) => {
+	const [firstName, ...rest] = r.name.split(" ");
+	return { user: { firstName, lastName: rest.join(" "), avatarSrc: samplePersonPhoto(r.name) }, reviewer: sampleReviewerPeople[r.id] };
+});
 
 /** Who published it. */
 export const samplePublishedBy = "Dana Morales";
@@ -63,19 +73,24 @@ export const samplePublishedConcept: ConceptForReview = sampleConceptForReview({
 
 const hoursAgo = (hours: number) => new Date(Date.now() - hours * 60 * 60 * 1000).toISOString();
 
-/** What the other teams have pinned on the prototype so far; Dana has answered the UX team. */
+/**
+ * Every comment pinned on the prototype so far: Marcus's own, which Dana has answered, and the other teams'. While it's
+ * in review he sees only his own (`PublishedIdea` filters them); the others are here to show that.
+ */
 export const samplePublishedPrototypeComments: PrototypeComment[] = [
 	{
-		...sampleReviewerPin("ux")!,
+		...sampleReviewerPin("marcus")!,
 		createdAt: hoursAgo(1.5),
-		replies: [{ id: "reply-dana-ux", text: "Good point. I'll try that heading in the next version.", createdAt: hoursAgo(1), author: dana }],
+		replies: [{ id: "reply-dana-marcus", text: "Thanks. I'll check the invoice reading with your team before the next version.", createdAt: hoursAgo(1), author: dana }],
 	},
-	{ ...sampleReviewerPin("catalog")!, createdAt: hoursAgo(0.5) },
+	{ ...sampleReviewerPin("priya")!, createdAt: hoursAgo(1.25) },
+	{ ...sampleReviewerPin("ana")!, createdAt: hoursAgo(0.5) },
 ];
 
-/** What the other teams have said on parts of the idea so far. */
+/** Every comment on parts of the idea so far: Marcus's own and the catalog team's (which he doesn't see). */
 export const samplePublishedIdeaComments: IdeaComment[] = [
-	{ ...sampleReviewerIdeaComment("catalog")!, createdAt: hoursAgo(0.75) },
+	{ ...sampleReviewerIdeaComment("marcus")!, createdAt: hoursAgo(1.1) },
+	{ ...sampleReviewerIdeaComment("ana")!, createdAt: hoursAgo(0.75) },
 ];
 
 /*
@@ -85,7 +100,7 @@ export const samplePublishedIdeaComments: IdeaComment[] = [
  */
 
 /** Jordan, from Dana's product team, who builds it. */
-export const sampleAdvancedUser: AutoPartsHubUser = { firstName: "Jordan", avatarSrc: samplePersonPhoto("Jordan Lee") };
+export const sampleAdvancedUser: AutoPartsHubUser = { firstName: "Jordan", lastName: "Lee", avatarSrc: samplePersonPhoto("Jordan Lee") };
 export const sampleAdvancedReader: PrototypeCommentAuthor = sampleTeamMember;
 
 export const sampleAdvancedVersion = 4;

@@ -2,6 +2,8 @@ import type { FitCheckChanges } from "../prototype/fit-check-prototype";
 import { directionPrototypes } from "../prototype/direction-prototypes";
 import type { Evaluation } from "../validate/validate-panel";
 import type { ConceptForReview, Reviewer } from "./review-panel";
+import { samplePersonPhoto } from "../../sample-data/sample-people";
+import { sampleShareMemberFor } from "../shared/sample-share";
 
 /*
  * Review, direction by direction (prds/sparks-review.md): what differs with the direction Dana chose. The user stories,
@@ -19,10 +21,10 @@ export type ReviewProfile = {
 	stories: (changes: FitCheckChanges) => ConceptForReview["stories"];
 	/** What's pretend and the sample data, after the version line. */
 	prototype: (changes: FitCheckChanges) => string[];
+	/** The 5 people asked to review it, in the order their views come in (the demo), each with their team. */
 	reviewers: Reviewer[];
+	/** Each person's view once they've given it, by their id, for the prototype as it stands. */
 	views: (changes: FitCheckChanges) => Record<string, Pick<Reviewer, "view" | "why">>;
-	/** "All four teams would advance it…": the reviews in one sentence. */
-	verdict: (changes: FitCheckChanges) => string;
 	/** The reviews, grouped by topic. */
 	topics: (changes: FitCheckChanges) => string[];
 	/** The prototype change Sparks proposes after the reviews, if any. */
@@ -62,13 +64,21 @@ const rangeOf = (evaluation: Evaluation) =>
 		.replace(/ fewer.*$/, "")
 		.trim();
 
-const ux = (evaluates = "the experience, the design notes and what to test with real people"): Reviewer => ({
-	id: "ux",
-	department: "UX team",
+/** Someone asked to review it (people from the Share directory, `shared/sample-share.ts`), with their team and what it evaluates. */
+const person = (id: string, name: string, department: string, evaluates: string): Reviewer => ({
+	id,
+	name,
+	avatarSrc: samplePersonPhoto(name),
+	// As Share lists them, from the same directory.
+	subtitle: sampleShareMemberFor(name).detail,
+	department,
 	evaluates,
 	status: "invited",
 });
-const eng: Reviewer = { id: "eng", department: "Engineering", evaluates: "whether it can be built as described, what's missing and the effort", status: "invited" };
+const uxEvaluates = "the experience, the design notes and what to test with real people";
+const engEvaluates = "whether it can be built as described, what's missing and the effort";
+const ux = (id: string, name: string, evaluates = uxEvaluates) => person(id, name, "UX team", evaluates);
+const eng = (id: string, name: string) => person(id, name, "Engineering", engEvaluates);
 
 const fitCheck: ReviewProfile = {
 	stories: (changes) => {
@@ -93,22 +103,34 @@ const fitCheck: ReviewProfile = {
 		];
 	},
 	prototype: (changes) => prototypeLines("fit-check", changes),
-	// The UX team, engineering and the catalog team (the fit data it depends on). Not stores.
-	reviewers: [ux(), eng, { id: "catalog", department: "Catalog team", evaluates: "the fit data it depends on", status: "invited" }],
+	// The UX team, engineering and the catalog team (the fit data it depends on). Not stores. In this order, after three
+	// views: 2 support, 1 doesn't; all in: 3 and 2.
+	reviewers: [
+		ux("priya", "Priya Shah"),
+		person("lucas-ferreira", "Lucas Ferreira", "Catalog team", "the fit data it depends on"),
+		eng("marcus", "Marcus Lee"),
+		person("ana", "Ana Silva", "Catalog team", "the fit data it depends on"),
+		eng("nina-kowalski", "Nina Kowalski"),
+	],
 	views: (changes) => ({
-		ux: changes.fitAbovePrice
+		priya: changes.fitAbovePrice
 			? { view: "Advance", why: "The fit message is easy to see now. Test it with customers before building." }
 			: { view: "Advance with changes", why: "Move the fit message above the price: customers in a hurry miss it." },
-		eng: { view: "Advance", why: "Saved vehicles are there; reading VINs and invoices is new. About 6 weeks for the web team, after the holiday freeze." },
-		catalog: { view: "Advance with changes", why: "We can fill the fit data gaps for older vehicles, but we need a date and someone to own it." },
+		"lucas-ferreira": {
+			view: "Don't advance yet",
+			why: "About 1 in 8 parts have no fit data for vehicles over 15 years old. Customers would see \"We're not sure\" too often until we fill it.",
+		},
+		marcus: { view: "Advance", why: "Saved vehicles are there; reading VINs and invoices is new. About 6 weeks for the web team, after the holiday freeze." },
+		ana: { view: "Advance with changes", why: "We can fill the fit data gaps for older vehicles, but we need a date and someone to own it." },
+		"nina-kowalski": { view: "Don't advance yet", why: "Reading invoices isn't proven. I'd try it on real invoices before we commit to it." },
 	}),
-	verdict: (changes) => `All three teams would advance it, ${changes.fitAbovePrice ? "one" : "two"} of them with changes.`,
 	topics: (changes) => [
 		changes.fitAbovePrice
 			? "**The fit message:** everyone's fine with it as it is; the UX team wants it tested with customers before the build."
 			: "**The fit message:** the UX team wants it above the price, so customers in a hurry see it.",
 		"**Building it:** engineering confirms saved vehicles, and gives about 6 weeks for the web team, after the holiday freeze.",
-		"**Fit data:** the catalog team can fill the gaps for older vehicles, but needs a date and an owner.",
+		"**Fit data:** the catalog team can fill the gaps for older vehicles, but needs a date and an owner; Lucas Ferreira wouldn't advance it until they're filled.",
+		"**Reading invoices:** Nina Kowalski, in engineering, wants it tried on real invoices first.",
 	],
 	prototypeChange: (changes) =>
 		changes.fitAbovePrice
@@ -136,7 +158,7 @@ const fitCheck: ReviewProfile = {
 		why: 'From the prototype: its "We\'re not sure this fits" message says the fit data doesn\'t cover the vehicle\'s trim and engine.',
 	},
 	recommendation: (evaluation) =>
-		`I'd recommend advancing, with real-user testing first. The simulation and business data support the hypothesis: "doesn't fit" returns are likely to drop ${rangeOf(evaluation)}, against a target of 25%. That's based on simulated scenarios, so the UX team's test of the fit message with real customers should come before the build. All three reviewing teams support it.`,
+		`I'd recommend advancing, with real-user testing first. The simulation and business data support the hypothesis: "doesn't fit" returns are likely to drop ${rangeOf(evaluation)}, against a target of 25%. That's based on simulated scenarios, so the UX team's test of the fit message with real customers should come before the build. 3 of the 5 reviewers support it; the other 2 want the fit data and invoice reading checked first.`,
 	decision: () => ({
 		kind: "advance",
 		reason: "Advance. The case is clear and honest about what's still simulated. Test the fit message with customers first, as recommended.",
@@ -163,20 +185,21 @@ const flagReturns: ReviewProfile = {
 	],
 	prototype: (changes) => prototypeLines("flag-returns", changes),
 	reviewers: [
-		ux("the experience, how the flag reads, and what to test with real people"),
-		eng,
-		{ id: "stores", department: "Stores", evaluates: "calls about flagged parts", status: "invited" },
-		{ id: "returns", department: "Returns team", evaluates: "the return counts behind the flag", status: "invited" },
+		ux("priya", "Priya Shah", "the experience, how the flag reads, and what to test with real people"),
+		eng("marcus", "Marcus Lee"),
+		person("tom", "Tom Becker", "Stores", "calls about flagged parts"),
+		person("kayla-johnson", "Kayla Johnson", "Returns team", "the return counts behind the flag"),
+		person("ben-adler", "Ben Adler", "Returns team", "the return counts behind the flag"),
 	],
 	views: (changes) => ({
-		ux: changes.flagReminder
+		priya: changes.flagReminder
 			? { view: "Don't advance yet", why: "The reminder reads better, but it still raises the fit question without answering it." }
 			: { view: "Don't advance yet", why: "The flag can read as \"this part is bad\". It raises the fit question without answering it." },
-		eng: { view: "Advance", why: "Return counts are there. About 2 weeks for the web team, before the holiday freeze." },
-		stores: { view: "Advance with changes", why: "We'll get calls asking why a part is flagged. We need a line to answer them with." },
-		returns: { view: "Advance with changes", why: 'Our counts mix return reasons. We can separate "doesn\'t fit", but it takes a month.' },
+		marcus: { view: "Advance", why: "Return counts are there. About 2 weeks for the web team, before the holiday freeze." },
+		tom: { view: "Advance with changes", why: "We'll get calls asking why a part is flagged. We need a line to answer them with." },
+		"kayla-johnson": { view: "Advance with changes", why: 'Our counts mix return reasons. We can separate "doesn\'t fit", but it takes a month.' },
+		"ben-adler": { view: "Don't advance yet", why: "Until the counts are split by reason, the flag will mark the wrong parts." },
 	}),
-	verdict: () => "The teams are split: engineering would advance it, stores and the returns team only with changes, and the UX team not yet.",
 	topics: (changes) => [
 		changes.flagReminder
 			? "**The flag:** the UX team says the reminder reads better but still doesn't answer whether a part fits; stores expect calls about it."
@@ -230,20 +253,21 @@ const checkoutCheck: ReviewProfile = {
 	],
 	prototype: (changes) => prototypeLines("checkout-check", changes),
 	reviewers: [
-		ux(),
-		eng,
-		{ id: "stores", department: "Stores", evaluates: "orders with swapped parts and fit calls after buying", status: "invited" },
-		{ id: "catalog", department: "Catalog team", evaluates: "the fit data it depends on", status: "invited" },
+		ux("priya", "Priya Shah"),
+		eng("marcus", "Marcus Lee"),
+		person("tom", "Tom Becker", "Stores", "orders with swapped parts and fit calls after buying"),
+		person("ana", "Ana Silva", "Catalog team", "the fit data it depends on"),
+		person("grace-okafor", "Grace Okafor", "Stores", "orders with swapped parts and fit calls after buying"),
 	],
 	views: (changes) => ({
-		ux: changes.cartCheck
+		priya: changes.cartCheck
 			? { view: "Advance", why: "Checked in the cart, checkout has no surprises. Test it with customers before building." }
 			: { view: "Advance with changes", why: "Check the fit as parts go in the cart, so checkout has no surprises." },
-		eng: { view: "Advance", why: "Saved vehicles are there, and checkout isn't frozen. About 4 weeks for the web team, before January." },
-		stores: { view: "Advance", why: "Seeing the swap on the order helps us explain it." },
-		catalog: { view: "Advance with changes", why: "Gaps in fit data show up at checkout now. We need a date and an owner to fill them." },
+		marcus: { view: "Advance", why: "Saved vehicles are there, and checkout isn't frozen. About 4 weeks for the web team, before January." },
+		tom: { view: "Advance", why: "Seeing the swap on the order helps us explain it." },
+		ana: { view: "Advance with changes", why: "Gaps in fit data show up at checkout now. We need a date and an owner to fill them." },
+		"grace-okafor": { view: "Don't advance yet", why: "Swaps at checkout will mean more calls to stores until the fit data is better." },
 	}),
-	verdict: (changes) => `All four teams would advance it, ${changes.cartCheck ? "one" : "two"} of them with changes.`,
 	topics: (changes) => [
 		changes.cartCheck
 			? "**The warning:** with the fit checked in the cart, everyone's fine with it; the UX team wants it tested with customers before the build."
@@ -273,7 +297,7 @@ const checkoutCheck: ReviewProfile = {
 			evaluation.findings.some((f) => f.id === "checkout-late" && f.status === "fixed")
 				? "With the fit checked in the cart, no one gave up the order in the scenarios, but that's simulated, so a live test with a share of orders should confirm online sales hold before it goes to everyone."
 				: "But the simulation suggests some customers give up the order at the warning, so a live test with a share of orders should show what happens to online sales before it goes to everyone."
-		} All four reviewing teams support it.`,
+		} 4 of the 5 reviewers support it.`,
 	decision: () => ({
 		kind: "advance",
 		reason: "Advance, with the live test first. If online sales drop, we stop and look again at checking the fit earlier.",
@@ -311,25 +335,23 @@ const fitData: ReviewProfile = {
 	],
 	prototype: (changes) => prototypeLines("fit-data", changes),
 	reviewers: [
-		ux("the counter screen, the weekly list, and what to test with real people"),
-		eng,
-		{ id: "stores", department: "Stores", evaluates: "what changes at the counter", status: "invited" },
-		{ id: "catalog", department: "Catalog team", evaluates: "the weekly routine and the supplier feed", status: "invited" },
+		ux("priya", "Priya Shah", "the counter screen, the weekly list, and what to test with real people"),
+		eng("marcus", "Marcus Lee"),
+		person("tom", "Tom Becker", "Stores", "what changes at the counter"),
+		person("ana", "Ana Silva", "Catalog team", "the weekly routine and the supplier feed"),
+		person("aaron-price", "Aaron Price", "Catalog team", "the weekly routine and the supplier feed"),
 	],
 	views: (changes) => ({
-		ux: changes.counterPrefill
+		priya: changes.counterPrefill
 			? { view: "Advance", why: "One tap at the counter is right. Try it in two stores before rolling it out." }
 			: { view: "Advance with changes", why: "Fill the vehicle in from the customer's account, so it's one tap at the counter." },
-		eng: { view: "Advance", why: "Return reasons are there; the vehicle field is new. About 3 weeks, plus the catalog team's time." },
-		stores: changes.counterPrefill
+		marcus: { view: "Advance", why: "Return reasons are there; the vehicle field is new. About 3 weeks, plus the catalog team's time." },
+		tom: changes.counterPrefill
 			? { view: "Advance", why: "One tap we can do, even on a busy Saturday." }
 			: { view: "Don't advance yet", why: "On a busy Saturday, 20 more seconds per return is too much. We'd skip it." },
-		catalog: { view: "Advance with changes", why: "We can do a weekly list, but fixes only reach customers with the monthly supplier feed." },
+		ana: { view: "Advance with changes", why: "We can do a weekly list, but fixes only reach customers with the monthly supplier feed." },
+		"aaron-price": { view: "Don't advance yet", why: "Without a weekly supplier feed, the fixes come too late to matter." },
 	}),
-	verdict: (changes) =>
-		changes.counterPrefill
-			? "All four teams would advance it, one of them with changes."
-			: "The teams are split: engineering would advance it, the UX team and the catalog team only with changes, and stores not yet.",
 	topics: (changes) => [
 		changes.counterPrefill
 			? "**At the counter:** with the vehicle filled in from the account, stores say one tap works even on busy days."

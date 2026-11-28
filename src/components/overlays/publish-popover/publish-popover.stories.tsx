@@ -50,7 +50,13 @@ type Story = StoryObj<typeof meta>;
 
 /** Figma "With team members": who it goes to, and "Manage reviewers". */
 export const WithReviewers: Story = {
-	args: { audience: { title: "Your idea will be shared with 3 team members.", action: { label: "Manage reviewers", onClick: () => {} } } },
+	args: {
+		audience: {
+			title: "Your idea will be shared with 3 team members.",
+			detail: "Departments: Leadership, UX team, and Sales team",
+			action: { label: "Manage reviewers", onClick: () => {} },
+		},
+	},
 };
 
 /** Figma "No team members": no one to send it to yet, so the publish button can't be selected. */
@@ -64,7 +70,30 @@ export const NoReviewers: Story = {
 	},
 };
 
-/** Both Figma variants, side by side. */
+/**
+ * Figma "Published" (138:2887): once it's out, from the header's "Published" (a Flat button): when, where, what was
+ * shared and who it went to, with no buttons at the bottom.
+ */
+export const Published: Story = {
+	args: {
+		variant: "published",
+		title: "Your idea is published",
+		publishedAt: "Fri, Nov 27, 2026, 4:43 PM",
+		description: undefined,
+		itemsLabel: "Idea solution paths shared",
+		next: undefined,
+		note: undefined,
+		preview: undefined,
+		audience: {
+			title: "Your idea was shared with 3 team members.",
+			detail: "Departments: Leadership, UX team, and Sales team",
+			action: { label: "Manage reviewers", onClick: () => {} },
+		},
+		children: <Button variant='flat'>Published</Button>,
+	},
+};
+
+/** The three Figma variants, side by side. */
 export const AllVariants: Story = {
 	decorators: [
 		() => (
@@ -74,6 +103,9 @@ export const AllVariants: Story = {
 				</div>
 				<div className='h-[560px]'>
 					<PublishPopover {...meta.args} {...NoReviewers.args} />
+				</div>
+				<div className='h-[560px]'>
+					<PublishPopover {...meta.args} {...Published.args} />
 				</div>
 			</div>
 		),

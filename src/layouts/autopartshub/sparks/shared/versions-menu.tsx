@@ -199,4 +199,4 @@ function VersionsMenu({
 	);
 }
 
-export { VersionsMenu, type VersionsMenuProps };
+export { publishedFormat, VersionsMenu, type VersionsMenuProps };

@@ -7,7 +7,7 @@ import { ideaCommentAt, type ConceptForReview, type IdeaComment, type Reviewer }
 import type { ReadyCheck } from "./review-next";
 import type { InvitationEmailProps } from "../invitation-email/invitation-email";
 import type { CommentScope, PrototypeComment, PrototypeCommentAuthor } from "../prototype/prototype-comments";
-import { reviewProfileFor, type ReviewDecision } from "./sample-review-directions";
+import { reviewProfileFor, reviewProfiles, type ReviewDecision } from "./sample-review-directions";
 import { samplePersonPhoto } from "../../sample-data/sample-people";
 
 /** Sources as the evidence names them, each once: "from " dropped, "a and b" split. */
@@ -173,10 +173,38 @@ export function sampleReadyToBuild(concept: ConceptForReview, changes: FitCheckC
 	];
 }
 
-/** The departments Sparks suggests: the UX team and engineering always, plus those the concept changes. Never people. */
+/**
+ * The people Sparks suggests (5), from the UX team and engineering always, plus the teams the concept changes, each with
+ * their team, in the order their views come in (the demo).
+ */
 export const sampleReviewersFor = (directionId?: string): Reviewer[] => reviewProfileFor(directionId).reviewers.map((r) => ({ ...r }));
 
-/** Each department's view once it's done, for the prototype as it stands. */
+/**
+ * Someone she added with "Share" as a reviewer: one of the people Sparks suggests (with their part in the demo), or
+ * anyone else, invited, evaluating what someone from their team evaluates. In the demo, only the suggested people answer.
+ */
+export const sampleReviewerFor = (
+	who: { name: string; subtitle?: string; avatarSrc?: string; department: string },
+	directionId?: string,
+): Reviewer => {
+	const suggested = reviewProfileFor(directionId).reviewers.find((r) => r.name === who.name);
+	if (suggested) return { ...suggested };
+	const sameTeam = (r: Reviewer) => r.department.replace(/ team$/, "") === who.department.replace(/ team$/, "");
+	const teammate = Object.values(reviewProfiles)
+		.flatMap((profile) => profile.reviewers)
+		.find(sameTeam);
+	return {
+		id: `invitee-${who.name.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`,
+		name: who.name,
+		avatarSrc: who.avatarSrc,
+		subtitle: who.subtitle,
+		department: who.department,
+		evaluates: teammate?.evaluates ?? "the idea and its prototype",
+		status: "invited",
+	};
+};
+
+/** Each person's view once they've given it, by their id, for the prototype as it stands. */
 export const sampleReviewerViews = (changes: FitCheckChanges, directionId?: string) => reviewProfileFor(directionId).views(changes);
 
 /** A department as it reads in a sentence: "the UX team", "engineering". */
@@ -185,26 +213,25 @@ const inSentence = (department: string) =>
 
 /** "the UX team, engineering, stores and the catalog team". */
 export const sampleDepartmentsInWords = (directionId?: string) => {
-	const names = reviewProfileFor(directionId).reviewers.map((r) => inSentence(r.department));
+	const names = [...new Set(reviewProfileFor(directionId).reviewers.map((r) => r.department))].map(inSentence);
 	return `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}`;
 };
 
 /** The reviewers' next status, one step at a time, in the demo. */
 export const sampleReviewStepMs = 700;
 
-/** Who comments for each team (made-up people): their name and team on what they pin on the prototype. */
-export const sampleReviewerPeople: Record<string, PrototypeCommentAuthor> = {
-	ux: { name: "Priya Shah", role: "UX team", avatarSrc: samplePersonPhoto("Priya Shah") },
-	eng: { name: "Marcus Lee", role: "Engineering", avatarSrc: samplePersonPhoto("Marcus Lee") },
-	stores: { name: "Tom Becker", role: "Stores", avatarSrc: samplePersonPhoto("Tom Becker") },
-	catalog: { name: "Ana Silva", role: "Catalog team", avatarSrc: samplePersonPhoto("Ana Silva") },
-};
+/** Every reviewer as the author of what they write (name, team, photo), by their id, across the directions. */
+export const sampleReviewerPeople: Record<string, PrototypeCommentAuthor> = Object.fromEntries(
+	Object.values(reviewProfiles)
+		.flatMap((profile) => profile.reviewers)
+		.map((r) => [r.id, { name: r.name, role: r.department, avatarSrc: samplePersonPhoto(r.name) }]),
+);
 
 const onPhone: CommentScope = { key: "customer-phone", audience: "customer", audienceLabel: "Customer", device: "phone" };
 
-/** What each team pins on the "Fit check before you buy" prototype while it reviews, on the element it's about. */
+/** What each team's lead pins on the "Fit check before you buy" prototype while they review, on the element it's about, by reviewer id. */
 const fitCheckPins: Record<string, Omit<PrototypeComment, "id" | "createdAt" | "author">> = {
-	ux: {
+	priya: {
 		point: "vehicle-title",
 		fx: 0.85,
 		fy: 0.5,
@@ -213,7 +240,7 @@ const fitCheckPins: Record<string, Omit<PrototypeComment, "id" | "createdAt" | "
 		scope: onPhone,
 		text: "Lead with what they get: \"See which parts fit your car\" says why to add it.",
 	},
-	eng: {
+	marcus: {
 		point: "save-vehicle",
 		fx: 0.8,
 		fy: 0.5,
@@ -222,7 +249,7 @@ const fitCheckPins: Record<string, Omit<PrototypeComment, "id" | "createdAt" | "
 		scope: onPhone,
 		text: "Saved vehicles are already in accounts, so this can reuse them. Should it save the vehicle for guests too?",
 	},
-	stores: {
+	tom: {
 		point: "save-vehicle",
 		fx: 0.15,
 		fy: 0.5,
@@ -231,7 +258,7 @@ const fitCheckPins: Record<string, Omit<PrototypeComment, "id" | "createdAt" | "
 		scope: onPhone,
 		text: "When someone calls us about a part, can we see the vehicle they saved here?",
 	},
-	catalog: {
+	ana: {
 		point: "vehicle-hint",
 		fx: 0.8,
 		fy: 0.5,
@@ -242,11 +269,11 @@ const fitCheckPins: Record<string, Omit<PrototypeComment, "id" | "createdAt" | "
 	},
 };
 
-/** What each team says on a part of the "Fit check before you buy" idea while it reviews; "Unclear" flags the part. */
+/** What each team's lead says on a part of the "Fit check before you buy" idea while they review, by reviewer id; "Unclear" flags the part. */
 const fitCheckIdeaComments: Record<string, Pick<IdeaComment, "part" | "text" | "unclear"> & { fy?: number }> = {
-	ux: { part: "For the UX team to test with real people", text: "We can test the fit message with 5 customers in the first week of December." },
-	eng: { part: "What it needs to be built", text: "Saved vehicles are there. The fit check on every product page is the bulk of it: about 6 weeks for the web team." },
-	catalog: {
+	priya: { part: "For the UX team to test with real people", text: "We can test the fit message with 5 customers in the first week of December." },
+	marcus: { part: "What it needs to be built", text: "Saved vehicles are there. The fit check on every product page is the bulk of it: about 6 weeks for the web team." },
+	ana: {
 		part: "What it needs to be built",
 		text: "Who fills the fit data gaps for older vehicles, and by when? It isn't on our plan yet.",
 		unclear: true,
@@ -402,8 +429,18 @@ export function sampleReviewProposals(changes: FitCheckChanges, directionId?: st
 /** The reviews in one sentence, and by topic. */
 export const sampleReviewSummary = (changes: FitCheckChanges, directionId?: string) => {
 	const profile = reviewProfileFor(directionId);
-	return { verdict: profile.verdict(changes), topics: profile.topics(changes) };
+	return { verdict: verdictOf(Object.values(profile.views(changes))), topics: profile.topics(changes) };
 };
+
+/** The views in one sentence, counted, so it always matches the team assessment: "6 of the 8 reviewers would advance it…". */
+function verdictOf(views: Pick<Reviewer, "view">[]) {
+	const total = views.length;
+	const advance = views.filter((v) => v.view && v.view !== "Don't advance yet").length;
+	const withChanges = views.filter((v) => v.view === "Advance with changes").length;
+	const changes = withChanges ? `, ${withChanges} of them with changes` : "";
+	if (advance === total) return `All ${total} reviewers would advance it${changes}.`;
+	return `${advance} of the ${total} reviewers would advance it${changes}; ${total - advance} wouldn't yet.`;
+}
 
 /** What "Make the changes" does: the prototype change (if any), the open question, engineering's effort. */
 export const sampleReviewChanges = (changes: FitCheckChanges, directionId?: string) => {

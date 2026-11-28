@@ -1,6 +1,6 @@
 import * as React from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { CornerDownRight, Globe, Mail, SquarePen, Trash2, TriangleAlert } from "lucide-react";
+import { Clock, CornerDownRight, Globe, Mail, SquarePen, Trash2, TriangleAlert } from "lucide-react";
 
 import { Button } from "@/components/buttons/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/overlays/dialog";
@@ -26,6 +26,15 @@ type PublishPath = { name: string; version: React.ReactNode };
 type PublishItem = { name: string; version?: React.ReactNode; paths?: PublishPath[] };
 
 type PublishPopoverProps = {
+	/**
+	 * `publish` (default; sparks.ds "With team members", "No team members"): what she checks before it goes, with "Cancel"
+	 * and the publish button. `published` (sparks.ds "Published", 138:2887): what went out, once it has: the title
+	 * ("Your idea is published"), when (`publishedAt`) and where (`link`), what was shared and who it went to, with no
+	 * buttons at the bottom.
+	 */
+	variant?: "publish" | "published";
+	/** When it was published, after a 16px clock, above `link` (4px apart), sm medium. With `variant` `published`. */
+	publishedAt?: React.ReactNode;
 	/** The popover's title, e.g. "Publish your idea". */
 	title?: React.ReactNode;
 	/** Under the title (16px medium): what publishing does. */
@@ -42,12 +51,13 @@ type PublishPopoverProps = {
 	next?: React.ReactNode;
 	nextLabel?: React.ReactNode;
 	/**
-	 * Who it goes to, in a box: one semibold line ("Your idea will be shared with 3 team members.") and an outlined button
-	 * under it to change who ("Manage reviewers"), on the info colors (light blue). `tone` `warning`: no one yet, on the warning
-	 * colors, with a solid warning triangle before the line and the button full width ("Add reviewers to publish and
-	 * share your idea."). The button closes the popover first, without taking focus back to the trigger.
+	 * Who it goes to (sparks.ds 129:2258). `default`: no box: one semibold line ("Your idea will be shared with 3 team
+	 * members."), `detail` under it ("Departments: UX team, Engineering, and Catalog"), then a text link to change who
+	 * ("Manage reviewers", sm medium, the link color), 4px apart. `tone` `warning`: no one yet, in a box on the warning
+	 * colors, with a solid warning triangle before the line and an outlined button, full width ("Add reviewers to publish
+	 * and share your idea."). The action closes the popover first, without taking focus back to the trigger.
 	 */
-	audience?: { title: React.ReactNode; tone?: "default" | "warning"; action?: { label: string; onClick: () => void } };
+	audience?: { title: React.ReactNode; detail?: React.ReactNode; tone?: "default" | "warning"; action?: { label: string; onClick: () => void } };
 	/**
 	 * What reviewers get, shown in a dialog from a link ("View invite email"), over the popover, which stays open
 	 * behind it. `title` names the dialog for screen readers ("Invite email"); it isn't shown.
@@ -124,8 +134,13 @@ function PublishItems({ items, className, ...props }: React.ComponentProps<"ul">
 // "Add a note", "View invite email": text links in the foreground color with a 14px icon, underlined on hover.
 const inlineLink = "h-auto gap-2 p-0 text-sm font-medium text-foreground [&_svg]:size-3.5 [&_svg]:text-icon";
 
-/** Publish: what's shared, what happens next and who it goes to, with "Cancel" and the publish button. */
+/**
+ * Publish: what's shared, what happens next and who it goes to, with "Cancel" and the publish button; or, once it's
+ * published (`variant` `published`), what went out, when and to whom.
+ */
 function PublishPopover({
+	variant = "publish",
+	publishedAt,
 	title = "Publish",
 	description,
 	link,
@@ -152,6 +167,7 @@ function PublishPopover({
 		if (openProp === undefined) setOpenState(next);
 		onOpenChange?.(next);
 	};
+	const published = variant === "published";
 	const titleId = React.useId();
 	const itemsId = React.useId();
 	// The audience link leads somewhere else (e.g. Share): closing, focus doesn't go back to the trigger, or it would
@@ -195,24 +211,34 @@ function PublishPopover({
 				</Typography>
 				{/* Body: 20px on the sides, its parts 16px apart; scrolls if the window is short. 4px below, so the note field's focus
 				    ring isn't clipped by the scrolling (the actions take 4px less above, so it's still 8px + 8px to the buttons). */}
-				<div className='scrollbar-subtle flex min-h-0 flex-col gap-4 overflow-y-auto px-5 pb-1'>
+				{/* Published, there are no buttons below: 20px at the bottom instead. */}
+				<div className={cn("scrollbar-subtle flex min-h-0 flex-col gap-4 overflow-y-auto px-5", published ? "pb-5" : "pb-1")}>
 					{description ? <p className='text-base font-medium text-foreground'>{description}</p> : null}
-					{link ? (
-						<a
-							href={linkHref ?? link}
-							target='_blank'
-							rel='noreferrer'
-							// It opens in a new tab, and the popover closes behind it (focus doesn't go back to the trigger).
-							onClick={() => {
-								leaving.current = true;
-								setOpen(false);
-							}}
-							className='flex w-fit max-w-full items-center gap-1.5 rounded-sm text-sm font-medium text-link outline-none hover:underline focus-visible:ring-[3px] focus-visible:ring-ring/50'
-						>
-							<Globe aria-hidden className='size-4 shrink-0' />
-							<span className='truncate'>{link}</span>
-						</a>
-					) : null}
+					{/* Published: when, after a clock, then where, 4px apart (sparks.ds 138:3053). */}
+					<div className={cn("flex flex-col gap-1", !(published && publishedAt) && "contents")}>
+						{published && publishedAt ? (
+							<p className='flex items-center gap-1.5 text-sm font-medium text-foreground'>
+								<Clock aria-hidden className='size-4 shrink-0 text-icon' />
+								{publishedAt}
+							</p>
+						) : null}
+						{link ? (
+							<a
+								href={linkHref ?? link}
+								target='_blank'
+								rel='noreferrer'
+								// It opens in a new tab, and the popover closes behind it (focus doesn't go back to the trigger).
+								onClick={() => {
+									leaving.current = true;
+									setOpen(false);
+								}}
+								className='flex w-fit max-w-full items-center gap-1.5 rounded-sm text-sm font-medium text-link outline-none hover:underline focus-visible:ring-[3px] focus-visible:ring-ring/50'
+							>
+								<Globe aria-hidden className='size-4 shrink-0' />
+								<span className='truncate'>{link}</span>
+							</a>
+						) : null}
+					</div>
 					{items.length ? (
 						<div className='flex flex-col gap-2 text-sm text-foreground'>
 							<p id={itemsId} className='font-semibold'>
@@ -227,27 +253,18 @@ function PublishPopover({
 							<p>{next}</p>
 						</div>
 					) : null}
-					{audience ? (
-						// A box, 16px around and 16px corners, the line and the button 12px apart (Figma 81:987, 81:974).
-						<div
-							className={cn(
-								"flex flex-col items-start gap-3 rounded-2xl border p-4 text-sm",
-								audience.tone === "warning" ? "border-warning-muted bg-warning-subtle" : "border-info-muted bg-info-subtle",
-							)}
-						>
-							{audience.tone === "warning" ? (
-								<p className='flex items-center gap-2 font-semibold text-warning-emphasis'>
-									{/* sparks.ds "triangle-exclamation-point" Style=Solid, 20px, in the warning color, the "!" cut out. */}
-									<TriangleAlert aria-hidden className='size-5 shrink-0 fill-warning text-warning [&>path:not(:first-child)]:stroke-warning-subtle' />
-									{audience.title}
-								</p>
-							) : (
-								<p className='font-semibold text-foreground'>{audience.title}</p>
-							)}
+					{audience?.tone === "warning" ? (
+						// No one yet: a box, 16px around and 16px corners, the line and the button 12px apart (sparks.ds 129:2272).
+						<div className='flex flex-col items-start gap-3 rounded-2xl border border-warning-muted bg-warning-subtle p-4 text-sm'>
+							<p className='flex items-center gap-2 font-semibold text-warning-emphasis'>
+								{/* sparks.ds "triangle-exclamation-point" Style=Solid, 20px, in the warning color, the "!" cut out. */}
+								<TriangleAlert aria-hidden className='size-5 shrink-0 fill-warning text-warning [&>path:not(:first-child)]:stroke-warning-subtle' />
+								{audience.title}
+							</p>
 							{audience.action ? (
 								<Button
 									variant='outline'
-									className={cn(audience.tone === "warning" && "w-full")}
+									className='w-full'
 									onClick={() => {
 										leaving.current = true;
 										setOpen(false);
@@ -256,6 +273,33 @@ function PublishPopover({
 								>
 									{audience.action.label}
 								</Button>
+							) : null}
+						</div>
+					) : audience ? (
+						// Who it goes to, with no box (sparks.ds 136:2774): the line semibold, its detail under it, then the link, 4px
+						// apart, 8px more below.
+						<div className={cn("flex flex-col items-start gap-1 text-sm text-foreground", !published && "pb-2")}>
+							<p>
+								<span className='font-semibold'>{audience.title}</span>
+								{audience.detail ? (
+									<>
+										<br />
+										{audience.detail}
+									</>
+								) : null}
+							</p>
+							{audience.action ? (
+								<button
+									type='button'
+									onClick={() => {
+										leaving.current = true;
+										setOpen(false);
+										audience.action?.onClick();
+									}}
+									className='rounded-sm font-medium text-link outline-none hover:underline focus-visible:ring-[3px] focus-visible:ring-ring/50'
+								>
+									{audience.action.label}
+								</button>
 							) : null}
 						</div>
 					) : null}
@@ -323,22 +367,24 @@ function PublishPopover({
 						</div>
 					) : null}
 				</div>
-				{/* Actions: 8px above, 20px below and on the sides, on the right, 8px apart. */}
-				<div className='flex justify-end gap-2 px-5 pt-1 pb-5'>
-					<Button variant='outline' onClick={() => setOpen(false)}>
-						{cancelLabel}
-					</Button>
-					<Button
-						variant='neutral'
-						disabled={blocked}
-						onClick={() => {
-							setOpen(false);
-							onPublish?.();
-						}}
-					>
-						{publishLabel}
-					</Button>
-				</div>
+				{/* Actions: 8px above, 20px below and on the sides, on the right, 8px apart. None once it's published. */}
+				{published ? null : (
+					<div className='flex justify-end gap-2 px-5 pt-1 pb-5'>
+						<Button variant='outline' onClick={() => setOpen(false)}>
+							{cancelLabel}
+						</Button>
+						<Button
+							variant='neutral'
+							disabled={blocked}
+							onClick={() => {
+								setOpen(false);
+								onPublish?.();
+							}}
+						>
+							{publishLabel}
+						</Button>
+					</div>
+				)}
 			</PopoverContent>
 		</Popover>
 		{/* Outside the popover's content, so opening it doesn't close the popover; closing it, focus goes back to the link. */}

@@ -1,5 +1,6 @@
 import type { SparksConceptSummary } from "../start-page/start-page";
 import type { SparksWorkspaceProps } from "../workspace/workspace";
+import { clearDemoSharedComments } from "./demo-shared-comments";
 
 /*
  * Prototype only (stories, never a screen): the concept Dana started from "New idea" in this tab, so it shows in "Your
@@ -11,8 +12,11 @@ import type { SparksWorkspaceProps } from "../workspace/workspace";
 type DemoConcept = {
 	/** Its row in "Your ideas". */
 	summary: SparksConceptSummary;
-	/** What reopening it gives the workspace: its name, step and conversation. */
-	workspace: Pick<SparksWorkspaceProps, "conceptName" | "currentStep" | "reachedStep" | "messages">;
+	/**
+	 * What reopening it gives the workspace: its name, Sparks's default name (so a name she gave it can still go back to
+	 * it, with "Use default name"), step and conversation.
+	 */
+	workspace: Pick<SparksWorkspaceProps, "conceptName" | "defaultConceptName" | "currentStep" | "reachedStep" | "messages">;
 };
 
 const key = "sparks:demo-concept";
@@ -86,7 +90,11 @@ function returnToIdeas() {
 /** For the start page as it opens, once: the concept she started, if she comes from an idea; otherwise the demo starts over. */
 function openDemoConcept(): DemoConcept | undefined {
 	try {
-		if (!sessionStorage.getItem(returningKey)) sessionStorage.removeItem(key);
+		if (!sessionStorage.getItem(returningKey)) {
+			sessionStorage.removeItem(key);
+			// The demo starts over: no comment from an earlier run carries over.
+			clearDemoSharedComments();
+		}
 		sessionStorage.removeItem(returningKey);
 		sessionStorage.removeItem(continuingKey);
 	} catch {

@@ -1,12 +1,13 @@
 import * as React from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 
-// Opened from Dana's Review panel ("See what the teams see"), it takes the version she published (`story-links` applies
+// Opened from Publish (the idea's address, the invitation's link), it takes the version she published (`story-links` applies
 // the args the opening tab left).
 import "../../../story-links";
 import { directionPrototypes, screenAudience } from "../prototype/direction-prototypes";
 import type { PrototypeComment } from "../prototype/prototype-comments";
 import { sampleFitCheck } from "../prototype/sample-fit-check";
+import { useDemoSharedComments } from "../shared/demo-shared-comments";
 import { sampleMentionable } from "../shared/sample-share";
 import type { IdeaComment } from "../review/review-panel";
 import { PublishedIdea, type PublishedIdeaProps, type ReviewerView } from "./published-idea";
@@ -26,6 +27,7 @@ import {
 	samplePublishedInvitation,
 	samplePublishedPrototypeComments,
 	samplePublishedReviewer,
+	samplePublishedReviewers,
 	samplePublishedUser,
 	samplePublishedVersion,
 	samplePublishedVersions,
@@ -38,6 +40,9 @@ function PublishedIdeaPrototype(props: Omit<PublishedIdeaProps, "onPrototypeComm
 	const [prototypeComments, setPrototypeComments] = React.useState<PrototypeComment[]>(props.prototypeComments);
 	const [ideaComments, setIdeaComments] = React.useState<IdeaComment[]>(props.ideaComments);
 	const [view, setView] = React.useState<ReviewerView | undefined>(props.view);
+	// What they comment shows on Dana's Review (the Workspace stories, in this tab or another), and her replies here.
+	useDemoSharedComments("prototype", prototypeComments, setPrototypeComments);
+	useDemoSharedComments("idea", ideaComments, setIdeaComments);
 	return (
 		<PublishedIdea
 			{...props}
@@ -49,6 +54,26 @@ function PublishedIdeaPrototype(props: Omit<PublishedIdeaProps, "onPrototypeComm
 			onViewChange={setView}
 		/>
 	);
+}
+
+/**
+ * The demo's reviewer for this page load: the next of `samplePublishedReviewers` each time the page loads (kept in the
+ * browser; at random without storage). Worked out once per load, so re-renders and story switches keep the same person.
+ */
+let thisLoadsReviewer: (typeof samplePublishedReviewers)[number] | undefined;
+function reviewerForThisLoad() {
+	if (thisLoadsReviewer) return thisLoadsReviewer;
+	const count = samplePublishedReviewers.length;
+	let index = Math.floor(Math.random() * count);
+	try {
+		const last = Number(window.localStorage.getItem("sparks-demo-published-reviewer"));
+		index = Number.isInteger(last) && last >= 0 ? (last + 1) % count : 0;
+		window.localStorage.setItem("sparks-demo-published-reviewer", String(index));
+	} catch {
+		// No storage (private window, blocked): the random one stands.
+	}
+	thisLoadsReviewer = samplePublishedReviewers[index];
+	return thisLoadsReviewer;
 }
 
 const meta = {
@@ -82,24 +107,31 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 /**
- * What a reviewer from Engineering sees from Dana's invitation: version 3 of the idea and its prototype, the other teams'
- * first comments, and their own view still to give. Not in Figma yet.
+ * What a reviewer sees from Dana's invitation: version 3 of the idea and its prototype, their own comments (the other
+ * teams' aren't shown), and their view still to give. Each time the page loads it's the next of the five reviewers
+ * (Priya, Lucas, Marcus, Ana, Nina), so the demo shows each one sees only their own. Not in Figma yet.
  */
-export const Default: Story = {};
+export const Default: Story = {
+	// A different reviewer each time the page loads: their name and photo, and only their comments.
+	render: (args) => {
+		const { user, reviewer } = reviewerForThisLoad();
+		return <PublishedIdeaPrototype {...args} user={user} reviewer={reviewer} />;
+	},
+};
 
 /** Their assessment sent: "Advance", with why; "Change your assessment" opens it again. */
 export const ViewSent: Story = {
 	args: { view: { view: "Advance", why: "Saved vehicles are there. About 6 weeks for the web team, after the holiday freeze." } },
 };
 
-/** No comments yet: the first reviewer to open it. */
+/** No comments yet: before they've added one. */
 export const NoComments: Story = { args: { prototypeComments: [], ideaComments: [] } };
 
 /**
  * Advanced and shared with Dana's product team (prds/sparks-review.md, "After the decision"): what Jordan, a developer,
  * opens. What to build first, next to the prototype (user stories and acceptance criteria, what it needs, what to track,
  * design notes, open questions), then why it's built this way. "Ready to build" shows Sparks's check, with what's still
- * open. "See what the teams see" in Dana's Review opens it once she's shared it.
+ * open.
  */
 export const Advanced: Story = {
 	args: {

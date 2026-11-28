@@ -88,8 +88,10 @@ type SharePopoverProps = {
 	recommended?: {
 		label?: string;
 		people: ShareSuggestion[];
-		/** Adding one; for a team, the people she unchecked in its popover first. */
+		/** Adding one; for a team, the people she unchecked in its popover first. "Add all" calls it for each one left. */
 		onAdd: (name: string, excluded: string[]) => void;
+		/** "Add all", on the right of `label`: adds every one not added yet. */
+		addAllLabel?: string;
 	};
 	/** The link to what's shared, for "Copy link". */
 	link: string;
@@ -348,10 +350,12 @@ const [value, setValue] = React.useState("");
 						<ExpandBlock key='recommended-section' className='-mt-2'>
 							<div className='flex flex-col gap-2 pt-2'>
 							<hr className='mt-2 border-border' />
+							{/* The toggle, and "Add all" on the right, 8px more above them than between the rows. */}
+							<div className='mt-2 flex items-center justify-between gap-3'>
 							<Button
 								variant='link'
-								// 8px more above it than between the rows; regular weight, as a link in the text.
-								className='mt-2 h-auto w-fit gap-1.5 p-0 font-normal text-link'
+								// Regular weight, as a link in the text.
+								className='h-auto w-fit gap-1.5 p-0 font-normal text-link'
 								aria-expanded={showRecommended}
 								aria-controls={recommendedId}
 								onClick={() => setShowRecommended((open) => !open)}
@@ -373,6 +377,18 @@ const [value, setValue] = React.useState("");
 									</AnimatePresence>
 								</span>
 							</Button>
+							{/* Every one left at once (each as its own circle-plus would); focus goes to the field, since this section closes. */}
+							<Button
+								variant='link'
+								className='h-auto shrink-0 p-0 font-medium text-link'
+								onClick={() => {
+									for (const reviewer of recommendedLeft) recommended?.onAdd(reviewer.name, pendingExcluded[reviewer.name] ?? []);
+									inputRef.current?.focus();
+								}}
+							>
+								{recommended?.addAllLabel ?? "Add all"}
+							</Button>
+							</div>
 							{/* Expand (MOTION.md): the list opens and closes in place, its height and the 8px above it together (the
 							    -8px takes back the column's gap, the 8px inside gives it back), so nothing jumps; clipped only while it
 							    moves. Reduced motion: at once. */}

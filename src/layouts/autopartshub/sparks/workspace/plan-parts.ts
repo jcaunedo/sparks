@@ -1,4 +1,4 @@
-import type { DirectionDraft } from "../plan/direction-card";
+import type { DirectionDraft, DirectionStatus } from "../plan/direction-card";
 import type { SparksMessage, SparksReplyPart } from "./workspace";
 
 /*
@@ -14,7 +14,13 @@ type PlanPartId = "problem" | "brief" | "success" | "chosen";
  * does (the story decides: before Plan is done it picks it; after, Sparks offers to build it as another path, or opens
  * the path when it's built).
  */
-type DirectionPaths = { built: string[]; active?: string; onRun: (direction: DirectionDraft) => void };
+type DirectionPaths = {
+	built: string[];
+	active?: string;
+	/** The paths sent to Review: their cards say "In Review". */
+	inReview?: string[];
+	onRun: (direction: DirectionDraft) => void;
+};
 
 /**
  * A direction's call to action on its card: "Generate prototype" (before Plan is done it picks the direction, and "What
@@ -31,6 +37,12 @@ function directionActionFor(messages: SparksMessage[], paths?: DirectionPaths) {
 	};
 }
 
+/** A direction's status under its name: "In Review" once its path is in Review, "Generated" once it's built. */
+function directionStatusFor(paths?: DirectionPaths) {
+	return (direction: DirectionDraft): DirectionStatus =>
+		paths?.inReview?.includes(direction.id) ? "in-review" : paths?.built.includes(direction.id) ? "generated" : "not-generated";
+}
+
 /** The latest part of a kind in the conversation (after a correction, the corrected one). */
 function latest<K extends SparksReplyPart["kind"]>(messages: SparksMessage[], kind: K) {
 	for (let i = messages.length - 1; i >= 0; i--) {
@@ -42,4 +54,4 @@ function latest<K extends SparksReplyPart["kind"]>(messages: SparksMessage[], ki
 	return undefined;
 }
 
-export { directionActionFor, type DirectionPaths, type PlanPartId };
+export { directionActionFor, directionStatusFor, type DirectionPaths, type PlanPartId };
