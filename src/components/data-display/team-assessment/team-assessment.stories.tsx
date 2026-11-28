@@ -1,5 +1,6 @@
 import * as React from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
+import { fn } from "storybook/test";
 
 import { TeamAssessment, type TeamAssessmentPerson } from "./team-assessment";
 
@@ -56,6 +57,9 @@ type Story = StoryObj<typeof meta>;
 export const Default: Story = {};
 
 /** Without `people`: the legend is just a legend. */
+/** Each person in a popover can be selected (`onPersonSelect`), e.g. to open their assessment in the full report. */
+export const SelectablePeople: Story = { args: { onPersonSelect: fn() } };
+
 export const WithoutPeople: Story = { args: { people: undefined } };
 
 /** Published, nothing in yet: the whole bar is pending. */

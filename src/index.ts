@@ -113,6 +113,7 @@ export {
 } from "@/components/chat/direction-card";
 export { PromptComposer, type PromptComposerProps } from "@/components/chat/prompt-composer";
 export { QuickReplies, type QuickRepliesProps } from "@/components/chat/quick-replies";
+export { ReplyOptions, type ReplyOption, type ReplyOptionsProps } from "@/components/chat/reply-options";
 export { SectionDivider, type SectionDividerProps } from "@/components/chat/section-divider";
 export { ThinkingIndicator, type ThinkingIndicatorProps } from "@/components/chat/thinking-indicator";
 export { UserMessage, type UserMessageProps } from "@/components/chat/user-message";

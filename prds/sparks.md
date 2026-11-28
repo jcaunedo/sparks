@@ -2,8 +2,8 @@
 Created: Nov 21, 2026
 Created by: Julio Caunedo
 Last updated: Nov 27, 2026
-Latest update: Share's recommended reviewers start closed each time Share opens, and "Add all" shows only while they're open.
-Recent updates: a step not reached yet shows an illustration above its explanation instead of an icon (hands drafting, hands on a board, a light bulb between laptops). While she edits the concept's name, "Use default name" comes as soon as what she types differs from Sparks's name.
+Latest update: a new idea joins "Your ideas" once it's named (Sparks names it from the problem she described, or she names it herself). Each row has a "…" menu (Open, Duplicate, Archive, Delete, which asks first). A concept reopened fades in at its top and glides to its end, in the middle of the view, nothing replaying. Why: an idea is worth listing once it has a name; she manages ideas from the list; reopening lands on the question waiting for her.
+Recent updates: an advanced concept can also be created in Jira, one way, each story linking back to it (sparks-review.md, "Creating it in Jira"). Share's recommended reviewers start closed each time Share opens, and "Add all" shows only while they're open.
 Scope: the Sparks app as a whole: how it's reached, the start page, the concept workspace (the conversation, cards and the plan), the four steps (Plan, Prototype, Evaluate, Review) and how a concept moves through them, evidence and decisions, sharing, the decision log, knowledge, and how the Sparks assistant behaves in every step.
 Purpose: defines the frame every Sparks step works inside, so each step's own PRD only has to define what's specific to that step.
 -->
@@ -113,9 +113,25 @@ What Dana sees, top to bottom:
 
 ~~1. Her concepts ("Your concepts"), most recently edited first, with a search button and "New idea" above the list.~~ ~~✅ **Resolved:** "Your ideas" holds her concepts. Each concept is a row: a preview of its prototype (a tile in one of the Sparks logo's colors until it has one), its name, one line on the problem, who can see it ("Only you", "You and 3 others"), when it was last edited ("2 hr ago", "Yesterday") and where it is. Where it is: the step it's on, "Waiting for a decision", "Advanced" or "Stopped" (the last three with their date, as in "Advanced · Nov 12"). Selecting a row opens the concept where she left off.~~
 
-✅ **Resolved:** a concept she starts from "New idea" joins "Your ideas" as soon as she has sent her first message, first in the list (most recently edited): its name (then the one Sparks gives it), her first message as its line, who can see it, created, Evaluate's result once it has one, and the step it's on (or "Waiting for a decision", "Advanced"). Selecting it opens it where she left it, with its conversation. ℹ️ In the Storybook prototype, ~~the demo concept is kept for the browser tab (closing the tab starts the demo over; starting another from "New idea" replaces it)~~ the list starts without it, and it shows once she has created it and goes back with "All ideas"; opening the start page any other way (from the home, or reloading it) starts the demo over, and starting another from "New idea" replaces it; its prototype versions, Evaluate runs and review progress aren't kept, only the step and the conversation.
+✅ **Resolved:** a concept she starts from "New idea" joins "Your ideas" ~~as soon as she has sent her first message~~ ~~as soon as it's created~~ once it's named: when Sparks names it from the problem she described, or she names it herself. While it's still "New idea", it isn't in the list; once in, it stays. First in the list (most recently edited): its name, her first message as its line ("No problem described yet.", muted, if she named it before describing it), who can see it, created, Evaluate's result once it has one, and the step it's on (or "Waiting for a decision", "Advanced"). Selecting it opens it where she left it, with its conversation. ℹ️ In the Storybook prototype, ~~the demo concept is kept for the browser tab (closing the tab starts the demo over; starting another from "New idea" replaces it)~~ the list starts without it, and it shows once she has created it and goes back with "All ideas"; opening the start page any other way (from the home, or reloading it) starts the demo over, and starting another from "New idea" replaces it; its prototype versions, Evaluate runs and review progress aren't kept, only the step and the conversation. Why (once named): an idea is worth listing once its problem is defined and it has a name to find it by; a list of "New idea" rows left empty would be clutter.
 
 ✅ **Resolved:** "Your ideas" holds her concepts. Each concept is a row: a preview of its prototype (a tile in one of the Sparks logo's colors until it has one), its name, one line on the problem, who can see it ("Only you", "You and 3 others"), when it was created ("2 hr ago", "Yesterday", "Nov 3, 2026"), Evaluate's last result and where it is. The list stays sorted by the last edit, most recent first. Evaluate's result: the share of scenarios that worked in the last finished run ("83%"), "Failed" when the last run failed ([sparks-validate.md](sparks-validate.md), "A run failed"), "Not run" before Evaluate has run. Where it is: the step it's on (on Review, "In review"), "Waiting for a decision", "Advanced" or "Stopped" (the last three with their date, as in "Advanced · Nov 12"). Selecting a row opens the concept where she left off.
+
+**Reopening it:** the conversation is as she left it: nothing streams or thinks again. It fades in at its top (Sparks's introduction), then glides down until its end (the latest question and its replies) sits in the middle of the view; any scroll, click or key stops it. Reduced motion: at its end at once.
+
+✅ **Resolved:** a concept reopened fades in at the top of its conversation, then glides to its end, in the middle of the view. Why: she sees what's there on the way down and lands on the question waiting for her, with room under it, instead of the conversation replaying or jumping.
+
+**"…" on each row** (on its right, subtle until the row is hovered, then the icon color; its name, "More actions", in a tooltip): Open, Duplicate, Archive, then, after a line, Delete, in the destructive color.
+
+- **Open:** opens it, as selecting the row does.
+- **Duplicate:** a copy, hers ("Only you"), named "{name} (copy)", first in "Your ideas".
+- **Archive:** moves it to Archive. In Archive, "Unarchive" moves it back to "Your ideas".
+- **Delete:** asks first: "Delete "{name}"?", "It's gone, with its conversation, prototype and evaluation. You can't undo this." (shared: "It's gone for you and everyone you shared it with, …"), with "Cancel" and "Delete". Then it's gone.
+- **Shared with you:** Open and Duplicate only: it isn't hers to archive or delete.
+
+✅ **Resolved:** each row has a "…" menu with Open, Duplicate, Archive and Delete. Why: managing her ideas from the list, without opening each one; Delete asks first, since it can't be undone.
+
+⚠️ **Gap:** in the demo, Duplicate, Archive and Delete last until the start page opens again. What a duplicate copies (the conversation, the prototype and its versions, the evaluation; not who it's shared with or the reviews) isn't decided.
 
 ✅ **Resolved:** once Review has put the idea together, the row shows where it stands, as the badge in its header does ("Where an idea stands"): "Ready to publish", "In review", then the decision's statuses. A draft still shows the step it's on.
 
@@ -695,7 +711,7 @@ Rules for every share:
 - **Viewers can ask Sparks about the concept** ("Why not 'Flag often-returned parts'?"). Sparks answers only from what was shared with them, never from Dana's private conversation or her personal knowledge.
 - **Notifications:** people get a notification in AutoPartsHUB and an email when a concept is shared with them or a decision is asked of them. New comments on an idea are a notification too ("New comments", in "The concept workspace").
 
-✅ **Resolved:** an advanced concept stays in Sparks as a shareable concept that viewers can't change, instead of being exported or sent to a work tracker. Dana decides who sees it; the conversation is hidden unless she includes it; viewers can ask Sparks questions answered from the concept only.
+✅ **Resolved:** an advanced concept stays in Sparks as a shareable concept that viewers can't change~~, instead of being exported or sent to a work tracker~~; once advanced, Dana can also create it in Jira, one way, each story linking back to it ([sparks-review.md](sparks-review.md), "Creating it in Jira"). Dana decides who sees it; the conversation is hidden unless she includes it; viewers can ask Sparks questions answered from the concept only.
 
 ~~✅ **Resolved:** "Share" appears in the header only from Review on. Before Review, the concept stays private to Dana.~~
 

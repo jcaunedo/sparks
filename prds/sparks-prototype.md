@@ -1,9 +1,9 @@
 <!--
 Created: Nov 21, 2026
 Created by: Julio Caunedo
-Last updated: Nov 26, 2026
-Latest update: a comment's pin can be dragged to another spot, while it's being written and after it's added (her own comments), on the prototype and on the idea for review: where it's dropped is what it's attached to now. Why: a pin dropped a little off is fixed in place instead of being deleted and written again.
-Recent updates: the prototype's title is the direction's name alone ("Fit check before you buy"), and once published, the line under it says when ("Version 2 · Published Nov 26, 2026, 2:40 PM"). One "Add comment", on the prototype's toolbar, turns commenting on for the idea and the prototype together, and the Comments panel has a filters icon (Open, Resolved, On the idea, On the prototype).
+Last updated: Nov 27, 2026
+Latest update: Sparks's plan for a finding and what Dana can pick are one numbered list in the message (no box, each title numbered and subtly underlined): "Make this change" holds the plan's steps and why, then each follow-up, then "Fix all" last (the plan and every follow-up, as one version). Why: the plan shows once, every way forward is in one place with what it does, and one selection decides. What Dana adds to "What comes later" from a change beyond the direction now shows in Review's "What comes later", in a few words.
+Recent updates: a comment's pin can be dragged to another spot, while it's being written and after it's added (her own comments). The prototype's title is the direction's name alone ("Fit check before you buy"), and once published, the line under it says when ("Version 2 · Published Nov 26, 2026, 2:40 PM"). One "Add comment", on the prototype's toolbar, turns commenting on for the idea and the prototype together.
 Scope: the Prototype step of a Sparks concept, the second of four (Plan, Prototype, Evaluate, Review): what Sparks builds from the chosen direction, how Dana tries it and changes it without design or engineering skills, versions, and the Prototype section of the concept.
 Purpose: defines how the chosen direction becomes a working concept Dana can try (a clickable prototype, or another testable artifact), built from AutoParts Co.'s own design system, ready to be evaluated in Evaluate.
 -->
@@ -159,7 +159,7 @@ How each way works, as built:
 
 When a change goes beyond simple edits:
 
-- **Beyond the chosen direction** ("Also let customers book an installation"): Sparks says it's a new part of the solution and offers to add it to "What comes later" or go back to the choice in Plan. It doesn't build it silently. Why: the prototype is evaluated against the direction Dana chose; adding features drifts away from it unnoticed.
+- **Beyond the chosen direction** ("Also let customers book an installation"): Sparks says it's a new part of the solution and offers to add it to "What comes later" or go back to the choice in Plan. It doesn't build it silently. Why: the prototype is evaluated against the direction Dana chose; adding features drifts away from it unnoticed. Added, it goes under "What comes later" in the idea for review, in a few words ("Booking an installation with the part."), and Sparks says so: "Done. "Booking an installation with the part" is under "What comes later" in your idea, so reviewers see it was left out on purpose."
 - **Another direction** ("Let's try a different direction"): the choice reopens in Plan, as it does from "Go back to the choice" above.
 
 ✅ **Resolved:** going back to the choice from Prototype, from "Go back to the choice" or in her words, reopens the choice in Plan in the same conversation ([sparks-plan-compare.md](sparks-plan-compare.md), "Going back to the choice"). The prototype she leaves stays in the concept; a new pick is built from version 1.
@@ -171,8 +171,15 @@ When a change goes beyond simple edits:
 "Fix in the prototype", on a finding in Evaluate or on a scenario that ran into it ([sparks-validate.md](sparks-validate.md), "Fixing and running again"), brings Dana here to work out the solution with Sparks:
 
 1. **The page.** Prototype opens on the page, the part and the spot where the finding happens, for whoever it happens to (e.g. the spark plugs with no fit data, on the customer's phone). A finding that isn't on one page leaves the prototype where it starts.
-2. **The plan first.** Her message names the finding ("Fix finding 2: "We're not sure this fits" leaves people with no next step."). Sparks thinks, then shows its plan: what it will change, step by step, what stays as it is, why, and the version it will be. It asks "Should I make this change?". Nothing has changed yet.
-3. **Suggested follow-ups.** The quick replies are "Make this change" (↵) and up to two follow-ups that take it further ("Also name the vehicle first", "Also offer "Tell me when you know""). Picking a follow-up makes the plan and the follow-up together, as one version. She can also say what she'd do instead, in her own words, or point at something ("Edit element"); when Sparks can't do what she asks, it says so and the plan still waits.
+2. **The plan first.** Her message names the finding ("Fix finding 2: "We're not sure this fits" leaves people with no next step."). Sparks thinks, then asks "Should I make this change?": "Here's my plan and what I can add to it. Pick one, or tell me what you'd do instead. It will be version 2, so you can always go back." Nothing has changed yet.
+3. **The plan and the options, in one list.** ~~The quick replies are "Make this change" (↵) and up to two follow-ups that take it further ("Also name the vehicle first", "Also offer "Tell me when you know"").~~ A numbered list in the message, with no box around it: each option's title numbered ("1. Make this change") and underlined, subtly, what it does under it. Selecting one sends it as her message:
+   1. "Make this change": the plan itself, what it will change step by step and what stays as it is, then why, muted.
+   2. Each follow-up that takes it further, with what it adds ("Also name the vehicle first": "The fit message names the vehicle first ("2015 Ford F-150: fits")"). It's made with the plan, as one version.
+   3. With two follow-ups or more, "Fix all" last ("Everything above"): the plan and every follow-up, as one version.
+
+   A plan with no follow-ups stays in the message, with "Make this change" as its only reply. She can also say what she'd do instead, in her own words, or point at something ("Edit element"); when Sparks can't do what she asks, it says so and the plan still waits.
+
+   ✅ **Resolved:** the plan and its choices are one numbered list, the plan in the first option and "Fix all" last, instead of the plan in the message and quick-reply buttons under it. Why: the plan shows once, every way forward is in one place with what it does, one selection decides, and "Fix all" takes all of it in one step.
 4. **Made.** The change shows on the page she's on. Sparks says what it changed and the version, that the finding stays to be checked until the evaluation runs again, and asks "Ready for me to evaluate it again?": "Yes, evaluate it" (↵), "Fix finding {n} next" when the prototype can fix another, and the follow-ups left. "Fix finding {n} next" opens that finding's page and plan, with no trip back to Evaluate.
 
 **Already fixed:** "Change the fix in the prototype" opens the same page; Sparks says what was done and in which version, and asks "What would you change about it?", with the follow-ups left.
@@ -325,7 +332,7 @@ The prototype isn't shared with anyone before Review ([sparks.md](sparks.md), "B
 | Building | Progress by step; a blank panel, then each screen as it's assembled | ~~Try the ready screens,~~ Keep talking to Sparks, stop it |
 | Ready | "Built in {time}" and what Sparks built; the prototype in the preview | Try it, change it, go full screen |
 | Changing | The change being made, then a one-line summary of it | Keep trying it, undo by restoring the previous version |
-| Fixing a finding | The page it happens on; Sparks's plan, "Make this change" and the follow-ups | Make it, take it further, say what she'd do instead, leave it |
+| Fixing a finding | The page it happens on; Sparks's plan and its options: "Make this change", the follow-ups and "Fix all" | Make it, take it further, fix all, say what she'd do instead, leave it |
 | Change goes beyond the direction | Sparks's note and its options | Add it to "What comes later", go back to the choice in Plan, drop it |
 | Change goes against the design system | Sparks's reason and the closest option | Take the option, or keep her change |
 | Building failed | "I couldn't finish building {screen}. Your last version is still here." and "Try again" | Try again, keep using the last version |

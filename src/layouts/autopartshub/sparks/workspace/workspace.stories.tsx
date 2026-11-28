@@ -1,7 +1,7 @@
 import * as React from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 
-import { goToStory, openStoryInNewTab, storyHref, storyIds, withStoryLinks } from "../../../story-links";
+import { argsPendingAtLoad, goToStory, openStoryInNewTab, storyHref, storyIds, withStoryLinks } from "../../../story-links";
 import { conceptStoryLinks } from "../start-page/concept-story-links";
 import { EmptyState } from "@/components/feedback/empty-state";
 import { sampleUser } from "../../sample-data/sample-user";
@@ -111,6 +111,7 @@ import {
 	sampleBeyondAnswerReply,
 	sampleBeyondReplies,
 	sampleBeyondReply,
+	sampleLaterItem,
 	sampleBuildProgress,
 	sampleBuildScreen,
 	sampleBuildStepMs,
@@ -146,6 +147,7 @@ import {
 	sampleFixPlanReply,
 	sampleFixStage,
 	sampleMakeTheChange,
+	sampleFixAll,
 } from "../prototype/sample-fix";
 import { assetName } from "../../library/library-assets";
 import type { LibraryPick } from "./library-dialog";
@@ -162,14 +164,16 @@ import {
 	sampleRunStepMs,
 	sampleValidateStartedReply,
 } from "../validate/sample-validate";
-import { ReviewPanel, reviewPartTitles, type IdeaComment, type Reviewer, type ReviewNext, type ReviewStatus } from "../review/review-panel";
+import { ReviewPanel, reviewPartsOf, type IdeaComment, type Reviewer, type ReviewNext, type ReviewStatus } from "../review/review-panel";
 import { ReviewStatusPanel, ReviewTeamAssessment } from "../review/review-status";
+import { ReviewNextOnCard } from "../review/review-next";
 import { sampleAssessmentStepMs, sampleReviewFeedback } from "../review/sample-review-status";
 import {
 	sampleConceptForReview,
 	sampleBuildFlag,
 	sampleBuildFlagMs,
 	sampleProductTeam,
+	sampleJira,
 	sampleReadyToBuild,
 	sampleTeamMember,
 	sampleDecision,
@@ -181,6 +185,8 @@ import {
 	sampleReviewersFor,
 	sampleReviewerFor,
 	sampleReviewerViews,
+	sampleRemindedCount,
+	sampleRemindedView,
 	sampleReviewerPin,
 	sampleReviewerIdeaComment,
 	sampleReviewBuildFinished,
@@ -477,6 +483,9 @@ type ReviewDecisionRecord = ReviewDecision & { owner: string; date: string };
 /** Story-only: Review opens already published (`ReviewPublished`), with no assessment in yet. */
 type PrototypeProps = SparksWorkspaceProps & { startPublished?: boolean };
 
+/** A new concept's name until Sparks names it, the same words as the button that created it. */
+const newIdeaName = "New idea";
+
 function WorkspacePrototype(props: PrototypeProps) {
 	const [messages, setRawMessages] = React.useState<SparksMessage[]>(props.messages);
 	// The name Sparks gives the concept ("New idea" until it does), and the one she gave it, which wins: Sparks naming
@@ -579,7 +588,8 @@ function WorkspacePrototype(props: PrototypeProps) {
 		agentsDone?: boolean;
 		screen?: { label: string; agents: number };
 	};
-	type PathData = { buildStep: number; versions: Version[]; runs: Run[] };
+	/** `later`: what she left for later on this path ("Add it to What comes later"), for Review's "What comes later". */
+	type PathData = { buildStep: number; versions: Version[]; runs: Run[]; later: string[] };
 	const firstVersion: Version = { id: "v1", name: sampleVersionNames.first, changes: {} };
 	const screensOf = (id: string) => (directionPrototypes[id] ?? directionPrototypes["fit-check"]).screens;
 	// A story (or a reopened concept) whose conversation already started a run: that run, finished.
@@ -597,7 +607,7 @@ function WorkspacePrototype(props: PrototypeProps) {
 		const part = progress?.from === "sparks" ? progress.parts.find((p) => p.kind === "progress") : undefined;
 		const unfinished = part?.kind === "progress" && !part.done ? part.steps.length - 1 : undefined;
 		const started = (props.reachedStep ?? props.currentStep) !== "plan";
-		return { buildStep: unfinished ?? (started ? sampleBuildSteps(screensOf(id)).length : 0), versions: [firstVersion], runs: id === planChoiceId ? initialRuns : [] };
+		return { buildStep: unfinished ?? (started ? sampleBuildSteps(screensOf(id)).length : 0), versions: [firstVersion], runs: id === planChoiceId ? initialRuns : [], later: [] };
 	};
 	const [pathData, setPathData] = React.useState<Record<string, PathData>>({});
 	const dataFor = (id: string) => pathData[id] ?? pathDefault(id);
@@ -612,7 +622,7 @@ function WorkspacePrototype(props: PrototypeProps) {
 	/** A direction becomes a path: added (once), built from version 1, and shown. */
 	const startPath = (id: string) => {
 		setPaths((current) => (current.includes(id) ? current : [...current, id]));
-		setPathData((current) => ({ ...current, [id]: { buildStep: 0, versions: [firstVersion], runs: [] } }));
+		setPathData((current) => ({ ...current, [id]: { buildStep: 0, versions: [firstVersion], runs: [], later: [] } }));
 		setActivePath(id);
 		setBuildingPath(id);
 	};
@@ -844,6 +854,10 @@ function WorkspacePrototype(props: PrototypeProps) {
 		publishedAt?: string;
 		/** When "Send a reminder" was selected (ISO), for the version published now. */
 		remindedAt?: string;
+		/** In the demo, the people a reminder brought in (by id): they answer too, though Sparks didn't suggest them. */
+		reminded?: string[];
+		/** Advanced: "Create in Jira" (prds/sparks-review.md, "Creating it in Jira"): being created, then created. */
+		jira?: "creating" | "created";
 		/**
 		 * Advanced and shared: what the team who builds it flagged as unclear, Sparks's fix (hers to edit) and what she did
 		 * (prds/sparks-review.md, "Something unclear after it advances").
@@ -903,6 +917,7 @@ function WorkspacePrototype(props: PrototypeProps) {
 			engineeringEffort: extra.engineeringEffort ?? review?.engineeringEffort,
 			openQuestions: extra.openQuestions ?? review?.openQuestions,
 			clarified: review?.clarified,
+			later: reviewData.later,
 		});
 	/**
 	 * Review opens (prds/sparks-review.md, "Review's screen"): no conversation; Sparks puts the idea together on the left,
@@ -1002,6 +1017,7 @@ function WorkspacePrototype(props: PrototypeProps) {
 				published: dataFor(id).versions.length,
 				publishedAt,
 				remindedAt: undefined,
+				reminded: undefined,
 			}));
 	};
 	// Published, for the path on screen: its version and when, under the prototype's title in every step.
@@ -1020,6 +1036,7 @@ function WorkspacePrototype(props: PrototypeProps) {
 						published: version,
 						publishedAt: new Date().toISOString(),
 						remindedAt: undefined,
+						reminded: undefined,
 						reviewers: reviewersInShare.map((invitee) => {
 							const r = current.reviewers.find((existing) => existing.name === invitee.name);
 							if (!r) return invitee;
@@ -1074,7 +1091,8 @@ function WorkspacePrototype(props: PrototypeProps) {
 	/** What Review is waiting for, at the top of the idea for review (`ReviewNextStep`). */
 	// In the demo, the reviewers Sparks suggested answer; anyone else she added stays invited (pending in the team
 	// assessment), so the reviews are in once the suggested ones have.
-	const answersInDemo = (r: Reviewer) => sampleReviewersFor(reviewId).some((s) => s.id === r.id);
+	// A reminder brings some of the others in (`reminded`), so it shows what it does.
+	const answersInDemo = (r: Reviewer) => sampleReviewersFor(reviewId).some((s) => s.id === r.id) || Boolean(review?.reminded?.includes(r.id));
 	const reviewsIn = Boolean(
 		review?.reviewers.some(answersInDemo) && review.reviewers.filter(answersInDemo).every((r) => r.status === "view"),
 	);
@@ -1130,6 +1148,21 @@ function WorkspacePrototype(props: PrototypeProps) {
 							onSkip: () => update({ buildFlag: { ...review.buildFlag!, outcome: "skipped" } }),
 						}
 					: undefined,
+				// Advanced: an epic in her product team's Jira project, one story per user story (pretend: nothing is sent).
+				jira:
+					review.decision.kind === "advance"
+						? {
+								project: sampleJira.project,
+								stories: concept().stories.length,
+								status: review.jira ?? "idle",
+								epic: sampleJira.epic,
+								url: sampleJira.url,
+								onCreate: () => {
+									update({ jira: "creating" });
+									window.setTimeout(() => setReviewFor(reviewId, (current) => (current ? { ...current, jira: "created" } : current)), sampleJira.createMs);
+								},
+							}
+						: undefined,
 				shared: Boolean(review.shared),
 				// The same sharing as "Share": her product team, then the reviewers' departments, join "Who has access".
 				onShare: () => {
@@ -1219,15 +1252,16 @@ function WorkspacePrototype(props: PrototypeProps) {
 	React.useEffect(() => {
 		if (!review || review.buildStep === undefined) return;
 		const { skipped } = review;
+		const parts = reviewPartsOf(concept());
 		const now = review.buildStep + 1;
 		const timer = window.setTimeout(() => {
-			const done = sampleReviewBuildFinished(reviewPartTitles, skipped, now);
+			const done = sampleReviewBuildFinished(parts, skipped, now);
 			setReview({
 				...review,
 				buildStep: done ? undefined : now,
 				seconds: done && review.startedAt ? Math.max(1, Math.round((Date.now() - review.startedAt) / 1000)) : undefined,
 			});
-		}, sampleReviewBuildStepMs(reviewPartTitles, skipped, review.buildStep));
+		}, sampleReviewBuildStepMs(parts, skipped, review.buildStep));
 		return () => window.clearTimeout(timer);
 	}, [review]);
 	// The reviewers, one step at a time, in turn (invited, opened, commented, their view of the published version); when
@@ -1244,12 +1278,14 @@ function WorkspacePrototype(props: PrototypeProps) {
 		const status = order[order.indexOf(review.reviewers[index].status) + 1];
 		const timer = window.setTimeout(
 			() => {
-				const views = sampleReviewerViews(reviewChanges, reviewId);
+				const suggestedViews = sampleReviewerViews(reviewChanges, reviewId);
+				const views = (id: string) =>
+					suggestedViews[id] ?? sampleRemindedView(review.reviewers.find((r) => r.id === id)!, reviewChanges, reviewId);
 				const reviewers = review.reviewers.map((r, i): Reviewer => {
 					if (i !== index) return r;
 					// Commenting, they write the point they'll make in their view; then the view, with why, of this version.
-					if (status === "commented") return { ...r, status, comment: views[r.id]?.why };
-					return status === "view" ? { ...r, status, ...views[r.id], version: review.published } : { ...r, status };
+					if (status === "commented") return { ...r, status, comment: views(r.id).why };
+					return status === "view" ? { ...r, status, ...views(r.id), version: review.published } : { ...r, status };
 				});
 				setReview({ ...review, reviewers, ticks: index + 1 });
 				// Commenting, a team's lead also pins a comment on the prototype, on what it's about…
@@ -1271,12 +1307,27 @@ function WorkspacePrototype(props: PrototypeProps) {
 	// The prototype stays mounted underneath, hidden, so its version, device and screen are as she left them.
 	const [reviewStatusOpen, setReviewStatusOpen] = React.useState(false);
 	const assessmentTrigger = React.useRef<HTMLButtonElement>(null);
+	// Where Review status opens: at a person selected in the card's popovers ("Reviewers"), or at the next step, from the
+	// card's next step; at the top from "View full report".
+	const [statusFocus, setStatusFocus] = React.useState<{ target: { reviewer: string } | "next-step"; key: number }>();
+	const openStatusAt = (target?: { reviewer: string } | "next-step") => {
+		setStatusFocus(target ? { target, key: Date.now() } : undefined);
+		setReviewStatusOpen(true);
+	};
 	const closeReviewStatus = () => {
 		setReviewStatusOpen(false);
 		// Back on the card's "View full report", once the card is back.
 		requestAnimationFrame(() => assessmentTrigger.current?.focus());
 	};
-	const remind = () => setReview((current) => (current ? { ...current, remindedAt: new Date().toISOString() } : current));
+	// Reminding: the date moves, and in the demo about half of those still pending who weren't answering start to
+	// (`sampleRemindedCount`): they open it, comment and give their view, so the card fills.
+	const remind = () =>
+		setReview((current) => {
+			if (!current) return current;
+			const waiting = current.reviewers.filter((r) => r.status !== "view" && !answersInDemo(r)).map((r) => r.id);
+			const brought = waiting.slice(0, sampleRemindedCount(waiting.length));
+			return { ...current, remindedAt: new Date().toISOString(), reminded: [...(current.reminded ?? []), ...brought] };
+		});
 	// Waiting for a decision: the decision owner decides.
 	React.useEffect(() => {
 		if (review?.status.kind !== "waiting") return;
@@ -1537,7 +1588,12 @@ function WorkspacePrototype(props: PrototypeProps) {
 			const fixing = sampleFixStage(askId);
 			const fixedFinding = fixing && findingToFix(fixing.findingId);
 			const followUp = fixing && sampleFixFollowUps(fixing.findingId, changes).find((f) => f.reply === text);
-			const goesWithPlan = Boolean(fixing && !fixing.made && (text === sampleMakeTheChange || (text.trim() && yesPattern.test(text)) || followUp));
+			// "Fix all": the plan and every follow-up left, as one version.
+			const fixAll = Boolean(fixing && !fixing.made && text === sampleFixAll);
+			const followUps = fixing && fixAll ? sampleFixFollowUps(fixing.findingId, changes) : followUp ? [followUp] : [];
+			const goesWithPlan = Boolean(
+				fixing && !fixing.made && (text === sampleMakeTheChange || fixAll || (text.trim() && yesPattern.test(text)) || followUp),
+			);
 			const nextNumber = fixing && nextToFix(fixing.findingId);
 			if (!pointedAt && nextNumber && text === sampleFixNext(nextNumber)) {
 				setMessages([...messages, ...startFix(lastRun!.evaluation.findings[nextNumber - 1].id, text)]);
@@ -1548,9 +1604,9 @@ function WorkspacePrototype(props: PrototypeProps) {
 			if (!pointedAt && fixing && fixedFinding && (goesWithPlan || followUp)) {
 				const fix = sampleFixes[fixing.findingId];
 				const base = goesWithPlan ? { ...changes, ...fix.changes } : changes;
-				const changed = followUp ? followUp.apply(base) : base;
-				const summaries = [...(goesWithPlan ? [fix.summary] : []), ...(followUp ? [followUp.summary] : [])];
-				const version = saveVersion([...(goesWithPlan ? [fix.version] : []), ...(followUp ? [followUp.version] : [])].join("; "), changed);
+				const changed = followUps.reduce((c, f) => f.apply(c), base);
+				const summaries = [...(goesWithPlan ? [fix.summary] : []), ...followUps.map((f) => f.summary)];
+				const version = saveVersion([...(goesWithPlan ? [fix.version] : []), ...followUps.map((f) => f.version)].join("; "), changed);
 				reply = sampleFixMadeReply(fixedFinding, summaries, version, changed, nextNumber);
 			} else if (pointedAt) {
 				const element = built.elements[pointedAt] ?? "that";
@@ -1574,7 +1630,12 @@ function WorkspacePrototype(props: PrototypeProps) {
 								: sampleElementUnknownReply(element);
 				setPointedAt(undefined);
 			} else if (askId.startsWith("prototype-beyond") && sampleBeyondReplies.includes(text)) {
-				reply = text === sampleBackToChoice ? backToChoice(sampleBackFromPrototype.beyond(direction.name)) : sampleBeyondAnswerReply(text);
+				// "Add it to What comes later": what she asked for (her message before Sparks's note) goes in this path's
+				// "What comes later", in a few words, for Review.
+				const asked = messages[messages.indexOf(lastAsk!) - 1];
+				const item = text === sampleBeyondReplies[0] && asked?.from === "user" ? sampleLaterItem(asked.text) : undefined;
+				if (item) updatePath(chosenId, (d) => ({ ...d, later: d.later.includes(item) ? d.later : [...d.later, item] }));
+				reply = text === sampleBackToChoice ? backToChoice(sampleBackFromPrototype.beyond(direction.name)) : sampleBeyondAnswerReply(text, item);
 			} else if (samplePrototypeIntent(text, chosenId).kind === "choice") {
 				// Asking for another direction, in words: the choice reopens in Plan.
 				reply = backToChoice(sampleBackFromPrototype.asked);
@@ -1921,8 +1982,8 @@ function WorkspacePrototype(props: PrototypeProps) {
 		setMessages(next);
 	};
 
-	// Prototype: the concept she started from "New idea" (or reopened from its row) shows in "Your ideas", where it
-	// stands, and reopens with its conversation (prds/sparks.md, "The start page"; `demo-session.ts`).
+	// Prototype: the concept she started from "New idea" (or reopened from its row) shows in "Your ideas" once it's
+	// named, where it stands, and reopens with its conversation (prds/sparks.md, "The start page"; `demo-session.ts`).
 	const tracksDemo = React.useRef(
 		(() => {
 			if (props.messages.length === 0) return true;
@@ -1933,9 +1994,15 @@ function WorkspacePrototype(props: PrototypeProps) {
 		})(),
 	).current;
 	const demoCreatedAt = React.useRef(props.messages.length === 0 ? undefined : loadDemoConcept()?.summary.createdAt);
+	// It joins the list once it's named: Sparks names it from the problem she described, or she names it herself; while
+	// it's still "New idea", it isn't there. Once in, it stays. Named before she describes it, its line reads "No
+	// problem described yet." until she does.
+	const listed = React.useRef(props.messages.length > 0 || props.conceptName !== newIdeaName);
 	React.useEffect(() => {
 		const first = messages.find((m) => m.from === "user");
-		if (!tracksDemo || first?.from !== "user") return;
+		if (!tracksDemo) return;
+		if (conceptName !== newIdeaName) listed.current = true;
+		if (!listed.current) return;
 		const now = new Date().toISOString();
 		demoCreatedAt.current ??= now;
 		const others = shareMembers.length - 1;
@@ -1943,7 +2010,7 @@ function WorkspacePrototype(props: PrototypeProps) {
 			summary: {
 				id: "demo",
 				name: conceptName,
-				summary: first.text,
+				summary: first?.from === "user" ? first.text : "",
 				sharing: others > 0 ? `You and ${others} other${others > 1 ? "s" : ""}` : "Only you",
 				createdAt: demoCreatedAt.current,
 				editedAt: now,
@@ -2169,7 +2236,10 @@ function WorkspacePrototype(props: PrototypeProps) {
 										version={review.published}
 										remindedAt={review.remindedAt}
 										onRemind={remind}
-										action={{ label: "View full report", onClick: () => setReviewStatusOpen(true), ref: assessmentTrigger }}
+										action={{ label: "View full report", onClick: () => openStatusAt(), ref: assessmentTrigger }}
+										onReviewerSelect={(id) => openStatusAt({ reviewer: id })}
+										// What to do next, on the card itself (prds/sparks-review.md, "The Team assessment card").
+										footer={reviewNext ? <ReviewNextOnCard next={reviewNext} onOpen={() => openStatusAt("next-step")} /> : undefined}
 									/>
 								) : undefined
 							}
@@ -2177,11 +2247,11 @@ function WorkspacePrototype(props: PrototypeProps) {
 								review.startedAt === undefined
 									? undefined
 									: {
-											...sampleReviewBuildProgress(reviewPartTitles, review.skipped, review.buildStep ?? Number.MAX_SAFE_INTEGER, review.seconds),
+											...sampleReviewBuildProgress(reviewPartsOf(concept()), review.skipped, review.buildStep ?? Number.MAX_SAFE_INTEGER, review.seconds),
 											startedAt: review.startedAt,
 										}
 							}
-							building={review.buildStep === undefined ? undefined : sampleReviewBuilt(reviewPartTitles, review.skipped, review.buildStep)}
+							building={review.buildStep === undefined ? undefined : sampleReviewBuilt(reviewPartsOf(concept()), review.skipped, review.buildStep)}
 							focusPart={focusPart}
 							// Her comments on parts of the idea, with the teams': "Add comment" on the prototype's toolbar, or selected text.
 							comments={{
@@ -2206,6 +2276,7 @@ function WorkspacePrototype(props: PrototypeProps) {
 								onBack={closeReviewStatus}
 								next={reviewNext}
 								reviewers={review.reviewers}
+								focus={statusFocus}
 							/>
 						) : null}
 						{/* As the teams get it: to try and comment on; changed in Prototype, so no "Edit element" and no restoring.
@@ -2417,7 +2488,7 @@ function ResettablePrototype(props: PrototypeProps) {
 		setResets((n) => n + 1);
 	};
 	const start: Partial<SparksWorkspaceProps> = resets
-		? { conceptName: "New idea", currentStep: "plan", reachedStep: "plan", messages: [], comments: undefined, openCommentsKey: 0 }
+		? { conceptName: newIdeaName, currentStep: "plan", reachedStep: "plan", messages: [], comments: undefined, openCommentsKey: 0 }
 		: {};
 	return <WorkspacePrototype key={resets} {...props} {...start} onResetPrototype={reset} />;
 }
@@ -2429,13 +2500,17 @@ const meta = {
 		layout: "fullscreen",
 	},
 	// Keyed on the concept, so opening another one (a notification about it) starts it fresh.
-	render: (args, { parameters }) => (
-		<ResettablePrototype
-			key={`${args.conceptName}-${args.currentStep}-${args.messages[0]?.from === "user" ? args.messages[0].text : ""}`}
-			{...args}
-			startPublished={Boolean(parameters.startPublished)}
-		/>
-	),
+	// Opened with a concept's args (its row, a notification), it's that concept from the first frame: no new concept first.
+	render: (storyArgs, { parameters, id }) => {
+		const args = argsPendingAtLoad(id, storyArgs);
+		return (
+			<ResettablePrototype
+				key={`${args.conceptName}-${args.currentStep}-${args.messages[0]?.from === "user" ? args.messages[0].text : ""}`}
+				{...args}
+				startPublished={Boolean(parameters.startPublished)}
+			/>
+		);
+	},
 	// A notification about a concept opens it here, in the same tab.
 	decorators: [withStoryLinks(() => conceptStoryLinks())],
 	args: {
@@ -2443,7 +2518,7 @@ const meta = {
 		initialPrompt: sampleInitialPrompt,
 		notifications: { notifications: sampleNotifications, now: sampleNotificationsNow },
 		myLibrary: { assets: sampleLibrary, now: sampleLibraryNow },
-		conceptName: "New idea",
+		conceptName: newIdeaName,
 		currentStep: "plan",
 		messages: [],
 		// Prototype: closes the concept's tab when the start page opened it; otherwise goes to the start page story.

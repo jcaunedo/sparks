@@ -6,9 +6,9 @@ import { sampleUser } from "../../sample-data/sample-user";
 import { sampleNotifications, sampleNotificationsNow } from "../../sample-data/sample-notifications";
 import type { SparksWorkspaceProps } from "../workspace/workspace";
 import { sampleArchivedConcepts, sampleConcepts, sampleNow, sampleSharedConcepts } from "./sample-concepts";
-import { SparksStartPage, type SparksStartPageProps } from "./start-page";
+import { SparksStartPage, type SparksConceptAction, type SparksConceptList, type SparksConceptSummary, type SparksStartPageProps } from "./start-page";
 import { conceptStoryLinks, noComments } from "./concept-story-links";
-import { openDemoConcept } from "../shared/demo-session";
+import { clearDemoConcept, openDemoConcept } from "../shared/demo-session";
 
 /* Prototype: "New idea" opens the workspace with a new concept on Plan and an empty conversation. */
 const newConcept: Partial<SparksWorkspaceProps> = {
@@ -25,7 +25,34 @@ const newConcept: Partial<SparksWorkspaceProps> = {
  */
 function StartPagePrototype(props: SparksStartPageProps) {
 	const [demo] = React.useState(openDemoConcept);
-	return <SparksStartPage {...props} concepts={demo ? [demo.summary, ...props.concepts] : props.concepts} />;
+	// A row's "…" menu, for this visit: Duplicate puts a copy first in "Your ideas", Archive and Unarchive move it between
+	// the tabs, Delete takes it out (and the idea she started, if it's that one, for good).
+	const [yours, setYours] = React.useState(() => (demo ? [demo.summary, ...props.concepts] : props.concepts));
+	const [archived, setArchived] = React.useState(props.archivedConcepts ?? []);
+	const copies = React.useRef(0);
+	const onConceptAction = (action: SparksConceptAction, concept: SparksConceptSummary, list: SparksConceptList) => {
+		const without = (concepts: SparksConceptSummary[]) => concepts.filter((c) => c.id !== concept.id);
+		const now = new Date().toISOString();
+		if (action === "duplicate")
+			setYours((current) => [
+				{ ...concept, id: `${concept.id}-copy-${++copies.current}`, name: `${concept.name} (copy)`, sharing: "Only you", createdAt: now, editedAt: now },
+				...current,
+			]);
+		if (action === "archive") {
+			setYours(without);
+			setArchived((current) => [concept, ...current]);
+		}
+		if (action === "unarchive") {
+			setArchived(without);
+			setYours((current) => [concept, ...current]);
+		}
+		if (action === "delete") {
+			if (list === "archive") setArchived(without);
+			else setYours(without);
+			if (concept.id === demo?.summary.id) clearDemoConcept();
+		}
+	};
+	return <SparksStartPage {...props} concepts={yours} archivedConcepts={archived} onConceptAction={onConceptAction} />;
 }
 
 const meta = {

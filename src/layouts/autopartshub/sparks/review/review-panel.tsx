@@ -171,7 +171,7 @@ type ReviewPanelProps = {
 	progress?: React.ComponentProps<typeof ActivityFeed>;
 	/**
 	 * While Sparks puts it together (prds/sparks-review.md, "Putting it together"): whether the writing has begun (before
-	 * that, the panel is blank), and how many parts are written so far, in the order of `reviewPartTitles`. The next one
+	 * that, the panel is blank), and how many parts are written so far, in the order of `reviewPartsOf(concept)`. The next one
 	 * shows as being written. Without it, the whole idea shows.
 	 */
 	building?: { begun: boolean; written: number };
@@ -205,6 +205,22 @@ const reviewPartTitles = [
 ] as const;
 
 type ReviewPartTitle = (typeof reviewPartTitles)[number];
+
+/**
+ * The parts shown only when they have something in them (prds/sparks-review.md, "What's reviewed"): "What comes later"
+ * is filled only when Dana leaves something for later, so empty it's left out instead of saying "None.".
+ */
+const partsShownOnlyFilled = { "What comes later": (concept: ConceptForReview) => concept.later.length > 0 } as const satisfies Partial<
+	Record<ReviewPartTitle, (concept: ConceptForReview) => boolean>
+>;
+
+/** The parts of `titles` this idea shows, in their order: every one, less those left out while empty. */
+function reviewPartsOf(concept: ConceptForReview, titles: readonly ReviewPartTitle[] = reviewPartTitles): ReviewPartTitle[] {
+	return titles.filter((title) => {
+		const filled = partsShownOnlyFilled[title as keyof typeof partsShownOnlyFilled];
+		return filled ? filled(concept) : true;
+	});
+}
 
 /**
  * The same parts, in the order the team who builds it reads them (prds/sparks-review.md, "After the decision"): what to
@@ -343,7 +359,10 @@ function ReviewerList({
 	onOpen,
 	notes = {},
 	size = "sm",
+	marked,
 }: {
+	/** A reviewer marked for a moment (by id): selected in the team assessment, so their row is where to look. */
+	marked?: string;
 	/** Text size: `sm` in the narrow Comments panel; `base` in Review's panel, as Evaluate's text. */
 	size?: "sm" | "base";
 	reviewers: Reviewer[];
@@ -359,12 +378,15 @@ function ReviewerList({
 				const isUnread = openable && unread.includes(reviewer.id);
 				const Row = openable ? "button" : "div";
 				return (
-				<li key={reviewer.id}>
+				// Focusable from code only (`data-reviewer`), so selecting them in the team assessment puts her on their row.
+				<li key={reviewer.id} data-reviewer={reviewer.id} tabIndex={-1} className='outline-none'>
 					<Row
 						{...(openable ? { type: "button" as const, onClick: () => onOpen?.(reviewer.id) } : {})}
 						className={cn(
-							"relative flex w-full flex-col gap-1 py-2 text-start",
-							openable && "-mx-2 rounded-md px-2 outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring",
+							// 8px of fill around the row (`-mx-2 px-2`), for the hover and for the mark, without moving its text.
+							"relative -mx-2 flex w-[calc(100%+1rem)] flex-col gap-1 rounded-md px-2 py-2 text-start transition-colors motion-reduce:transition-none",
+							openable && "outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring",
+							marked === reviewer.id && "bg-(--corn-50)",
 						)}
 					>
 					{/* New feedback she hasn't opened: the unread dot (the notifications' sky), before the name. */}
@@ -509,9 +531,10 @@ titles?: readonly ReviewPartTitle[];
 	partBelow?: (title: string) => React.ReactNode;
 }) {
 	const body = reviewPartBody(concept);
+	const parts = reviewPartsOf(concept, titles);
 	return (
 		<>
-			{titles.slice(0, shown ?? titles.length).map((title) => (
+			{parts.slice(0, shown ?? parts.length).map((title) => (
 				<React.Fragment key={title}>
 					<Part
 						title={title}
@@ -694,7 +717,8 @@ function ReviewPanel({ concept, title = "Idea for review", paths = [], path, onP
 			stop();
 		};
 	}, [focusPart, reducedFocus]);
-	const shown = build ? build.written : reviewPartTitles.length;
+	const parts = reviewPartsOf(concept);
+	const shown = build ? build.written : parts.length;
 	const blank = build ? !build.begun : false;
 	// While it's written, the view follows the newest part, unless she has scrolled up to read.
 	const writingRef = React.useRef<HTMLDivElement>(null);
@@ -781,10 +805,10 @@ function ReviewPanel({ concept, title = "Idea for review", paths = [], path, onP
 							{progress && !progress.done ? <ActivityFeed {...progress} /> : null}
 							{/* The parts written so far, each coming in as it's written; then the one being written. */}
 							{blank ? null : <ReviewDocument concept={concept} recommendation={recommendation} shown={shown} reveal={building} marked={marked} />}
-							{building && !blank && shown < reviewPartTitles.length ? <PartInProgress ref={writingRef} title={reviewPartTitles[shown]} /> : null}
+							{building && !blank && shown < parts.length ? <PartInProgress ref={writingRef} title={parts[shown]} /> : null}
 						</div>
 					</IdeaCommentLayer>
-					{building && shown >= reviewPartTitles.length ? <div ref={writingRef} aria-hidden className='h-px shrink-0' /> : null}
+					{building && shown >= parts.length ? <div ref={writingRef} aria-hidden className='h-px shrink-0' /> : null}
 				</motion.div>
 			</div>
 		</section>
@@ -801,6 +825,7 @@ export {
 	ReviewerStatus,
 	ReviewPanel,
 	reviewPartTitles,
+	reviewPartsOf,
 	SectionsMenu,
 	viewTone,
 	type ConceptForReview,

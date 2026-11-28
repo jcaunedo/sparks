@@ -41,6 +41,8 @@ export type ReviewInputs = {
 	openQuestions?: string[];
 	/** Clarifications Dana accepted after it advanced: words replaced in the acceptance criteria. */
 	clarified?: { from: string; to: string }[];
+	/** What she left for later in Prototype ("Add it to What comes later"), in a few words each. */
+	later?: string[];
 };
 
 const lowerFirst = (text: string) => text.charAt(0).toLowerCase() + text.slice(1);
@@ -56,6 +58,7 @@ export function sampleConceptForReview({
 	engineeringEffort,
 	openQuestions = [],
 	clarified = [],
+	later = [],
 }: ReviewInputs): ConceptForReview {
 	const profile = reviewProfileFor(direction.id);
 	const main = evaluation?.measures[0];
@@ -136,7 +139,7 @@ export function sampleConceptForReview({
 			evaluation ? "Evaluate: run, then Dana went ahead to Review." : "Evaluate: skipped.",
 		],
 		openQuestions: [...profile.openQuestions, ...openQuestions],
-		later: [],
+		later,
 	};
 }
 
@@ -206,6 +209,29 @@ export const sampleReviewerFor = (
 
 /** Each person's view once they've given it, by their id, for the prototype as it stands. */
 export const sampleReviewerViews = (changes: FitCheckChanges, directionId?: string) => reviewProfileFor(directionId).views(changes);
+
+/**
+ * In the demo, "Send a reminder" brings some of the people still pending in: about half of them, rounded up (3 → 2, 1 → 1),
+ * so the card fills and there's still someone to remind again.
+ */
+export const sampleRemindedCount = (pending: number) => Math.ceil(pending / 2);
+
+/**
+ * The view of someone who answers after a reminder (not one of Sparks's suggested reviewers, so the direction has no view
+ * for them): their team's view, as a teammate's in the suggestions gives it; otherwise one of a few, by their name.
+ */
+export function sampleRemindedView(reviewer: Reviewer, changes: FitCheckChanges, directionId?: string): Pick<Reviewer, "view" | "why"> {
+	const profile = reviewProfileFor(directionId);
+	const views = profile.views(changes);
+	const team = (department: string) => department.replace(/ team$/, "");
+	const teammate = profile.reviewers.find((r) => team(r.department) === team(reviewer.department) && views[r.id]);
+	if (teammate) return views[teammate.id];
+	const fallback: Pick<Reviewer, "view" | "why">[] = [
+		{ view: "Advance", why: "It solves a problem we hear about every week. Fine by us to go ahead." },
+		{ view: "Advance with changes", why: "Worth doing. Tell us early what it changes for our team, so we can plan for it." },
+	];
+	return fallback[[...reviewer.name].reduce((sum, c) => sum + c.charCodeAt(0), 0) % fallback.length];
+}
 
 /** A department as it reads in a sentence: "the UX team", "engineering". */
 const inSentence = (department: string) =>
@@ -462,3 +488,10 @@ export const sampleDecisionMs = 3500;
 export function sampleDecision(evaluation?: Evaluation, directionId?: string): ReviewDecision {
 	return evaluation ? reviewProfileFor(directionId).decision(evaluation) : { kind: "iterate-validate", reason: "Evaluate it first, then bring it back." };
 }
+
+/**
+ * "Create in Jira", once it's advanced (made up): her product team's Jira project, the epic it creates there and its
+ * address (a placeholder, example.com: replace it with the company's Jira), and how long creating it takes in the demo.
+ * Nothing is sent.
+ */
+export const sampleJira = { project: "Online shopping (SHOP)", epic: "SHOP-412", url: "https://jira.example.com/browse/SHOP-412", createMs: 1400 };

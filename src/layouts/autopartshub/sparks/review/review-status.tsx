@@ -5,7 +5,7 @@ import { motion } from "motion/react";
 import { TeamAssessment, type TeamAssessmentAction } from "@/components/data-display/team-assessment";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/data-display/table";
 import { Typography } from "@/components/typography/typography";
-import { fadeVariants, revealVariants, useMotionPreference } from "@/lib/motion";
+import { fadeVariants, revealVariants, scrollIntoViewSmoothly, useMotionPreference } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 
 import { HeaderIconButton } from "../../header-icon-button";
@@ -107,6 +107,8 @@ function ReviewTeamAssessment({
 	action,
 	remindedAt,
 	onRemind,
+	onReviewerSelect,
+	footer,
 	className,
 }: {
 	reviewers: Reviewer[];
@@ -116,6 +118,10 @@ function ReviewTeamAssessment({
 	/** When "Send a reminder" was selected (ISO), for the version published now. */
 	remindedAt?: string;
 	onRemind?: () => void;
+	/** Selecting a person in a popover: their assessment in Review status ("Reviewers"). */
+	onReviewerSelect?: (id: string) => void;
+	/** Last on the card, after a line: the next step (`ReviewNextOnCard`), on the idea's panel only. */
+	footer?: React.ReactNode;
 	className?: string;
 }) {
 	const counts = countAssessments(reviewers, version);
@@ -140,6 +146,8 @@ function ReviewTeamAssessment({
 				// "Advance with changes": the changes they ask for, under their name.
 				detail: outcomeOf(r, version) && r.view === "Advance with changes" && r.why ? r.why : undefined,
 			}))}
+			onPersonSelect={onReviewerSelect}
+			footer={footer}
 			className={className}
 		/>
 	);
@@ -222,6 +230,12 @@ type ReviewStatusPanelProps = {
 	next?: ReviewNext;
 	/** Everyone asked to review it, with their team and where each one is: the team assessment counts their views. */
 	reviewers: Reviewer[];
+	/**
+	 * Where to open it (`key` tells a new request from the same one): a reviewer (`reviewer`, their id: "Reviewers"
+	 * scrolls to them, at the top, and marks their row for a moment, e.g. after selecting them in the idea panel's team
+	 * assessment) or the next step (`"next-step"`, e.g. from the card's "See what Sparks would change").
+	 */
+	focus?: { target: { reviewer: string } | "next-step"; key: number };
 	className?: string;
 };
 
@@ -241,14 +255,50 @@ function ReviewStatusPanel({
 	onBack,
 	next,
 	reviewers,
+	focus,
 	className,
 }: ReviewStatusPanelProps) {
 	const { prefersReducedMotion } = useMotionPreference();
+	// A reviewer selected (here, or in the idea panel's card): their row in "Reviewers" comes into view and is marked for
+	// a moment, as a part of the idea is when a comment on it is opened. The next step, from the card: it comes into view.
+	const [shown, setShown] = React.useState(focus);
+	React.useEffect(() => {
+		if (focus) setShown(focus);
+	}, [focus]);
+	const bodyRef = React.useRef<HTMLDivElement>(null);
+	const [markedReviewer, setMarkedReviewer] = React.useState<string>();
+	React.useEffect(() => {
+		if (!shown) return;
+		let stop = () => {};
+		let timer = 0;
+		const frame = requestAnimationFrame(() => {
+			const { target } = shown;
+			const element = bodyRef.current?.querySelector<HTMLElement>(
+				target === "next-step" ? "[data-next-step]" : `[data-reviewer="${CSS.escape(target.reviewer)}"]`,
+			);
+			if (!element) return;
+			if (target !== "next-step") {
+				setMarkedReviewer(target.reviewer);
+				timer = window.setTimeout(() => setMarkedReviewer(undefined), 1600);
+			}
+			element.focus({ preventScroll: true });
+			stop = scrollIntoViewSmoothly(element, { reducedMotion: Boolean(prefersReducedMotion), align: "start" });
+		});
+		return () => {
+			cancelAnimationFrame(frame);
+			window.clearTimeout(timer);
+			stop();
+		};
+	}, [shown, prefersReducedMotion]);
 	const counts = countAssessments(reviewers, version);
 	const results = feedback && counts.received > 0 ? feedback : undefined;
 	// Opening it, focus goes to its title, so the panel that took the prototype's place is where she is.
 	const titleRef = React.useRef<HTMLHeadingElement>(null);
-	React.useEffect(() => titleRef.current?.focus({ preventScroll: true }), []);
+	// Opened at a reviewer or the next step, focus goes there instead (above).
+	React.useEffect(() => {
+		if (!focus) titleRef.current?.focus({ preventScroll: true });
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, []);
 	const shownNext = next && next.kind !== "publish" ? next : undefined;
 	return (
 		<motion.section
@@ -296,7 +346,7 @@ function ReviewStatusPanel({
 					<Download aria-hidden />
 				</HeaderIconButton>
 			</div>
-			<div className='scrollbar-subtle -mx-[15px] flex min-h-0 flex-1 flex-col overflow-y-auto px-[19px]'>
+			<div ref={bodyRef} className='scrollbar-subtle -mx-[15px] flex min-h-0 flex-1 flex-col overflow-y-auto px-[19px]'>
 				<div className='flex flex-col gap-6 pb-2'>
 					<div className='flex flex-col gap-2'>
 						<ReviewTeamAssessment
@@ -305,6 +355,7 @@ function ReviewStatusPanel({
 							version={version}
 							remindedAt={remindedAt}
 							onRemind={onRemind}
+							onReviewerSelect={(id) => setShown({ target: { reviewer: id }, key: Date.now() })}
 						/>
 						{/* The team recommends; it doesn't approve (prds/sparks-review.md, "Assessment lifecycle"). */}
 						<p className='px-1 text-sm text-muted-foreground'>The team's assessments inform the decision. The decision owner makes it, once you ask.</p>
@@ -359,7 +410,7 @@ function ReviewStatusPanel({
 						{shownNext ? <ReviewNextStep next={shownNext} /> : null}
 						{reviewers.length ? (
 							<StatusSection title='Reviewers'>
-								<ReviewerList reviewers={reviewers} size='base' />
+								<ReviewerList reviewers={reviewers} size='base' marked={markedReviewer} />
 							</StatusSection>
 						) : null}
 					</div>

@@ -10,6 +10,7 @@ import { UserMessage } from "@/components/chat/user-message";
 import { PromptComposer } from "@/components/chat/prompt-composer";
 import { DropdownMenuItem, DropdownMenuSeparator } from "@/components/overlays/dropdown-menu";
 import { QuickReplies } from "@/components/chat/quick-replies";
+import { ReplyOptions } from "@/components/chat/reply-options";
 import { SectionDivider } from "@/components/chat/section-divider";
 import { ThinkingIndicator } from "@/components/chat/thinking-indicator";
 import { AppHeader } from "@/components/navigation/app-header";
@@ -197,6 +198,12 @@ type SparksReply = {
 	parts: SparksReplyPart[];
 	/** Likely answers under the reply while it's the last message; selecting one sends it as Dana's message. */
 	quickReplies?: string[];
+	/**
+	 * The quick replies show as a numbered list of options (ReplyOptions) instead of buttons, each with what it does under
+	 * it (`steps`, then `details`, by reply): for choices that go further than yes or no, such as a fix's plan (its steps
+	 * in the first option), what can go on top of it and "Fix all" (prds/sparks-prototype.md, "Fixing a finding").
+	 */
+	options?: { label?: string; steps?: Record<string, string[]>; details?: Record<string, string> };
 	/**
 	 * The quick reply that opens the file picker instead of being sent ("Attach files"). While this is the last message,
 	 * files can be sent with no text.
@@ -444,7 +451,18 @@ function SparksReplyView({
 					animate='animate'
 				>
 					{/* The same replies as ClarificationCard's (`QuickReplies`, sparks.ds "ctas"): the first one, the "continue",
-					    last with the ↵ key, and Enter picks it. */}
+					    last with the ↵ key, and Enter picks it. As options, a numbered list, the first one with the ↵ key. */}
+					{reply.options ? (
+						<ReplyOptions
+							aria-label={reply.options.label}
+							options={reply.quickReplies.map((label) => ({
+								label,
+								steps: reply.options?.steps?.[label],
+								detail: reply.options?.details?.[label],
+							}))}
+							onSelect={onQuickReply}
+						/>
+					) : (
 					<QuickReplies
 						replies={reply.quickReplies}
 						onReply={onQuickReply}
@@ -455,6 +473,7 @@ function SparksReplyView({
 							...(reply.libraryReply ? { [reply.libraryReply]: <Folder /> } : {}),
 						}}
 					/>
+					)}
 				</motion.div>
 			) : null}
 			{/* The reply's end, for bringing its actions into view, with 32px below them. */}
@@ -1072,18 +1091,40 @@ function SparksWorkspace({
 		else scrollRef.current?.scrollTo({ top: 0 });
 	}, [threadStep, threadLast]);
 
-	// A conversation that opens with history (a concept reopened, or "Add Plan") starts at its latest reply, where she
-	// left off, not at the introduction. A reply that goes on after a section divider starts at its last section (after
-	// "Add Plan": "Next, pick the path to prototype first.", not the success summary before it). Right after "Add Plan"
-	// (`glideToLatest`), it glides there from the introduction over 1.2s (`glideScrollTransition`), slow enough to see the
-	// Plan go by; any wheel, touch, click or key stops it.
+	// A conversation that opens with history (a concept reopened) shows where she left off, nothing streaming or
+	// thinking again: it fades in at its top (the introduction), then glides down until its end sits in the middle of the
+	// view (`endRef`, the half-view space under it; `glideScrollTransition`, 1.2s), so she sees what's there on the way.
+	// Any wheel, touch, click or key stops it. Reduced motion: at its end at once, no fade.
+	const [reopened] = React.useState(initialIds.size > 0 && !glideToLatest);
+	const endRef = React.useRef<HTMLDivElement>(null);
+	const glideToEnd = React.useRef<() => void>(() => {});
+	const glideStarted = React.useRef(false);
+	const startGlideToEnd = () => {
+		if (!reopened || glideStarted.current || !endRef.current) return;
+		glideStarted.current = true;
+		glideToEnd.current = scrollIntoViewSmoothly(endRef.current, {
+			reducedMotion: Boolean(prefersReducedMotion),
+			align: "end",
+			transition: glideScrollTransition,
+		});
+	};
+	React.useEffect(() => () => glideToEnd.current(), []);
+	React.useLayoutEffect(() => {
+		// Reduced motion: no fade to wait for, so once the view's height (and the space under the end) is known.
+		if (prefersReducedMotion && viewHeight) startGlideToEnd();
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [viewHeight]);
+	// Right after "Add Plan" (`glideToLatest`), it starts at its latest reply, and a reply that goes on after a section
+	// divider at its last section ("Next, pick the path to prototype first.", not the success summary before it): it
+	// glides there from the introduction over 1.2s (`glideScrollTransition`), slow enough to see the Plan go by; any
+	// wheel, touch, click or key stops it.
 	React.useLayoutEffect(() => {
 		const latest = threadLast ? itemRefs.current.get(threadLast.id) : undefined;
-		if (!latest) return;
+		if (!latest || !glideToLatest) return;
 		const dividers = latest.querySelectorAll<HTMLElement>("[data-slot=section-divider]");
 		const lastSection = dividers[dividers.length - 1]?.nextElementSibling;
 		return scrollIntoViewSmoothly(lastSection instanceof HTMLElement ? lastSection : latest, {
-			reducedMotion: !glideToLatest || Boolean(prefersReducedMotion),
+			reducedMotion: Boolean(prefersReducedMotion),
 			align: "start",
 			transition: glideScrollTransition,
 		});
@@ -1637,7 +1678,14 @@ const libraryOpen = sidePanel === "library";
 			>
 				{/* No scrollbar while the layout shifts: the text rewraps as the column narrows. */}
 				<div ref={scrollRef} className={cn("scrollbar-subtle min-h-0 flex-1 overflow-y-auto px-6", shift && "[scrollbar-width:none]")}>
-					<div className='mx-auto w-full max-w-[728px]'>
+					<motion.div
+						className='mx-auto w-full max-w-[728px]'
+						// Reopened: it fades in at its top, then glides to its end (above).
+						variants={fadeVariants}
+						initial={reopened && !prefersReducedMotion ? "initial" : false}
+						animate='animate'
+						onAnimationComplete={startGlideToEnd}
+					>
 						<ol aria-label='Conversation' aria-live='polite' className='flex flex-col gap-4'>
 							{/* The introduction: first in every concept, in Plan's conversation, 32px above what follows it. */}
 							{threadStep === "plan" ? (
@@ -1735,7 +1783,10 @@ const libraryOpen = sidePanel === "library";
 								),
 							)}
 						</ol>
-					</div>
+						{/* Reopened (no reply coming in): half the view under the conversation's end, so it can sit in the middle
+						    of the view, as a new reply's end can (prds/sparks.md, "The concept workspace"). */}
+						{!lastIsNewReply && thread.length ? <div ref={endRef} aria-hidden style={{ height: Math.round(viewHeight / 2) }} /> : null}
+					</motion.div>
 				</div>
 				{/* 24px between the conversation and the message box, outside the scroll area, so text never runs up to the box. */}
 				<div className='shrink-0 px-6 pt-6 pb-6'>

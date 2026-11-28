@@ -1,4 +1,5 @@
-import { Plus, Search } from "lucide-react";
+import * as React from "react";
+import { Archive, ArchiveRestore, ArrowUpRight, Copy, Ellipsis, Plus, Search, Trash2 } from "lucide-react";
 
 import { Logo } from "@/components/brand/logo";
 import { Button } from "@/components/buttons/button";
@@ -7,11 +8,20 @@ import { EmptyState } from "@/components/feedback/empty-state";
 import { AppHeader } from "@/components/navigation/app-header";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/navigation/tabs";
 import { Typography } from "@/components/typography/typography";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/overlays/dialog";
+import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuSeparator,
+	DropdownMenuTrigger,
+} from "@/components/overlays/dropdown-menu";
 import { formatRelativeDate } from "@/lib/relative-date";
 import { cn } from "@/lib/utils";
 
 import type { AutoPartsHubUser } from "../../autopartshub";
 import { HeaderActions } from "../../header-actions";
+import { HeaderIconButton } from "../../header-icon-button";
 import type { NotificationsPopoverProps } from "../../notifications-popover";
 import { ideaStatusBadge, type IdeaStatus } from "../shared/idea-status";
 import { OutlineIconButton } from "../shared/outline-icon-button";
@@ -27,7 +37,7 @@ type SparksConceptStatus = SparksStep | Exclude<IdeaStatus, "draft">;
 type SparksConceptSummary = {
 	id: string;
 	name: string;
-	/** One line on the problem it solves. */
+	/** One line on the problem it solves: her first message. Empty for an idea she hasn't described yet. */
 	summary: string;
 	/** Who can see it: "Only you", "You and 2 others", "Shared by Marco". */
 	sharing: string;
@@ -48,6 +58,15 @@ type SparksConceptSummary = {
 	href: string;
 };
 
+/** Which tab a concept is listed in: what its "…" menu offers depends on it. */
+type SparksConceptList = "yours" | "shared" | "archive";
+
+/**
+ * A row's "…" menu (prds/sparks.md, "The start page"): "Open" opens it (as the row does); "Duplicate" makes a copy of it,
+ * hers, first in "Your ideas"; "Archive" moves it to Archive, and "Unarchive" back; "Delete" asks first, then it's gone.
+ */
+type SparksConceptAction = "duplicate" | "archive" | "unarchive" | "delete";
+
 type SparksStartPageProps = {
 	user: AutoPartsHubUser;
 	/** Dana's concepts ("Your ideas"), most recently edited first. */
@@ -62,6 +81,8 @@ type SparksStartPageProps = {
 	onNewIdea?: () => void;
 	/** The bell's notifications (the same in every AutoPartsHUB header). */
 	notifications?: NotificationsPopoverProps;
+	/** A row's "…" menu: what she chose, for which concept and from which tab ("Delete" once she's confirmed it). */
+	onConceptAction?: (action: SparksConceptAction, concept: SparksConceptSummary, list: SparksConceptList) => void;
 };
 
 
@@ -105,7 +126,12 @@ function SparksStartPage({
 	now = Date.now(),
 	onNewIdea,
 	notifications,
+	onConceptAction,
 }: SparksStartPageProps) {
+	// "Delete" asks first: the concept, and the tab it's in, while the dialog is open.
+	const [deleting, setDeleting] = React.useState<{ concept: SparksConceptSummary; list: SparksConceptList }>();
+	const act = (action: SparksConceptAction | "ask-delete", concept: SparksConceptSummary, list: SparksConceptList) =>
+		action === "ask-delete" ? setDeleting({ concept, list }) : onConceptAction?.(action, concept, list);
 	return (
 		<div className='flex min-h-screen flex-col bg-background text-foreground'>
 			{/* No back button: Sparks opens in its own tab, and the AutoPartsHUB home stays open in the other. */}
@@ -151,6 +177,8 @@ function SparksStartPage({
 						<TabsContent value='yours'>
 							<ConceptList
 								concepts={concepts}
+								list='yours'
+								onAction={onConceptAction ? act : undefined}
 								now={now}
 								empty={{
 									title: "No ideas yet",
@@ -161,6 +189,8 @@ function SparksStartPage({
 						<TabsContent value='shared'>
 							<ConceptList
 								concepts={sharedConcepts}
+								list='shared'
+								onAction={onConceptAction ? act : undefined}
 								now={now}
 								empty={{
 									title: "Nothing shared with you yet",
@@ -171,6 +201,8 @@ function SparksStartPage({
 						<TabsContent value='archive'>
 							<ConceptList
 								concepts={archivedConcepts}
+								list='archive'
+								onAction={onConceptAction ? act : undefined}
 								now={now}
 								empty={{
 									title: "Nothing archived yet",
@@ -181,6 +213,33 @@ function SparksStartPage({
 					</Tabs>
 				</div>
 			</main>
+			{/* "Delete" asks first: it can't be undone, and it's gone for everyone she shared it with. */}
+			<Dialog open={Boolean(deleting)} onOpenChange={(open) => (open ? null : setDeleting(undefined))}>
+				<DialogContent showCloseButton={false}>
+					<DialogHeader>
+						<DialogTitle>Delete "{deleting?.concept.name}"?</DialogTitle>
+						<DialogDescription>
+							{deleting?.concept.sharing && deleting.concept.sharing !== "Only you"
+								? "It's gone for you and everyone you shared it with, with its conversation, prototype and evaluation. You can't undo this."
+								: "It's gone, with its conversation, prototype and evaluation. You can't undo this."}
+						</DialogDescription>
+					</DialogHeader>
+					<DialogFooter>
+						<Button variant='outline' onClick={() => setDeleting(undefined)}>
+							Cancel
+						</Button>
+						<Button
+							variant='destructive'
+							onClick={() => {
+								if (deleting) onConceptAction?.("delete", deleting.concept, deleting.list);
+								setDeleting(undefined);
+							}}
+						>
+							Delete
+						</Button>
+					</DialogFooter>
+				</DialogContent>
+			</Dialog>
 		</div>
 	);
 }
@@ -193,11 +252,16 @@ function SparksStartPage({
  */
 function ConceptList({
 	concepts,
+	list,
+	onAction,
 	now,
 	empty,
 	className,
 }: {
 	concepts: SparksConceptSummary[];
+	list: SparksConceptList;
+	/** With it, each row has its "…" menu, in a column of its own at the end. */
+	onAction?: (action: SparksConceptAction | "ask-delete", concept: SparksConceptSummary, list: SparksConceptList) => void;
 	now: number;
 	/** What an empty tab says (not in Figma yet). */
 	empty: { title: string; description: string };
@@ -207,7 +271,13 @@ function ConceptList({
 		return <EmptyState className={cn("min-h-[220px]", className)} title={empty.title} description={empty.description} />;
 	}
 	return (
-		<div className={cn("grid grid-cols-[408px_repeat(3,minmax(0,1fr))_max-content] gap-x-6", className)}>
+		<div
+			className={cn(
+				"grid gap-x-6",
+				onAction ? "grid-cols-[408px_repeat(3,minmax(0,1fr))_max-content_36px]" : "grid-cols-[408px_repeat(3,minmax(0,1fr))_max-content]",
+				className,
+			)}
+		>
 			{/* Figma "Frame 10121829": the column names, sm muted, on a light gray with rounded top corners. Hidden from
 			    screen readers: each row is one link, and its cells say their column themselves. */}
 			<div
@@ -219,11 +289,22 @@ function ConceptList({
 				<span>Created</span>
 				<span>Evaluation</span>
 				<span>Status</span>
+				{onAction ? <span /> : null}
 			</div>
 			<ul className='col-span-full grid grid-cols-subgrid border-t border-border'>
 				{concepts.map((concept, index) => (
-					<li key={concept.id} className='col-span-full grid grid-cols-subgrid border-b border-border'>
-						<ConceptRow concept={concept} now={now} tile={previewTiles[index % previewTiles.length]} />
+					// The whole row lights up on hover (the link and its "…" menu), and stays lit while the menu is open.
+					<li
+						key={concept.id}
+						className='group/row col-span-full grid grid-cols-subgrid items-center border-b border-border bg-background transition-colors hover:bg-background-subtle has-[[data-state=open]]:bg-background-subtle'
+					>
+						<ConceptRow
+							concept={concept}
+							now={now}
+							tile={previewTiles[index % previewTiles.length]}
+							actions={onAction ? (action) => onAction(action, concept, list) : undefined}
+							list={list}
+						/>
 					</li>
 				))}
 			</ul>
@@ -239,7 +320,20 @@ const validationLabel = (validation: SparksConceptSummary["validation"]) =>
  * One concept: its preview, name and summary, then who can see it, when it was created, Evaluate's last result and
  * where it is. Opens it.
  */
-function ConceptRow({ concept, now, tile }: { concept: SparksConceptSummary; now: number; tile: string }) {
+function ConceptRow({
+	concept,
+	now,
+	tile,
+	list,
+	actions,
+}: {
+	concept: SparksConceptSummary;
+	now: number;
+	tile: string;
+	list: SparksConceptList;
+	actions?: (action: SparksConceptAction | "ask-delete") => void;
+}) {
+	const linkRef = React.useRef<HTMLAnchorElement>(null);
 	const created = formatRelativeDate(concept.createdAt, now);
 	const status = statusBadge[concept.status];
 	const statusLabel =
@@ -251,9 +345,15 @@ function ConceptRow({ concept, now, tile }: { concept: SparksConceptSummary; now
 		// Figma: 20px top and bottom (96px rows), 16px left and right; 16px between the preview and the name, 24px between
 		// columns. The idea column is 408px: in a subgrid the row's 16px padding sits inside the first column, so 16 + 392 +
 		// the 24px gap puts sharing where Figma's starts (its 400px idea block plus a 16px gap). Hover and focus aren't in Figma.
+		<>
 		<a
+			ref={linkRef}
 			href={concept.href}
-			className='col-span-full grid grid-cols-subgrid items-center bg-background px-4 py-5 outline-none transition-colors hover:bg-background-subtle focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset'
+			className={cn(
+				"grid grid-cols-subgrid items-center py-5 ps-4 outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset",
+				// With the "…" menu, the link takes the five columns and the menu the last, 16px from the row's end.
+				actions ? "col-span-5" : "col-span-full pe-4",
+			)}
 		>
 			{/* 32px clear on its right (inside the column, so "Share with" stays where Figma has it): the cut name and summary
 			    don't run into the next column (DESIGN.md → "Columns"). */}
@@ -267,8 +367,9 @@ function ConceptRow({ concept, now, tile }: { concept: SparksConceptSummary; now
 					<Typography size='lg' weight='semibold' className='truncate'>
 						{concept.name}
 					</Typography>
-					<Typography size='sm' className='truncate'>
-						{concept.summary}
+					{/* Just created, before she describes the problem: the line says so, muted. */}
+					<Typography size='sm' className={cn("truncate", !concept.summary && "text-muted-foreground")}>
+						{concept.summary || "No problem described yet."}
 					</Typography>
 				</div>
 			</div>
@@ -293,11 +394,77 @@ function ConceptRow({ concept, now, tile }: { concept: SparksConceptSummary; now
 				</Badge>
 			</div>
 		</a>
+		{actions ? (
+			<div className='flex justify-end pe-4'>
+				<ConceptMenu name={concept.name} list={list} onOpen={() => linkRef.current?.click()} onAction={actions} />
+			</div>
+		) : null}
+		</>
+	);
+}
+
+/**
+ * A row's "…" menu (prds/sparks.md, "The start page"): a ghost icon button with its name in a tooltip, opening Open,
+ * Duplicate, Archive (Unarchive in Archive) and Delete, last, after a line, in the destructive color. An idea shared
+ * with her isn't hers to archive or delete: Open and Duplicate only.
+ */
+function ConceptMenu({
+	name,
+	list,
+	onOpen,
+	onAction,
+}: {
+	name: string;
+	list: SparksConceptList;
+	onOpen: () => void;
+	onAction: (action: SparksConceptAction | "ask-delete") => void;
+}) {
+	const own = list !== "shared";
+	return (
+		<DropdownMenu>
+			<DropdownMenuTrigger asChild>
+				{/* Subtle until the row is hovered (or it's focused, or its menu is open): the row's content reads first. */}
+				<HeaderIconButton
+					label={`More actions for ${name}`}
+					tooltip='More actions'
+					className='text-icon-subtle group-hover/row:text-icon focus-visible:text-icon data-[state=open]:text-icon'
+				>
+					<Ellipsis aria-hidden />
+				</HeaderIconButton>
+			</DropdownMenuTrigger>
+			<DropdownMenuContent align='end'>
+				<DropdownMenuItem onSelect={onOpen}>
+					<ArrowUpRight aria-hidden />
+					Open
+				</DropdownMenuItem>
+				<DropdownMenuItem onSelect={() => onAction("duplicate")}>
+					<Copy aria-hidden />
+					Duplicate
+				</DropdownMenuItem>
+				{own ? (
+					<DropdownMenuItem onSelect={() => onAction(list === "archive" ? "unarchive" : "archive")}>
+						{list === "archive" ? <ArchiveRestore aria-hidden /> : <Archive aria-hidden />}
+						{list === "archive" ? "Unarchive" : "Archive"}
+					</DropdownMenuItem>
+				) : null}
+				{own ? (
+					<>
+						<DropdownMenuSeparator />
+						<DropdownMenuItem variant='destructive' onSelect={() => onAction("ask-delete")}>
+							<Trash2 aria-hidden />
+							Delete
+						</DropdownMenuItem>
+					</>
+				) : null}
+			</DropdownMenuContent>
+		</DropdownMenu>
 	);
 }
 
 export {
 	SparksStartPage,
+	type SparksConceptAction,
+	type SparksConceptList,
 	type SparksStartPageProps,
 	type SparksConceptSummary,
 	type SparksConceptStatus,

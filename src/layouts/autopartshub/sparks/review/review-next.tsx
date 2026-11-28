@@ -39,6 +39,39 @@ type BuildFlag = {
 	outcome?: "made" | "skipped";
 };
 
+/**
+ * Creating an advanced idea in Jira for the team who builds it (prds/sparks-review.md, "Creating it in Jira"): an epic in
+ * their project, with one story per user story and its acceptance criteria, each linking back to the idea. One way:
+ * the idea in Sparks stays where it's decided. `creating` while it's sent; `created`, with the epic's key.
+ */
+type JiraHandoff = {
+	/** The team's Jira project ("Online shopping (SHOP)"). */
+	project: string;
+	/** How many stories it creates: one per user story. */
+	stories: number;
+	status: "idle" | "creating" | "created";
+	/** The epic, once created ("SHOP-412"), and where it is in Jira: its key links there, in a new tab. */
+	epic?: string;
+	url?: string;
+	onCreate: () => void;
+};
+
+/** The epic's key, wherever it shows (the next step, the card): a link to it in Jira, in the link color, underlined. */
+function JiraEpicLink({ jira }: { jira: JiraHandoff }) {
+	if (!jira.url) return <span className='font-medium'>{jira.epic}</span>;
+	return (
+		<a
+			href={jira.url}
+			target='_blank'
+			rel='noreferrer'
+			className='rounded-sm text-link underline underline-offset-2 outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50'
+		>
+			{jira.epic}
+			<span className='sr-only'> (opens Jira in a new tab)</span>
+		</a>
+	);
+}
+
 /** What Review is waiting for, with what she can do about it. */
 type ReviewNext =
 	/**
@@ -68,6 +101,8 @@ type ReviewNext =
 			ready?: ReadyCheck[];
 			/** Advanced and shared: something the team who builds it flagged as unclear, with Sparks's fix. */
 			flag?: BuildFlag;
+			/** Advanced: creating it in Jira, for the team who builds it. */
+			jira?: JiraHandoff;
 			shared: boolean;
 			onShare: () => void;
 			onEvaluate: () => void;
@@ -129,6 +164,36 @@ function BuildFlagFix({ flag }: { flag: BuildFlag }) {
 					</div>
 				</>
 			)}
+		</div>
+	);
+}
+
+/** "Create in Jira", after it's advanced: what it creates and where, then what was created. */
+function JiraStep({ jira, team }: { jira: JiraHandoff; team: string }) {
+	if (jira.status === "created")
+		return (
+			<div className='flex flex-col gap-1'>
+				<p className='flex items-start gap-2 text-base text-foreground'>
+					<CircleCheck aria-hidden className='mt-1 size-4 shrink-0 text-success' />
+					<span>
+						Created in Jira: epic <JiraEpicLink jira={jira} />, with {jira.stories} stories in {jira.project}. Each story has its acceptance
+						criteria and links back to this idea.
+					</span>
+				</p>
+				<p className={cn(note, "ps-6")}>Changes you make to the idea here don't update Jira.</p>
+			</div>
+		);
+	return (
+		<div className='flex flex-col gap-3'>
+			<p className='text-base text-foreground'>
+				Does {team} plan in Jira? Create it there: an epic in {jira.project}, with one story for each user story ({jira.stories}) and its acceptance criteria, each
+				linking back to this idea.
+			</p>
+			<div>
+				<NextButton onClick={jira.onCreate} disabled={jira.status === "creating"} aria-busy={jira.status === "creating" || undefined}>
+					{jira.status === "creating" ? "Creating in Jira…" : "Create in Jira"}
+				</NextButton>
+			</div>
 		</div>
 	);
 }
@@ -311,7 +376,6 @@ function ReviewNextStep({ next, className }: { next: ReviewNext; className?: str
 										with the decisions and every reason behind them after it.
 									</p>
 								) : null}
-								{next.shared && next.flag ? <BuildFlagFix flag={next.flag} /> : null}
 								{next.shared ? null : (
 									<>
 										<p className='text-base text-foreground'>
@@ -323,6 +387,9 @@ function ReviewNextStep({ next, className }: { next: ReviewNext; className?: str
 										</div>
 									</>
 								)}
+								{/* After sharing, so the team who builds it is named first; then the stories go where they plan. */}
+								{next.jira ? <JiraStep jira={next.jira} team={next.team} /> : null}
+								{next.shared && next.flag ? <BuildFlagFix flag={next.flag} /> : null}
 							</>
 						) : next.decision === "iterate-validate" ? (
 							<>
@@ -347,7 +414,7 @@ function ReviewNextStep({ next, className }: { next: ReviewNext; className?: str
 		}
 	})();
 	return (
-		<section ref={ref} tabIndex={-1} role='status' aria-label='Next step' className={cn("outline-none", className)}>
+		<section ref={ref} tabIndex={-1} role='status' aria-label='Next step' data-next-step className={cn("outline-none", className)}>
 			<motion.div
 				key={next.kind}
 				variants={prefersReducedMotion ? fadeVariants : revealVariants}
@@ -361,4 +428,84 @@ function ReviewNextStep({ next, className }: { next: ReviewNext; className?: str
 	);
 }
 
-export { ReadyToBuild, ReviewNextStep, type BuildFlag, type ReadyCheck, type ReviewNext };
+/**
+ * The next step on the team assessment card (prds/sparks-review.md, "The Team assessment card"), so Dana sees what to do
+ * without opening the full report: one sentence and its buttons. A step she can take in one selection runs from here
+ * ("Share it with your team", "Create in Jira", "Evaluate it"); one she reads or edits first opens Review status at the
+ * next step (`onOpen`). Nothing while the teams are still assessing it: "Send a reminder" is what she can do then.
+ */
+function ReviewNextOnCard({ next, onOpen }: { next: ReviewNext; onOpen: () => void }) {
+	const content = ((): { text: React.ReactNode; actions: { label: string; onClick?: () => void; busy?: boolean }[] } | undefined => {
+		switch (next.kind) {
+			case "publish":
+			case "in-review":
+				return undefined;
+			case "reviews":
+				return { text: "The reviews are in, and Sparks has changes to suggest.", actions: [{ label: "See what Sparks would change", onClick: onOpen }] };
+			case "ask":
+				return {
+					text: `Ready when you are: Sparks drafts your recommendation for ${next.owner}.`,
+					actions: [
+						{
+							label: "Draft my recommendation",
+							onClick: () => {
+								next.onDraft();
+								onOpen();
+							},
+						},
+					],
+				};
+			case "recommendation":
+				return { text: `Your recommendation for ${next.owner} is ready to check and submit.`, actions: [{ label: "Check and submit it", onClick: onOpen }] };
+			case "waiting":
+				return { text: `Sent to ${next.owner}. The decision shows here as soon as there's one.`, actions: [] };
+			case "decided": {
+				if (next.decision === "iterate-validate")
+					return { text: `${next.owner} asked to iterate: "${next.reason}"`, actions: [{ label: "Evaluate it", onClick: next.onEvaluate }] };
+				if (next.decision === "iterate-choice")
+					return { text: `${next.owner} asked to go back to the choice: "${next.reason}"`, actions: [{ label: "Go back to the choice", onClick: next.onBackToChoice }] };
+				const jira = next.jira;
+				const inJira = jira?.status === "created" ? jira : undefined;
+				return {
+					text: (
+						<>
+							{next.owner} advanced it
+							{next.shared || inJira ? ". It's " : ""}
+							{next.shared ? "shared with your team" : ""}
+							{next.shared && inJira ? " and " : ""}
+							{inJira ? (
+								<>
+									in Jira as <JiraEpicLink jira={inJira} />
+								</>
+							) : null}
+							.
+						</>
+					),
+					actions: [
+						...(next.shared ? [] : [{ label: "Share it with your team", onClick: next.onShare }]),
+						...(jira && jira.status !== "created"
+							? [{ label: jira.status === "creating" ? "Creating in Jira…" : "Create in Jira", onClick: jira.status === "creating" ? undefined : jira.onCreate, busy: jira.status === "creating" }]
+							: []),
+					],
+				};
+			}
+		}
+	})();
+	if (!content) return null;
+	return (
+		<div data-slot='review-next-on-card' role='status' aria-label='Next step' className='flex flex-col gap-3'>
+			<p className='text-base text-foreground'>{content.text}</p>
+			{content.actions.length ? (
+				<div className='flex flex-wrap gap-2'>
+					{content.actions.map((action) => (
+						<NextButton key={action.label} onClick={action.onClick} disabled={!action.onClick} aria-busy={action.busy || undefined}>
+							{action.label}
+						</NextButton>
+					))}
+				</div>
+			) : null}
+		</div>
+	);
+}
+
+export { ReadyToBuild, ReviewNextOnCard, ReviewNextStep, type BuildFlag, type JiraHandoff, type ReadyCheck, type ReviewNext };

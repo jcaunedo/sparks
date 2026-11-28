@@ -30,8 +30,11 @@ function scrollContainerTo(container: HTMLElement, top: number) {
 	else container.scrollTo({ top, behavior: "instant" });
 }
 
-/** "nearest": the least movement that brings the element fully into view. "start": its top at the top of the view. */
-type ScrollAlign = "nearest" | "start";
+/**
+ * "nearest": the least movement that brings the element fully into view. "start": its top at the top of the view.
+ * "end": its bottom at the bottom of the view (e.g. the space under a conversation, to bring its end to the middle).
+ */
+type ScrollAlign = "nearest" | "start" | "end";
 
 /**
  * Where `container` has to scroll so `element` is in view, honoring the container's `scroll-padding`
@@ -53,6 +56,7 @@ function scrollTargetFor(element: HTMLElement, container: HTMLElement, align: Sc
 
 	let delta = 0;
 	if (align === "start") delta = top - viewTop;
+	else if (align === "end") delta = bottom - viewBottom;
 	else if (bottom > viewBottom) delta = Math.min(bottom - viewBottom, top - viewTop);
 	else if (top < viewTop) delta = top - viewTop;
 

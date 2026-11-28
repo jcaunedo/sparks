@@ -13,6 +13,12 @@ type StoryLink = string | { storyId: string; args?: StoryArgs; newTab?: boolean;
 /* Args waiting for their story to render, kept across the reload of a standalone story tab. */
 const pendingArgsKey = "ucl-story-links:pending-args";
 
+/**
+ * The args a standalone tab's story was opened with, until they're set on it: Storybook renders a story with its own
+ * args first and takes these only after, so a story can use them from its first render (`argsPendingAtLoad`).
+ */
+let pendingAtLoad: { storyId: string; args: StoryArgs } | undefined;
+
 /** Once `storyId` has rendered, set `args` on it (they show in the Controls panel; "Reset controls" undoes them). */
 function applyArgsWhenRendered(storyId: string, args: StoryArgs) {
 	const channel = addons.getChannel();
@@ -20,8 +26,18 @@ function applyArgsWhenRendered(storyId: string, args: StoryArgs) {
 		if (renderedId !== storyId) return;
 		channel.off(STORY_RENDERED, apply);
 		channel.emit(UPDATE_STORY_ARGS, { storyId, updatedArgs: args });
+		if (pendingAtLoad?.storyId === storyId) pendingAtLoad = undefined;
 	};
 	channel.on(STORY_RENDERED, apply);
+}
+
+/**
+ * A story's args with those it was opened with (`goToStory` with args, in a standalone tab) already in, from its first
+ * render: without it, the story shows its own args for a moment first (a concept opened from its row showed a new
+ * concept, its introduction streaming, then the concept). For a story's `render`.
+ */
+function argsPendingAtLoad<T extends object>(storyId: string, args: T): T {
+	return pendingAtLoad?.storyId === storyId ? { ...args, ...(pendingAtLoad.args as Partial<T>) } : args;
 }
 
 /**
@@ -137,6 +153,7 @@ try {
 	if (pending) {
 		store.removeItem(pendingArgsKey);
 		const { storyId, args } = JSON.parse(pending) as { storyId: string; args: StoryArgs };
+		pendingAtLoad = { storyId, args };
 		applyArgsWhenRendered(storyId, args);
 	}
 } catch {
@@ -183,4 +200,4 @@ const storyIds = {
 	sparksAdvancedIdea: "layouts-autopartshub-sparks-published-idea--advanced",
 } as const;
 
-export { goToStory, openStoryInNewTab, closeStoryTab, storyHref, withStoryLinks, withTabName, storyIds, type StoryLink };
+export { goToStory, openStoryInNewTab, closeStoryTab, storyHref, withStoryLinks, withTabName, storyIds, type StoryLink, argsPendingAtLoad };

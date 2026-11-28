@@ -27,9 +27,10 @@ type SidePanelProps = {
 
 /**
  * A panel on the right edge of the workspace (Comments), as Figma Sparks → "Sparks Project" (63:12460) draws "Plan
- * summary": the screen's full height, a 1px border on its left, a soft gray (background-subtle at 50% on white, as the
+ * summary": the screen's full height, a soft gray (background-subtle at 50% on white, as the
  * bottom of the workspace), 24px all around (Figma's 28px top and bottom and 32px sides, changed on purpose: DESIGN.md). The title (lg semibold) and its icon buttons (8px apart, the
  * close button last, an X) on one row, then, 24px below, the content, which scrolls. Esc closes it too, from inside.
+ * Its 1px border on the left is drawn by the `aside` it sits in, once (DESIGN.md → "Side panels share one frame").
  */
 function SidePanel({ title, actions, closeLabel, onClose, autoFocus = false, bodyClassName, className, children }: SidePanelProps) {
 	const titleId = React.useId();
@@ -44,7 +45,7 @@ function SidePanel({ title, actions, closeLabel, onClose, autoFocus = false, bod
 			// Focusable from code only, so opening it puts her inside (Tab goes on to its close button).
 			tabIndex={-1}
 			className={cn(
-				"flex min-h-0 flex-1 flex-col gap-6 outline-none border-s border-border bg-[color-mix(in_srgb,var(--background-subtle)_50%,var(--background))] pt-6",
+				"flex min-h-0 flex-1 flex-col gap-6 outline-none bg-[color-mix(in_srgb,var(--background-subtle)_50%,var(--background))] pt-6",
 				className,
 			)}
 			onKeyDown={(event) => {

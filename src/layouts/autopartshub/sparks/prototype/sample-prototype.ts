@@ -270,10 +270,31 @@ export const sampleBeyondReply = (direction: string) =>
 		`That goes beyond "${direction}", so I haven't built it: the prototype gets evaluated against the direction you chose, and adding to it would drift from it without anyone noticing.\n\nI can add it to "What comes later" in your plan, or we can go back to the choice in Plan.`,
 		sampleBeyondReplies,
 	);
-/** "Add it to What comes later" or "Drop it"; "Go back to the choice" reopens the choice in Plan (the stories). */
-export function sampleBeyondAnswerReply(answer: string): SparksReply {
+/**
+ * What she asked for beyond the direction, in a few words, as it goes under "What comes later" (the idea for review):
+ * what the AI would write from her message.
+ */
+export function sampleLaterItem(request: string): string {
+	const t = request.toLowerCase();
+	if (/install|appointment|book/.test(t)) return "Booking an installation with the part.";
+	if (/delivery/.test(t)) return "Delivery options for the part.";
+	if (/financ/.test(t)) return "Paying for the part in installments.";
+	const words = request.trim().replace(/^(also|and|please|can you|could you)\s+/i, "").replace(/[.!?]*$/, "");
+	return `${words.charAt(0).toUpperCase()}${words.slice(1)}.`;
+}
+
+/**
+ * "Add it to What comes later" (`item`: what goes there, `sampleLaterItem`) or "Drop it"; "Go back to the choice" reopens
+ * the choice in Plan (the stories).
+ */
+export function sampleBeyondAnswerReply(answer: string, item?: string): SparksReply {
 	if (answer === "Add it to What comes later")
-		return prototypeReply("prototype-change", `Done. It's under "What comes later" in your plan, so reviewers see it.`);
+		return prototypeReply(
+			"prototype-change",
+			item
+				? `Done. "${item.replace(/\.$/, "")}" is under "What comes later" in your idea, so reviewers see it was left out on purpose.`
+				: `Done. It's under "What comes later" in your idea, so reviewers see it.`,
+		);
 	return prototypeReply("prototype-change", "Okay, I've dropped it.");
 }
 

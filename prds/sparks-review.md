@@ -2,8 +2,8 @@
 Created: Nov 21, 2026
 Created by: Julio Caunedo
 Last updated: Nov 27, 2026
-Latest update: in Share, "View recommended reviewers" is closed each time Share opens, and "Add all" shows only while the list is open.
-Recent updates: on the reviewers' page, once their assessment is sent, the header's button reads "Assessment shared" and the badge "In review"; a reply from Dana they haven't opened shows the unread dot on "Comments". The assessment opens in a dialog, and once sent sits on a card above the idea.
+Latest update: once it's advanced, "Create in Jira" creates an epic in the product team's Jira project, with one story per user story and its acceptance criteria, each linking back to the idea; it replaces "no work tracker integration". The team assessment card now shows what to do next, with its button ("See what Sparks would change", "Draft my recommendation", "Share it with your team", "Create in Jira"). Why: the team who builds it plans in Jira, and with the reviews in, the card offered nothing to do next.
+Recent updates: "What comes later" shows only when Dana has left something for later. "Send a reminder" brings in about half of the people still pending in the demo. Selecting a person in the team assessment's popovers opens Review status at their assessment.
 Scope: Review, the last of a Sparks concept's four steps (Plan, Prototype, Evaluate, Review), where it advances or not: the concept prepared for review, bringing in the UX team, engineering and the departments involved, Dana's recommendation, the decision owner's decision, and what happens after.
 Purpose: defines how a concept enters AutoParts Co.'s product process instead of going around it: reviewed by the people who will shape it, decided by the person who owns the decision, and shared with the teams when it advances.
 -->
@@ -99,7 +99,9 @@ When Review opens, Sparks prepares the concept for review from the spec, and tel
 | What it changes for teams | The change for each department | Evaluate |
 | Decisions | The decision log | [sparks.md](sparks.md), "The decision log" |
 | Open questions | Everything still undecided, from every step | Every step |
-| What comes later | Parts left for later | The choice in Plan, Prototype |
+| What comes later | Parts left for later. Shown only when there's something in it | The choice in Plan, Prototype |
+
+✅ **Resolved:** "What comes later" shows only when Dana has left something for later (a change beyond the direction, or a step of "How it works" she left out, in Prototype). Empty, it's left out of the idea, Sparks doesn't write it, and "Jump to a section" doesn't list it. Every other part shows even when empty, with "None.". Why: it's an optional part that's empty for most ideas, and its empty heading at the end made reviewers look for something that isn't there. When it has something in it, it says what was knowingly left out of scope.
 
 ✅ **Resolved:** the idea has a part for engineering, "For engineering to check", right after "What it needs to be built", as "For the UX team to test with real people" is the UX team's: questions, each with how to check it, never a guess at the answer. Engineering's reviewers start there; the team who builds it reads it after what it needs (`buildPartTitles`). Why: engineering's part of the review is whether it can be built as described, and the idea should say what's still to check rather than leave it to the reviewers to find.
 
@@ -281,9 +283,22 @@ One component (UCL's `TeamAssessment`), the same in both places, with a variant 
   ✅ **Resolved:** the card shows "% completed", worked out from the counts (sparks.ds shows "25% completed" beside 3 of 8, which would be 38%).
 - **The bar:** everyone invited, as one bar: support (green), doesn't support (red), pending (gray), in that order, each its exact share (2, 1 and 2 of 5: 40%, 20%, 40%), touching, with nothing else in it. Pending is the bar's own gray: the bar always adds up to everyone invited.
 - **Legend:** "2 support", "1 doesn't support", "5 pending": the counts in words, so color isn't the only way to tell them apart.
-- **Who's in each:** selecting a legend item, or its segment of the bar, opens a popover under the legend item: "Pending · 2 of 5", then those people ~~grouped by team (the team in small muted text), each with their photo, name and status on the right:~~ team by team, each as in Share's lists: their photo, name, and job title and team under it ("UX lead · UX team"), then their status under that: their view as a badge ("Advance", "Advance with changes", "Don't advance yet", in its color), or how far they've got ("Invited", "Opened it", "Commented"), the same as in "Reviewers". Someone who said "Advance with changes" has the changes they ask for under their name ("Move the fit message above the price: customers in a hurry miss it."). An outcome with no one in it ("0 pending") opens nothing.
+- **What to do next,** on the idea's panel only, last on the card after a line: one sentence and its buttons, as Review's next step moves on, so Dana doesn't have to open the full report to find it. A step she takes in one selection runs from the card; one she reads or edits first opens Review status at the next step:
+  - the reviews are in: "The reviews are in, and Sparks has changes to suggest." and "See what Sparks would change";
+  - ready to ask: "Ready when you are: Sparks drafts your recommendation for {owner}." and "Draft my recommendation" (it drafts it and opens it);
+  - her recommendation: "Your recommendation for {owner} is ready to check and submit." and "Check and submit it";
+  - waiting: "Sent to {owner}. The decision shows here as soon as there's one.", no button;
+  - advanced: "{owner} advanced it." (". It's shared with your team and in Jira as SHOP-412" as each is done), with "Share it with your team" and "Create in Jira" until each is done;
+  - iterate: the reason, with "Evaluate it" or "Go back to the choice".
+
+  Nothing while the teams are still assessing it: "Send a reminder" is what she can do then. Review status keeps the full next step; its own card shows none.
+
+  ✅ **Resolved:** the next step shows on the team assessment card too. Why: with the reviews in, the card said "The team recommends moving forward" and offered nothing to do; the way forward (decision, then handoff) was only behind "View full report".
+- **Who's in each:** selecting a legend item, or its segment of the bar, opens a popover under the legend item: "Pending · 2 of 5", then those people ~~grouped by team (the team in small muted text), each with their photo, name and status on the right:~~ team by team, each as in Share's lists: their photo, name, and job title and team under it ("UX lead · UX team"), then their status under that: their view as a badge ("Advance", "Advance with changes", "Don't advance yet", in its color), or how far they've got ("Invited", "Opened it", "Commented"), the same as in "Reviewers". Someone who said "Advance with changes" has the changes they ask for under their name ("Move the fit message above the price: customers in a hurry miss it."). An outcome with no one in it ("0 pending") opens nothing. **Selecting a person** closes the popover and opens Review status at their assessment: "Reviewers" scrolls to their row, which is marked for a moment and takes focus (their team, what it evaluates, their view and why). The same from the card in Review status itself.
 
   ✅ **Resolved:** each outcome opens who's in it, by team, with their status. Why: Dana sees who to chase, or whose concerns to read, without leaving the card.
+
+  ✅ **Resolved:** a person in the popover opens their assessment in Review status ("Reviewers"). Why: the popover is a glance; their full view, with why, is in the report, and she gets there in one selection instead of finding them in the list.
 - **Variants:** on the idea's panel, a white card on the panel's gray (32px padding); in Review status, inset on the white panel (the soft gray, 24px top and bottom, 32px sides).
 
 ~~✅ **Resolved:** the action on the idea's panel reads "View full report" (sparks.ds: "View full review details"), and in Review status "View assessments". Why: it names the place it opens.~~ ✅ **Resolved:** the action on the idea's panel reads "View full report" (sparks.ds: "View full review details"), with a chevron pointing right after it. Why: it says what she gets, everything the card sums up, in fewer words than sparks.ds.
@@ -351,6 +366,7 @@ The panel scrolls on its own, as the idea's panel does.
 
 - Shows ~~after the count~~ under the legend while anyone hasn't assessed it; gone once everyone has.
 - Selecting it reminds the people still pending (in AutoPartsHUB and by email), ~~and it becomes~~ ~~"Reminder sent"~~ and "Reminder sent on Nov 27, 2026, 2:46 PM" (when she sent the latest) shows after it until she publishes an update. It stays, so she can send another; each one moves the date. It's the same in both places.
+- ℹ️ **In the demo,** a reminder brings in about half of the people still pending who weren't answering, rounded up (3 → 2, 1 → 1): they open the idea, comment and give their view, one step at a time, so the card fills and there's still someone to remind again. Only Sparks's suggested reviewers answer without one.
 - ⚠️ **Gap:** in the demo nothing is sent: it only shows when it was sent. ~~How often she can send one isn't decided.~~ She can send several; whether to space them out (e.g. not twice in an hour) isn't decided.
 
 ### Download report
@@ -409,13 +425,15 @@ What follows each decision:
 
 | Decision | What happens | The concept shows |
 | --- | --- | --- |
-| Advance | The concept stays in Sparks, ready for Dana to share, without edit rights, with the people, teams or departments who'll carry it forward, or the whole company ([sparks.md](sparks.md), "Sharing a concept"). Sparks checks it's ready to build ("Ready to build") and suggests who, ~~starting with the reviewers' departments~~ starting with her product team, who builds it, then the reviewers' departments. Review is marked Done | "Advanced", with the date, next to the evidence status |
+| Advance | The concept stays in Sparks, ready for Dana to share, without edit rights, with the people, teams or departments who'll carry it forward, or the whole company ([sparks.md](sparks.md), "Sharing a concept"). Sparks checks it's ready to build ("Ready to build") and suggests who, ~~starting with the reviewers' departments~~ starting with her product team, who builds it, then the reviewers' departments, and offers to create it in Jira ("Creating it in Jira"). Review is marked Done | "Advanced", with the date, next to the evidence status |
 | Iterate | The concept goes back to the step, or the part of Plan, the decision names, with the decision's reason as Sparks's first message there. What comes after it becomes Needs a check | The step it's on |
 | Stop | The concept is closed, with its reasons and learnings documented. Review is marked Done | "Stopped", with the date, next to the evidence status |
 
 ✅ **Resolved:** Iterate back to the choice ends with "Go back to the choice": the choice reopens in Plan, the decision's reason first in Decisions, and the prototype and evaluation of the direction she tried stay in the concept. Picking another direction builds its prototype from version 1, and Evaluate and Review start again for it.
 
-✅ **Resolved:** an advanced concept stays in Sparks as a shareable concept that viewers can't change. There's no export and no work tracker integration: the teams explore the prototype and read the problem, success criteria, decisions and spec in Sparks.
+✅ **Resolved:** an advanced concept stays in Sparks as a shareable concept that viewers can't change~~. There's no export and no work tracker integration~~: the teams explore the prototype and read the problem, success criteria, decisions and spec in Sparks.
+
+✅ **Resolved:** once it's advanced, Dana can also create it in Jira ("Creating it in Jira"): one way, linking back, with the idea in Sparks still where it's decided. Why: the team who builds it plans its sprints in Jira, and the idea's user stories and acceptance criteria are already what a Jira story needs.
 
 ## After the decision
 
@@ -429,7 +447,7 @@ What follows each decision:
 
 ### Handing it to development
 
-The advanced concept is the handoff: no new step, no export. Her product team (Dana's squad, who builds it) gets the same idea, read-only, in the order they need it.
+The advanced concept is the handoff: no new step~~, no export~~. Her product team (Dana's squad, who builds it) gets the same idea, read-only, in the order they need it.
 
 **Ready to build.** When the decision is Advance, the next step shows Sparks's check before she shares it, under "Before your team builds it", each line done (a check) or still open (with a fix):
 
@@ -452,6 +470,18 @@ None of them stops her from sharing it; the team sees the same lines.
 ✅ **Resolved:** the advanced concept is the handoff to development: Sparks checks it's ready to build, suggests her product team first, and the team who builds it opens it on what to build, next to the prototype, with why after it. Why: Dana's goal is to hand her developers something they can understand and act on; the document written for a decision leads with the summary and gaps, and developers need the user stories, what it needs and what's open first.
 
 ✅ **Resolved:** "What to track" is a part of the idea, drafted from the success criteria. Why: without it, the main measure Plan agreed on can't be checked after launch; engineering sees it in the review too.
+
+### Creating it in Jira
+
+After "Share it with them" in the next step (and on the card), "Create in Jira" puts the idea where the team who builds it plans its work:
+
+- **Before:** "Does your product team, the online shopping squad, plan in Jira? Create it there: an epic in Online shopping (SHOP), with one story for each user story (2) and its acceptance criteria, each linking back to this idea." and "Create in Jira".
+- **While it's created:** the button reads "Creating in Jira…" and can't be selected.
+- **Created:** "Created in Jira: epic SHOP-412, with 2 stories in Online shopping (SHOP). Each story has its acceptance criteria and links back to this idea.", with a check, and, muted, "Changes you make to the idea here don't update Jira." On the card: "It's in Jira as SHOP-412", and the button goes. The epic's key (SHOP-412), in both places, is a link to it in Jira (the link color, underlined), opening a new tab.
+- **One way:** Sparks creates the epic and its stories once; it doesn't sync. The idea in Sparks is still where it's decided, and every story links back to it, so the team reads why, the prototype and what's open there.
+- It doesn't depend on sharing: she can create it in Jira before or after sharing it, or not at all.
+
+⚠️ **Gap:** in the demo nothing is sent to Jira: the project and the epic (SHOP-412) are made up, and its link goes to a placeholder address (jira.example.com). Which project, connecting AutoPartsHUB to the company's Jira, who can create in it, and whether "What to track" and the open questions become Jira issues too aren't decided.
 
 ### Something unclear after it advances
 

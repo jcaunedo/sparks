@@ -89,6 +89,15 @@ type TeamAssessmentProps = Omit<React.ComponentProps<"section">, "title"> &
 		 * listing who's in each. Keep it in step with `invited`, `support` and `against`.
 		 */
 		people?: TeamAssessmentPerson[];
+		/**
+		 * Selecting a person in a popover: their row becomes a button (the hover fill, the focus ring); the popover closes,
+		 * then this runs, e.g. to open the full report at their assessment. `personSelectLabel` names it for screen readers
+		 * ("See {name}'s assessment" by default).
+		 */
+		onPersonSelect?: (id: string) => void;
+		personSelectLabel?: (person: TeamAssessmentPerson) => string;
+		/** Last, after a line (24px above and below it): e.g. what to do next, with its buttons. Rendering nothing, no line. */
+		footer?: React.ReactNode;
 	};
 
 const linkClasses =
@@ -101,13 +110,31 @@ const outcomeTitle = { support: "Support", against: "Don't support", pending: "P
  * The people in one outcome, team by team (teams in order of first appearance), each as in Share's lists: their photo,
  * name (sm semibold) and `subtitle` (xs muted), then their status under it and any `detail` (the changes they ask for).
  */
-function PeopleByTeam({ people }: { people: TeamAssessmentPerson[] }) {
+function PeopleByTeam({
+	people,
+	onSelect,
+	selectLabel,
+}: {
+	people: TeamAssessmentPerson[];
+	onSelect?: (id: string) => void;
+	selectLabel: (person: TeamAssessmentPerson) => string;
+}) {
 	const teams = [...new Set(people.map((person) => person.team ?? ""))];
 	const ordered = teams.flatMap((team) => people.filter((person) => (person.team ?? "") === team));
 	return (
-		<ul className='flex max-h-96 flex-col gap-4 overflow-y-auto'>
-			{ordered.map((person) => (
-				<li key={person.id} className='flex items-start gap-2'>
+		// Selectable rows get 8px of fill around them (`-mx-2 px-2`, 6px top and bottom), so they keep the list's alignment.
+		<ul className={cn("flex max-h-96 flex-col overflow-y-auto", onSelect ? "-mx-2 gap-1 px-0" : "gap-4")}>
+			{ordered.map((person) => {
+				const Row = onSelect ? "button" : "div";
+				return (
+				<li key={person.id}>
+					<Row
+						{...(onSelect ? { type: "button" as const, onClick: () => onSelect(person.id), "aria-label": selectLabel(person) } : {})}
+						className={cn(
+							"flex w-full items-start gap-2 text-start",
+							onSelect && "cursor-pointer rounded-md px-2 py-1.5 outline-none hover:bg-accent focus-visible:ring-[3px] focus-visible:ring-ring/50",
+						)}
+					>
 					<Avatar className='shrink-0'>
 						{person.avatarSrc ? <AvatarImage src={person.avatarSrc} alt='' /> : null}
 						<AvatarFallback>{person.name.split(" ").map((part) => part[0]).join("").slice(0, 2)}</AvatarFallback>
@@ -116,10 +143,12 @@ function PeopleByTeam({ people }: { people: TeamAssessmentPerson[] }) {
 						<span className='max-w-full truncate text-sm font-semibold text-foreground'>{person.name}</span>
 						{person.subtitle ? <span className='max-w-full truncate text-xs text-muted-foreground'>{person.subtitle}</span> : null}
 						{person.status ? <span className='mt-1.5 text-sm text-muted-foreground'>{person.status}</span> : null}
-						{person.detail ? <p className='mt-1 text-sm text-foreground'>{person.detail}</p> : null}
+						{person.detail ? <span className='mt-1 text-sm text-foreground'>{person.detail}</span> : null}
 					</div>
+					</Row>
 				</li>
-			))}
+				);
+			})}
 		</ul>
 	);
 }
@@ -143,6 +172,9 @@ function TeamAssessment({
 	remindLabel = "Send a reminder",
 	reminded,
 	people,
+	onPersonSelect,
+	personSelectLabel = (person) => `See ${person.name}'s assessment`,
+	footer,
 	variant = "card",
 	className,
 	...props
@@ -159,6 +191,9 @@ function TeamAssessment({
 	// The outcome whose people are listed, opened from its legend item or its segment.
 	const [listed, setListed] = React.useState<TeamAssessmentOutcome | null>(null);
 	const peopleIn = (key: TeamAssessmentOutcome) => people?.filter((person) => person.outcome === key) ?? [];
+	// Selecting a person closes the popover without sending focus back to its legend item: `onPersonSelect` takes her
+	// somewhere else (their assessment), and focus goes there.
+	const selectingRef = React.useRef(false);
 
 	const actionButton = action ? (
 		<button
@@ -262,11 +297,31 @@ function TeamAssessment({
 											{words}
 										</button>
 									</PopoverTrigger>
-									<PopoverContent align='start' className='flex w-80 flex-col gap-3'>
+									<PopoverContent
+										align='start'
+										className='flex w-80 flex-col gap-3'
+										onCloseAutoFocus={(event) => {
+											if (!selectingRef.current) return;
+											selectingRef.current = false;
+											event.preventDefault();
+										}}
+									>
 										<h2 className='text-base font-semibold text-foreground-prominent'>
 											{outcomeTitle[key]} <span className='font-normal text-muted-foreground'>· {count} of {total}</span>
 										</h2>
-										<PeopleByTeam people={peopleIn(key)} />
+										<PeopleByTeam
+											people={peopleIn(key)}
+											selectLabel={personSelectLabel}
+											onSelect={
+												onPersonSelect
+													? (id) => {
+															selectingRef.current = true;
+															setListed(null);
+															onPersonSelect(id);
+														}
+													: undefined
+											}
+										/>
 									</PopoverContent>
 								</Popover>
 							</li>
@@ -287,6 +342,8 @@ function TeamAssessment({
 					</div>
 				) : null}
 			</div>
+			{/* Hidden while what's passed renders nothing (`empty:hidden`): no line and no space for nothing. */}
+			{footer ? <div className='mt-3 border-t border-border pt-6 empty:hidden'>{footer}</div> : null}
 		</section>
 	);
 }

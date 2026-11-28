@@ -100,6 +100,8 @@ const fixPlans: Record<string, FixPlan> = {
 const planFor = (findingId: string): FixPlan => fixPlans[findingId] ?? { steps: [], why: "", followUps: [] };
 
 export const sampleMakeTheChange = "Make this change";
+/** The last option, with two follow-ups or more: the plan and every follow-up, as one version. */
+export const sampleFixAll = "Fix all";
 const evaluateAgain = "Yes, evaluate it";
 
 /** "Fix finding 1 next": another finding the prototype can fix, without going back to Evaluate. */
@@ -121,25 +123,53 @@ export function sampleFixStage(replyId: string): { findingId: string; made: bool
 	return match ? { findingId: match[2], made: match[1] === "made" } : undefined;
 }
 
-/** The plan first: what Sparks will change and why, with the follow-ups to pick from. Nothing changes yet. */
+const sentence = (text: string) => text.charAt(0).toUpperCase() + text.slice(1);
+
+/**
+ * The plan first: what Sparks will change and why. Nothing changes yet. With follow-ups, the plan and what she can pick
+ * are one numbered list: the plan itself (↵, its steps and why), each follow-up on top of it, and "Fix all" last (with
+ * two or more). Without, the plan is in the message and "Make this change" is its only reply.
+ */
 export function sampleFixPlanReply(finding: FixedFinding, changes: FitCheckChanges, nextVersion: number): SparksReply {
 	const plan = planFor(finding.id);
 	const followUps = sampleFixFollowUps(finding.id, changes);
+	const fixAll = followUps.length > 1;
 	const where = finding.onPage ? "I've opened the page where it happens." : "It's on every page.";
-	const choose = followUps.length
-		? "Pick one of the others and I'll do that too, or tell me what you'd do instead."
-		: "If not, tell me what you'd do instead.";
+	const back = `It will be version ${nextVersion}, so you can always go back.`;
+	const thinking = [`Looking under the hood of finding ${finding.number}…`, "Finding parts that fit in the design system…", "Planning the repair…"];
+	if (!followUps.length)
+		return {
+			id: `prototype-fix-plan-${finding.id}`,
+			from: "sparks",
+			thinking,
+			parts: [
+				{
+					kind: "text",
+					text: `${where}\n\n**Here's my plan:**\n\n${plan.steps.map((step, i) => `${i + 1}. ${step}`).join("\n")}\n\n${plan.why} ${back}\n\n**Should I make this change?**\n\nIf not, tell me what you'd do instead.`,
+				},
+			],
+			quickReplies: [sampleMakeTheChange],
+		};
 	return {
 		id: `prototype-fix-plan-${finding.id}`,
 		from: "sparks",
-		thinking: [`Looking under the hood of finding ${finding.number}…`, "Finding parts that fit in the design system…", "Planning the repair…"],
+		thinking,
 		parts: [
 			{
 				kind: "text",
-				text: `${where}\n\n**Here's my plan:**\n\n${plan.steps.map((step, i) => `${i + 1}. ${step}`).join("\n")}\n\n${plan.why} It will be version ${nextVersion}, so you can always go back.\n\n**Should I make this change?**\n\n${choose}`,
+				text: `${where}\n\n**Should I make this change?**\n\nHere's my plan and what I can add to it. Pick one, or tell me what you'd do instead. ${back}`,
 			},
 		],
-		quickReplies: [sampleMakeTheChange, ...followUps.map((f) => f.reply)],
+		quickReplies: [sampleMakeTheChange, ...followUps.map((f) => f.reply), ...(fixAll ? [sampleFixAll] : [])],
+		options: {
+			label: "What should Sparks do?",
+			steps: { [sampleMakeTheChange]: plan.steps },
+			details: {
+				[sampleMakeTheChange]: plan.why,
+				...Object.fromEntries(followUps.map((f) => [f.reply, sentence(f.summary)])),
+				...(fixAll ? { [sampleFixAll]: "Everything above" } : {}),
+			},
+		},
 	};
 }
 
@@ -150,6 +180,9 @@ const madeReplies = (findingId: string, changes: FitCheckChanges, nextFinding?: 
 	...sampleFixFollowUps(findingId, changes).map((f) => f.reply),
 ];
 
+/** "a", "a, and b", "a, b, and c". */
+const listed = (items: string[]) => (items.length < 3 ? items.join(", and ") : `${items.slice(0, -1).join(", ")}, and ${items[items.length - 1]}`);
+
 /** Made: what changed, the version, and that only a new run can confirm it; then what she can do next. */
 export function sampleFixMadeReply(finding: FixedFinding, summaries: string[], version: number, changes: FitCheckChanges, nextFinding?: number): SparksReply {
 	return {
@@ -158,7 +191,7 @@ export function sampleFixMadeReply(finding: FixedFinding, summaries: string[], v
 		parts: [
 			{
 				kind: "text",
-				text: `Done: ${summaries.join(", and ")}. I've saved it as version ${version}.\n\nTry it on the prototype. Finding ${finding.number} stays to be checked until I run the evaluation again.\n\n**Ready for me to evaluate it again?**\n\nOr keep going: tell me what else to change.`,
+				text: `Done: ${listed(summaries)}. I've saved it as version ${version}.\n\nTry it on the prototype. Finding ${finding.number} stays to be checked until I run the evaluation again.\n\n**Ready for me to evaluate it again?**\n\nOr keep going: tell me what else to change.`,
 			},
 		],
 		quickReplies: madeReplies(finding.id, changes, nextFinding),

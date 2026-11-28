@@ -628,7 +628,7 @@ function PublishedIdea({
 						initial='initial'
 						animate='animate'
 						exit='exit'
-						className='relative flex h-full shrink-0 flex-col'
+						className='relative flex h-full shrink-0 flex-col border-s border-border bg-[color-mix(in_srgb,var(--background-subtle)_50%,var(--background))]'
 						style={{ width: commentsWidth }}
 					>
 						<SidePanelResizer width={commentsWidth} onWidthChange={setCommentsWidth} label='Resize comments' />
