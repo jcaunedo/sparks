@@ -10,7 +10,7 @@ import { handlePeopleKeys, matchPeople, PeopleList, type PeopleOption } from "@/
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/overlays/popover";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/overlays/tooltip";
 import { Typography } from "@/components/typography/typography";
-import { expandVariants, iconSwapReducedVariants, iconSwapVariants, useExpandClip, useMotionPreference } from "@/lib/motion";
+import { expandVariants, fadeVariants, iconSwapReducedVariants, iconSwapVariants, useExpandClip, useMotionPreference } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 
 /*
@@ -82,15 +82,15 @@ type SharePopoverProps = {
 	/**
 	 * The people and teams recommended for it (in Sparks: the reviewers for the idea, prds/sparks-review.md, "Who to
 	 * invite"), each with their `detail` as in "Who has access". `label` (default "View recommended reviewers"), under who
-	 * has access, shows the ones not there yet, open each time Share opens (it folds them away), each added with its
-	 * circle-plus or by selecting its row; hidden once they all are.
+	 * has access, shows the ones not there yet, closed each time Share opens (selecting it opens them), each added with its
+	 * circle-plus or by selecting its row; hidden once they all are. "Add all" shows only while they're open.
 	 */
 	recommended?: {
 		label?: string;
 		people: ShareSuggestion[];
 		/** Adding one; for a team, the people she unchecked in its popover first. "Add all" calls it for each one left. */
 		onAdd: (name: string, excluded: string[]) => void;
-		/** "Add all", on the right of `label`: adds every one not added yet. */
+		/** "Add all", on the right of `label` while the list is open: adds every one not added yet. */
 		addAllLabel?: string;
 	};
 	/** The link to what's shared, for "Copy link". */
@@ -163,12 +163,12 @@ const [value, setValue] = React.useState("");
 	const listId = React.useId();
 	const has = new Set(members.map((member) => member.name.toLowerCase()));
 	const recommendedLeft = (recommended?.people ?? []).filter((reviewer) => !has.has(reviewer.name.toLowerCase()));
-	// The recommended reviewers are open each time Share opens; she can fold them away.
-	const [showRecommended, setShowRecommended] = React.useState(true);
+	// The recommended reviewers are closed each time Share opens; she opens them from "View recommended reviewers".
+	const [showRecommended, setShowRecommended] = React.useState(false);
 	const { prefersReducedMotion } = useMotionPreference();
 	const recommendedClip = useExpandClip();
 	React.useEffect(() => {
-		if (open) setShowRecommended(true);
+		if (open) setShowRecommended(false);
 	}, [open]);
 	const recommendedId = React.useId();
 	const matches = value.trim() ? matchPeople(directory.filter((option) => !has.has(option.name.toLowerCase())), value) : [];
@@ -210,7 +210,7 @@ const [value, setValue] = React.useState("");
 		<Popover
 			open={open}
 			onOpenChange={(next) => {
-				if (next) setShowRecommended(true);
+				if (next) setShowRecommended(false);
 				onOpenChange?.(next);
 			}}
 		>
@@ -350,7 +350,8 @@ const [value, setValue] = React.useState("");
 						<ExpandBlock key='recommended-section' className='-mt-2'>
 							<div className='flex flex-col gap-2 pt-2'>
 							<hr className='mt-2 border-border' />
-							{/* The toggle, and "Add all" on the right, 8px more above them than between the rows. */}
+							{/* The toggle, and "Add all" on the right while the list is open (it fades in and out with it), 8px more above
+							    them than between the rows. */}
 							<div className='mt-2 flex items-center justify-between gap-3'>
 							<Button
 								variant='link'
@@ -377,17 +378,30 @@ const [value, setValue] = React.useState("");
 									</AnimatePresence>
 								</span>
 							</Button>
-							{/* Every one left at once (each as its own circle-plus would); focus goes to the field, since this section closes. */}
-							<Button
-								variant='link'
-								className='h-auto shrink-0 p-0 font-medium text-link'
-								onClick={() => {
-									for (const reviewer of recommendedLeft) recommended?.onAdd(reviewer.name, pendingExcluded[reviewer.name] ?? []);
-									inputRef.current?.focus();
-								}}
-							>
-								{recommended?.addAllLabel ?? "Add all"}
-							</Button>
+							<AnimatePresence initial={false}>
+							{showRecommended ? (
+								<motion.div
+									key='add-all'
+									className='shrink-0'
+									variants={prefersReducedMotion ? undefined : fadeVariants}
+									initial='initial'
+									animate='animate'
+									exit='exit'
+								>
+									{/* Every one left at once (each as its own circle-plus would); focus goes to the field, since this section closes. */}
+									<Button
+										variant='link'
+										className='h-auto shrink-0 p-0 font-medium text-link'
+										onClick={() => {
+											for (const reviewer of recommendedLeft) recommended?.onAdd(reviewer.name, pendingExcluded[reviewer.name] ?? []);
+											inputRef.current?.focus();
+										}}
+									>
+										{recommended?.addAllLabel ?? "Add all"}
+									</Button>
+								</motion.div>
+							) : null}
+							</AnimatePresence>
 							</div>
 							{/* Expand (MOTION.md): the list opens and closes in place, its height and the 8px above it together (the
 							    -8px takes back the column's gap, the 8px inside gives it back), so nothing jumps; clipped only while it

@@ -54,9 +54,9 @@ function EmptyState({
 			)}
 			{...props}
 		>
-			{/* Icon, title and description 8px apart, the text at most 480px wide so a long description stays readable in a
-			    wide panel; the button sits 16px below the group. */}
-			<div className='flex max-w-[480px] flex-col items-center gap-2'>
+			{/* Icon, title and description 8px apart, the text at most 720px wide (480px wrapped a
+			    short description into four lines); the button sits 16px below the group. */}
+			<div className='flex max-w-[720px] flex-col items-center gap-2'>
 				{icon && (
 					<div data-slot='empty-state-icon' className='flex items-center justify-center'>
 						{icon}

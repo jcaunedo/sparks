@@ -1,5 +1,5 @@
 import * as React from "react";
-import { ArrowLeft, Bell, ClipboardCheck, Undo2, FlaskConical, Folder, ListChecks, MessageCircle, MousePointerClick, Paperclip, Pencil, RotateCcw, Users, X, Zap } from "lucide-react";
+import { ArrowLeft, Bell, ClipboardCheck, Undo2, Folder, ListChecks, MessageCircle, MousePointerClick, Paperclip, Pencil, RotateCcw, X, Zap } from "lucide-react";
 import { animate, AnimatePresence, motion, useAnimationControls, useIsPresent, usePresenceData, type Variants } from "motion/react";
 
 import { ActivityFeed } from "@/components/chat/activity-feed";
@@ -64,6 +64,9 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/overlays/p
 import { HeaderIconButton } from "../../header-icon-button";
 import { NotificationsPopover, type NotificationsPopoverProps } from "../../notifications-popover";
 import { InvitationEmail, type InvitationEmailProps } from "../invitation-email/invitation-email";
+import emptyPrototype from "./images/empty-prototype.png";
+import emptyEvaluate from "./images/empty-evaluate.png";
+import emptyReview from "./images/empty-review.png";
 
 /** One of Dana's messages, as she wrote it, line breaks included. */
 type SparksUserMessage = {
@@ -674,8 +677,18 @@ function UpcomingPrototype({ name, detail, note }: UpcomingAction["prototype"] &
 	);
 }
 
-/** The icon on a step's empty state, before Dana gets there. Product artwork. */
-const upcomingIcons = { prototype: MousePointerClick, validate: FlaskConical, review: Users } as const;
+/**
+ * The illustration on a step's empty state, before Dana gets there (product artwork, not sample data): Prototype the
+ * drafting hands, Evaluate the hands on the board, Review the light bulb between laptops. Ink on a transparent
+ * background at 80% opacity, 24px above the title (`mb-4` on top of the empty state's 8px gap). Drawn 160px tall, except Evaluate's,
+ * a wider drawing that read too large at that height: 200px wide, its height from its proportions (about 134px).
+ * DESIGN.md → "Step empty states have an illustration".
+ */
+const upcomingIllustrations = {
+	prototype: { src: emptyPrototype, className: "h-40 w-auto" },
+	validate: { src: emptyEvaluate, className: "h-auto w-[200px]" },
+	review: { src: emptyReview, className: "h-40 w-auto" },
+} as const;
 
 
 /** When an idea went out, in the Published popover: "Fri, Nov 27, 2026, 4:43 PM" (sparks.ds 138:2894). */
@@ -1268,10 +1281,10 @@ const libraryOpen = sidePanel === "library";
 		<section aria-label={peeked.label} className='flex min-h-0 flex-1 flex-col rounded-card bg-background-subtle p-4'>
 			<EmptyState
 				className='flex-1'
-				icon={React.createElement(upcomingIcons[peeked.id as keyof typeof upcomingIcons], {
-					"aria-hidden": true,
-					className: "size-8 text-icon-muted",
-				})}
+				icon={(() => {
+					const illustration = upcomingIllustrations[peeked.id as keyof typeof upcomingIllustrations];
+					return <img src={illustration.src} alt='' className={cn("mb-4 opacity-80", illustration.className)} />;
+				})()}
 				title={peeked.upcoming.title}
 				description={peeked.upcoming.description}
 				// Once it can start (Evaluate and Review, with the prototype built): its action, and "Back to …" beside it.
@@ -1898,7 +1911,8 @@ const libraryOpen = sidePanel === "library";
 			</main>
 		</div>
 			{/* Comments or Library, on the right edge, the screen's full height; it slides in (fades, with reduced motion). From one
-			    to the other, the column stays and its content changes. */}
+			    to the other, the column stays (the aside carries the panel's border and gray, so nothing behind shows through) and
+			    its content crossfades: the one leaving fades out, then the other fades in (MOTION.md → "Side panels"). */}
 			<AnimatePresence initial={false}>
 				{sidePanel ? (
 					<motion.aside
@@ -1908,10 +1922,19 @@ const libraryOpen = sidePanel === "library";
 						initial='initial'
 						animate='animate'
 						exit='exit'
-						className='relative flex h-full shrink-0 flex-col'
+						className='relative flex h-full shrink-0 flex-col border-s border-border bg-[color-mix(in_srgb,var(--background-subtle)_50%,var(--background))]'
 						style={{ width: sidePanelWidth }}
 					>
 						<SidePanelResizer width={sidePanelWidth} onWidthChange={setSidePanelWidth} label={commentsOpen ? "Resize comments" : "Resize library"} />
+						<AnimatePresence initial={false} mode='wait'>
+						<motion.div
+							key={libraryOpen && library ? "library" : "comments"}
+							variants={prefersReducedMotion ? undefined : fadeVariants}
+							initial='initial'
+							animate='animate'
+							exit='exit'
+							className='flex min-h-0 flex-1 flex-col'
+						>
 						{libraryOpen && library ? (
 							<LibraryPanel items={library.items} onAdd={library.onAdd} onRemove={library.onRemove} images={images} onFilesPicked={keepImages} onClose={closeLibrary} autoFocus />
 						) : (
@@ -1927,6 +1950,8 @@ onClose={closeComments}
 							autoFocus
 						/>
 						)}
+						</motion.div>
+						</AnimatePresence>
 					</motion.aside>
 				) : null}
 			</AnimatePresence>
